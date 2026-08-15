@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import QEvent, QLineF, QLocale, QPointF, QRectF, QSettings, Qt, QThreadPool
+from PySide6.QtCore import QEvent, QLineF, QLocale, QPointF, QRectF, QSettings, QSize, Qt, QThreadPool
 from PySide6.QtGui import QCloseEvent, QColor, QPainter, QPainterPath, QPalette, QPen
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -42,12 +42,18 @@ from rgpdf.worker import SearchWorker
 class SettingsButton(QToolButton):
     """Flat settings button with a crisp, palette-aware vector glyph."""
 
+    ICON_SIZE = 20
+    BUTTON_SIZE = 34
+    PADDING = 4
+
     def __init__(self, *, checkable: bool = False) -> None:
         super().__init__()
         self.icon_kind = ""
         self.icon_foreground: QColor | None = None
         self.setCheckable(checkable)
-        self.setFixedSize(30, 28)
+        self.setIconSize(QSize(self.ICON_SIZE, self.ICON_SIZE))
+        self.setFixedSize(self.BUTTON_SIZE, self.BUTTON_SIZE)
+        self.setContentsMargins(self.PADDING, self.PADDING, self.PADDING, self.PADDING)
 
     def set_icon_kind(self, kind: str) -> None:
         self.icon_kind = kind

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from PySide6.QtCore import QSettings, Qt
+from PySide6.QtCore import QMargins, QSettings, QSize, Qt
 from PySide6.QtGui import QPalette
 from PySide6.QtWidgets import QToolBar
 
@@ -39,7 +39,9 @@ def test_main_window_has_three_result_columns(qtbot, monkeypatch, tmp_path) -> N
         window.highlight_button,
     )
     assert all(isinstance(button, SettingsButton) for button in settings_buttons)
-    assert all(button.size().width() == 30 and button.size().height() == 28 for button in settings_buttons)
+    assert all(button.size() == QSize(34, 34) for button in settings_buttons)
+    assert all(button.iconSize() == QSize(20, 20) for button in settings_buttons)
+    assert all(button.contentsMargins() == QMargins(4, 4, 4, 4) for button in settings_buttons)
     assert isinstance(window.settings_toolbar, QToolBar)
     assert len(window.settings_toolbar.findChildren(SettingsButton)) == 6
     assert window.left_panel is window.main_splitter.widget(0)
