@@ -8,6 +8,15 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "browse": "瀏覽…",
         "pattern": "搜尋樣式",
         "pattern_hint": "輸入文字或正規表示式",
+        "pattern_tooltip": (
+            "<b>搜尋樣式</b><br>"
+            "停用規則表達式時，輸入內容會視為完整的純文字。<br>"
+            "啟用時可使用例如：<br>"
+            "• <code>範例\\s*\\d+</code>：『範例』、可選空白與一串數字<br>"
+            "• <code>錯誤|警告</code>：符合其中任一文字<br>"
+            "• <code>\\b[A-Z]{{2}}\\d{{4}}\\b</code>：兩個大寫字母加四位數字<br>"
+            "語法參考：https://github.com/mrabarnett/mrab-regex#readme"
+        ),
         "plain": "純文字",
         "regex": "規則表達式",
         "case": "區分大小寫",
@@ -60,6 +69,15 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "browse": "Browse…",
         "pattern": "Search pattern",
         "pattern_hint": "Enter text or a regular expression",
+        "pattern_tooltip": (
+            "<b>Search pattern</b><br>"
+            "With Regular Expression off, the input is matched as literal text.<br>"
+            "With it on, examples include:<br>"
+            "• <code>example\\s*\\d+</code>: ‘example’, optional whitespace, then digits<br>"
+            "• <code>error|warning</code>: either word<br>"
+            "• <code>\\b[A-Z]{{2}}\\d{{4}}\\b</code>: two uppercase letters and four digits<br>"
+            "Syntax reference: https://github.com/mrabarnett/mrab-regex#readme"
+        ),
         "plain": "Plain text",
         "regex": "Regular Expression",
         "case": "Case sensitive",

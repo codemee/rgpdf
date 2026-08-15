@@ -190,27 +190,34 @@ class MainWindow(QMainWindow):
         saved_folder = self.settings.value("search/folder", "", type=str)
         self.folder_edit.setText(saved_folder)
 
-        search_form = QFormLayout()
+        self.search_form = QFormLayout()
+        self.search_form.setLabelAlignment(
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
+        )
         folder_row = QHBoxLayout()
+        folder_row.setContentsMargins(0, 0, 0, 0)
         folder_row.addWidget(self.folder_edit, 1)
         folder_row.addWidget(self.browse_button)
         folder_container = QWidget()
         folder_container.setLayout(folder_row)
-        search_form.addRow(self._make_label("folder"), folder_container)
+        self.folder_label = self._make_label("folder")
+        self.search_form.addRow(self.folder_label, folder_container)
 
         pattern_row = QHBoxLayout()
+        pattern_row.setContentsMargins(0, 0, 0, 0)
         pattern_row.addWidget(self.pattern_edit, 1)
         pattern_row.addWidget(self.search_button)
         pattern_row.addWidget(self.cancel_button)
         pattern_container = QWidget()
         pattern_container.setLayout(pattern_row)
-        search_form.addRow(self._make_label("pattern"), pattern_container)
+        self.pattern_label = self._make_label("pattern")
+        self.search_form.addRow(self.pattern_label, pattern_container)
 
         self.search_area = QFrame()
         self.search_area.setObjectName("searchArea")
         search_area_layout = QVBoxLayout(self.search_area)
         search_area_layout.setContentsMargins(10, 8, 10, 8)
-        search_area_layout.addLayout(search_form)
+        search_area_layout.addLayout(self.search_form)
 
         self.settings_toolbar = QToolBar()
         self.settings_toolbar.setObjectName("settingsToolbar")
@@ -334,6 +341,7 @@ class MainWindow(QMainWindow):
     def _make_label(self, key: str) -> QLabel:
         label = QLabel()
         label.setProperty("translation_key", key)
+        label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         return label
 
     @staticmethod
@@ -390,6 +398,9 @@ class MainWindow(QMainWindow):
                 label.setText(self.t(key))
         self.browse_button.setText(self.t("browse"))
         self.pattern_edit.setPlaceholderText(self.t("pattern_hint"))
+        pattern_tooltip = self.t("pattern_tooltip")
+        self.pattern_label.setToolTip(pattern_tooltip)
+        self.pattern_edit.setToolTip(pattern_tooltip)
         self.settings_toolbar.setWindowTitle(self.t("settings"))
         self._refresh_settings_buttons()
         self.highlight_panel_label.setText(self.t("common_colors"))

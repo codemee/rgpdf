@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from PySide6.QtCore import QSettings
+from PySide6.QtCore import QSettings, Qt
 from PySide6.QtGui import QPalette
 from PySide6.QtWidgets import QToolBar
 
@@ -41,6 +41,14 @@ def test_main_window_has_three_result_columns(qtbot, monkeypatch, tmp_path) -> N
     assert isinstance(window.settings_toolbar, QToolBar)
     assert len(window.settings_toolbar.findChildren(SettingsButton)) == 6
     assert window.left_panel is window.main_splitter.widget(0)
+    expected_alignment = Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
+    assert window.search_form.labelAlignment() == expected_alignment
+    assert window.folder_label.alignment() == expected_alignment
+    assert window.pattern_label.alignment() == expected_alignment
+    assert window.search_form.itemAt(1, window.search_form.ItemRole.FieldRole).widget().layout().contentsMargins().isNull()
+    assert window.search_form.itemAt(0, window.search_form.ItemRole.FieldRole).widget().layout().contentsMargins().isNull()
+    assert "Regular Expression" in window.pattern_label.toolTip()
+    assert window.pattern_edit.toolTip() == window.pattern_label.toolTip()
     assert window.regex_button.isChecked()
     assert window.language_button.icon_kind == "language_en"
     window.language_button.click()
