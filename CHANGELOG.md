@@ -4,6 +4,13 @@
 
 All notable changes are documented here. Immutable releases use `vX.Y.Z`; the moving `latest` tag points to the newest published release.
 
+## 0.0.2 — 2026-08-15
+
+- Vertically aligned search-form labels with their input controls.
+- Added interactive, localized search-pattern help with examples and a clickable regular-expression reference.
+- Added the package version to the application window title.
+- Added secure automated PyPI publishing through GitHub Trusted Publishing.
+
 ## 0.0.1 — 2026-08-15
 
 - Initial public release.
@@ -12,4 +19,3 @@ All notable changes are documented here. Immutable releases use `vX.Y.Z`; the mo
 - Added precise per-character highlights with configurable colors.
 - Added English/Traditional Chinese localization and system/light/dark themes.
 - Added persistent search, appearance, and window-layout settings.
-

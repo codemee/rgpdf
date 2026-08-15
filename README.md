@@ -59,4 +59,4 @@ See [Technical details](docs/TECHNICAL.md) for architecture, matching semantics,
 
 ## Releases
 
-Immutable releases use version tags such as `v0.0.1`. The movable `latest` Git tag always points to the newest published source release. PyPI provides the canonical packaged release.
+Immutable releases use version tags such as `v0.0.2`. The movable `latest` Git tag always points to the newest published source release. PyPI provides the canonical packaged release.
