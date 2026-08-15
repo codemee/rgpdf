@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QHeaderView,
     QMainWindow,
+    QMenu,
     QMessageBox,
     QPushButton,
     QProgressBar,
@@ -26,6 +27,7 @@ from PySide6.QtWidgets import (
     QTreeWidgetItem,
     QVBoxLayout,
     QWidget,
+    QWidgetAction,
 )
 
 from rgpdf.i18n import translate
@@ -211,7 +213,39 @@ class MainWindow(QMainWindow):
         pattern_container = QWidget()
         pattern_container.setLayout(pattern_row)
         self.pattern_label = self._make_label("pattern")
-        self.search_form.addRow(self.pattern_label, pattern_container)
+        self.pattern_help_button = QToolButton()
+        self.pattern_help_button.setObjectName("patternHelpButton")
+        self.pattern_help_button.setText("?")
+        self.pattern_help_button.setAutoRaise(True)
+        self.pattern_help_button.setFixedSize(20, 20)
+        self.pattern_help_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.pattern_help_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+
+        self.pattern_help_menu = QMenu(self)
+        self.pattern_help_menu.setObjectName("patternHelpMenu")
+        self.pattern_help_content = QLabel()
+        self.pattern_help_content.setObjectName("patternHelpContent")
+        self.pattern_help_content.setTextFormat(Qt.TextFormat.RichText)
+        self.pattern_help_content.setTextInteractionFlags(
+            Qt.TextInteractionFlag.TextBrowserInteraction
+        )
+        self.pattern_help_content.setOpenExternalLinks(True)
+        self.pattern_help_content.setWordWrap(True)
+        self.pattern_help_content.setFixedWidth(390)
+        self.pattern_help_content.setContentsMargins(10, 8, 10, 8)
+        pattern_help_action = QWidgetAction(self.pattern_help_menu)
+        pattern_help_action.setDefaultWidget(self.pattern_help_content)
+        self.pattern_help_menu.addAction(pattern_help_action)
+        self.pattern_help_button.setMenu(self.pattern_help_menu)
+
+        pattern_label_layout = QHBoxLayout()
+        pattern_label_layout.setContentsMargins(0, 0, 0, 0)
+        pattern_label_layout.setSpacing(4)
+        pattern_label_layout.addWidget(self.pattern_label)
+        pattern_label_layout.addWidget(self.pattern_help_button)
+        pattern_label_container = QWidget()
+        pattern_label_container.setLayout(pattern_label_layout)
+        self.search_form.addRow(pattern_label_container, pattern_container)
 
         self.search_area = QFrame()
         self.search_area.setObjectName("searchArea")
@@ -398,9 +432,9 @@ class MainWindow(QMainWindow):
                 label.setText(self.t(key))
         self.browse_button.setText(self.t("browse"))
         self.pattern_edit.setPlaceholderText(self.t("pattern_hint"))
-        pattern_tooltip = self.t("pattern_tooltip")
-        self.pattern_label.setToolTip(pattern_tooltip)
-        self.pattern_edit.setToolTip(pattern_tooltip)
+        self.pattern_help_button.setToolTip(self.t("pattern_help"))
+        self.pattern_help_button.setAccessibleName(self.t("pattern_help"))
+        self.pattern_help_content.setText(self.t("pattern_help_content"))
         self.settings_toolbar.setWindowTitle(self.t("settings"))
         self._refresh_settings_buttons()
         self.highlight_panel_label.setText(self.t("common_colors"))
