@@ -83,7 +83,7 @@ uv build
 2. Update both changelogs and both README/technical-document variants when behavior changes.
 3. Run tests and `uv build`.
 4. Commit to `main`, create the immutable `vX.Y.Z` tag, and publish its GitHub Release.
-5. Force-move the `latest` tag to the same commit and push it with `git push origin refs/tags/latest --force`.
+5. The GitHub Release event runs `.github/workflows/publish-pypi.yml`, builds both distributions, and publishes them to the `pypi` environment through Trusted Publishing.
+6. Force-move the `latest` tag to the same commit and push it with `git push origin refs/tags/latest --force`.
 
-Install documentation must reference `latest`, never a hard-coded version tag. Immutable version tags remain available for reproducible source checkout and release history.
-
+Install documentation must use PyPI's latest release or the moving `latest` source tag, never a hard-coded version tag. Immutable version tags remain available for reproducible source checkout and release history. The PyPI project must trust repository `codemee/rgpdf`, workflow `publish-pypi.yml`, and environment `pypi`; no long-lived upload token is stored in GitHub.

@@ -83,7 +83,7 @@ uv build
 2. 行為變更時同步更新中英文變更紀錄、README 與技術文件。
 3. 執行測試與 `uv build`。
 4. 提交到 `main`，建立不可變的 `vX.Y.Z` 標籤並發布對應 GitHub Release。
-5. 將 `latest` 標籤強制移到相同 commit，再用 `git push origin refs/tags/latest --force` 推送。
+5. GitHub Release 事件會執行 `.github/workflows/publish-pypi.yml`，建置兩種發布檔並透過 Trusted Publishing 發布到 `pypi` environment。
+6. 將 `latest` 標籤強制移到相同 commit，再用 `git push origin refs/tags/latest --force` 推送。
 
-安裝文件必須指向 `latest`，不得寫死版本標籤；不可變版本標籤則保留給可重現的原始碼 checkout 與發布歷程。
-
+安裝文件必須使用 PyPI 的最新發布版本或會移動的 `latest` 原始碼標籤，不得寫死版本標籤；不可變版本標籤則保留給可重現的原始碼 checkout 與發布歷程。PyPI 專案必須信任儲存庫 `codemee/rgpdf`、工作流程 `publish-pypi.yml` 與 environment `pypi`，GitHub 不保存長效上傳 token。
