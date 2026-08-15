@@ -18,7 +18,7 @@ QToolBar#settingsToolbar {
     border: 0;
     border-bottom: 1px solid palette(mid);
     padding: 2px 7px;
-    spacing: 1px;
+    spacing: 4px;
 }
 QToolBar#settingsToolbar::separator {
     background: palette(mid);
@@ -40,7 +40,7 @@ QToolButton:hover { background: palette(midlight); }
 QToolButton:pressed { background: palette(mid); }
 QToolButton:checked {
     background: palette(midlight);
-    border: 1px solid palette(mid);
+    border: 0;
 }
 QPushButton {
     border: 0;

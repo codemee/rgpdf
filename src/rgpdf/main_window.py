@@ -262,6 +262,7 @@ class MainWindow(QMainWindow):
         self.settings_toolbar.setObjectName("settingsToolbar")
         self.settings_toolbar.setMovable(False)
         self.settings_toolbar.setFloatable(False)
+        self.settings_toolbar.layout().setSpacing(4)
         for button in (
             self.language_button,
             self.theme_button,

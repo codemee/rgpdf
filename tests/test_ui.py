@@ -43,6 +43,7 @@ def test_main_window_has_three_result_columns(qtbot, monkeypatch, tmp_path) -> N
     assert all(button.iconSize() == QSize(20, 20) for button in settings_buttons)
     assert all(button.contentsMargins() == QMargins(4, 4, 4, 4) for button in settings_buttons)
     assert isinstance(window.settings_toolbar, QToolBar)
+    assert window.settings_toolbar.layout().spacing() == 4
     assert len(window.settings_toolbar.findChildren(SettingsButton)) == 6
     assert window.left_panel is window.main_splitter.widget(0)
     expected_alignment = Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
