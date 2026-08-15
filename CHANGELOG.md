@@ -4,6 +4,12 @@
 
 All notable changes are documented here. Immutable releases use `vX.Y.Z`; the moving `latest` tag points to the newest published release.
 
+## 0.0.3 — 2026-08-15
+
+- Standardized toolbar icons at 20×20 px inside 34×34 px buttons with 4 px padding.
+- Removed toolbar button borders, including from enabled states.
+- Set consistent 4 px spacing between toolbar buttons across platforms.
+
 ## 0.0.2 — 2026-08-15
 
 - Vertically aligned search-form labels with their input controls.
