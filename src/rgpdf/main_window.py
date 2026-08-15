@@ -219,7 +219,6 @@ class MainWindow(QMainWindow):
         self.pattern_help_button.setAutoRaise(True)
         self.pattern_help_button.setFixedSize(20, 20)
         self.pattern_help_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.pattern_help_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
 
         self.pattern_help_menu = QMenu(self)
         self.pattern_help_menu.setObjectName("patternHelpMenu")
@@ -236,7 +235,6 @@ class MainWindow(QMainWindow):
         pattern_help_action = QWidgetAction(self.pattern_help_menu)
         pattern_help_action.setDefaultWidget(self.pattern_help_content)
         self.pattern_help_menu.addAction(pattern_help_action)
-        self.pattern_help_button.setMenu(self.pattern_help_menu)
 
         pattern_label_layout = QHBoxLayout()
         pattern_label_layout.setContentsMargins(0, 0, 0, 0)
@@ -398,6 +396,7 @@ class MainWindow(QMainWindow):
         self.cancel_button.clicked.connect(self._cancel_search)
         self.pattern_edit.returnPressed.connect(self._start_search)
         self.pattern_edit.editingFinished.connect(self._save_pattern)
+        self.pattern_help_button.clicked.connect(self._show_pattern_help)
         self.language_button.clicked.connect(self._cycle_language)
         self.theme_button.clicked.connect(self._cycle_theme)
         self.recursive_button.toggled.connect(self._recursive_changed)
@@ -689,6 +688,10 @@ class MainWindow(QMainWindow):
 
     def _save_pattern(self) -> None:
         self.settings.setValue("search/pattern", self.pattern_edit.text())
+
+    def _show_pattern_help(self) -> None:
+        position = self.pattern_help_button.rect().bottomLeft()
+        self.pattern_help_menu.popup(self.pattern_help_button.mapToGlobal(position))
 
     def _toggle_highlight_panel(self, expanded: bool) -> None:
         self.highlight_panel.setVisible(expanded)

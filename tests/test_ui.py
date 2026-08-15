@@ -48,7 +48,7 @@ def test_main_window_has_three_result_columns(qtbot, monkeypatch, tmp_path) -> N
     assert window.search_form.itemAt(1, window.search_form.ItemRole.FieldRole).widget().layout().contentsMargins().isNull()
     assert window.search_form.itemAt(0, window.search_form.ItemRole.FieldRole).widget().layout().contentsMargins().isNull()
     assert window.pattern_help_button.text() == "?"
-    assert window.pattern_help_button.menu() is window.pattern_help_menu
+    assert window.pattern_help_button.menu() is None
     assert window.pattern_help_content.openExternalLinks()
     assert "Regular Expression" in window.pattern_help_content.text()
     assert '<a href="https://github.com/mrabarnett/mrab-regex#readme">' in window.pattern_help_content.text()
