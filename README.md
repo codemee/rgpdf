@@ -22,7 +22,7 @@ rgpdf searches existing PDF text layers. It does not perform OCR or modify sourc
 Install [uv](https://docs.astral.sh/uv/), then install the moving `latest` tag:
 
 ```shell
-uv tool install --force --refresh "git+https://github.com/codemee/rgpdf.git@latest"
+uv tool install "git+https://github.com/codemee/rgpdf.git@latest"
 ```
 
 Run the application:
@@ -31,7 +31,13 @@ Run the application:
 rgpdf
 ```
 
-To update later, run the same `uv tool install --force --refresh ...@latest` command. Windows and macOS are supported; uv manages the required Python environment.
+To update an existing installation:
+
+```shell
+uv tool upgrade rgpdf
+```
+
+Windows and macOS are supported; uv manages the required Python environment.
 
 ## Development
 
@@ -48,4 +54,3 @@ See [Technical details](docs/TECHNICAL.md) for architecture, matching semantics,
 ## Releases
 
 Immutable releases use version tags such as `v0.0.1`. The movable `latest` Git tag always points to the newest published release and is the canonical installation target.
-

@@ -22,7 +22,7 @@ rgpdf 只搜尋 PDF 已有的文字層，不執行 OCR，也不修改來源檔�
 先安裝 [uv](https://docs.astral.sh/uv/)，再安裝會移動到最新版本的 `latest` 標籤：
 
 ```shell
-uv tool install --force --refresh "git+https://github.com/codemee/rgpdf.git@latest"
+uv tool install "git+https://github.com/codemee/rgpdf.git@latest"
 ```
 
 執行程式：
@@ -31,7 +31,13 @@ uv tool install --force --refresh "git+https://github.com/codemee/rgpdf.git@late
 rgpdf
 ```
 
-日後更新時，再次執行相同的 `uv tool install --force --refresh ...@latest` 指令即可。支援 Windows 與 macOS，所需 Python 環境由 uv 管理。
+更新已安裝的版本：
+
+```shell
+uv tool upgrade rgpdf
+```
+
+支援 Windows 與 macOS，所需 Python 環境由 uv 管理。
 
 ## 開發
 
@@ -48,4 +54,3 @@ uv run rgpdf
 ## 發布版本
 
 不可變的發布版本使用 `v0.0.1` 之類的版本標籤；可移動的 `latest` Git 標籤永遠指向最新發布版本，也是文件中的標準安裝來源。
-
