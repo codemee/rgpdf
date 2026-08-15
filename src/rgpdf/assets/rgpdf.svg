@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Regular expression document search">
+  <path d="M120 36h190l92 92v318c0 20-16 36-36 36H120c-20 0-36-16-36-36V72c0-20 16-36 36-36z" fill="#315EFB"/>
+  <path d="M310 36v92h92z" fill="#BFD0FF"/>
+  <circle cx="180" cy="268" r="20" fill="#FFFFFF"/>
+  <g stroke="#FFFFFF" stroke-width="22" stroke-linecap="round">
+    <path d="M286 210v116"/>
+    <path d="M236 239l100 58"/>
+    <path d="M236 297l100-58"/>
+  </g>
+</svg>

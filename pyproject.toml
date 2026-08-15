@@ -1,0 +1,33 @@
+[project]
+name = "rgpdf"
+version = "0.0.1"
+description = "Cross-platform PDF text and regular-expression search desktop app"
+readme = "README.md"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+    "pymupdf>=1.25",
+    "pyside6>=6.8",
+    "regex>=2024.11.6",
+]
+
+[project.urls]
+Homepage = "https://github.com/codemee/rgpdf"
+Repository = "https://github.com/codemee/rgpdf"
+Issues = "https://github.com/codemee/rgpdf/issues"
+
+[project.scripts]
+rgpdf = "rgpdf.app:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-qt>=4.4",
+]
+
+[build-system]
+requires = ["uv_build>=0.8,<0.9"]
+build-backend = "uv_build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
