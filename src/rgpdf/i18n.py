@@ -3,7 +3,7 @@ from __future__ import annotations
 
 TRANSLATIONS: dict[str, dict[str, str]] = {
     "zh_TW": {
-        "app_title": "rgpdf — PDF 搜尋",
+        "app_title": "rgpdf {version} — PDF 搜尋",
         "folder": "PDF 資料夾",
         "browse": "瀏覽…",
         "pattern": "搜尋樣式",
@@ -66,7 +66,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "match_count": "{count} 筆",
     },
     "en": {
-        "app_title": "rgpdf — PDF Search",
+        "app_title": "rgpdf {version} — PDF Search",
         "folder": "PDF folder",
         "browse": "Browse…",
         "pattern": "Search pattern",

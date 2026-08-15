@@ -30,6 +30,7 @@ from PySide6.QtWidgets import (
     QWidgetAction,
 )
 
+from rgpdf import __version__
 from rgpdf.i18n import translate
 from rgpdf.models import DocumentMatch, SearchOptions, SearchReport
 from rgpdf.preview import PdfPreview
@@ -424,7 +425,7 @@ class MainWindow(QMainWindow):
         return translate(self.language, key, **values)
 
     def retranslate_ui(self) -> None:
-        self.setWindowTitle(self.t("app_title"))
+        self.setWindowTitle(self.t("app_title", version=__version__))
         for label in self.findChildren(QLabel):
             key = label.property("translation_key")
             if key:

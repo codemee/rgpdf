@@ -4,6 +4,7 @@ from PySide6.QtCore import QSettings, Qt
 from PySide6.QtGui import QPalette
 from PySide6.QtWidgets import QToolBar
 
+from rgpdf import __version__
 from rgpdf.app import apply_application_theme
 from rgpdf.main_window import MainWindow, SettingsButton
 from rgpdf.models import PageHighlight, TextMatch
@@ -19,6 +20,7 @@ def test_main_window_has_three_result_columns(qtbot, monkeypatch, tmp_path) -> N
     applied_themes = []
     window = MainWindow(applied_themes.append, settings=settings)
     qtbot.addWidget(window)
+    assert window.windowTitle() == f"rgpdf {__version__} — PDF Search"
     assert window.main_splitter.count() == 2
     assert window.main_splitter.handleWidth() == 12
     assert window.main_splitter.widget(1) is window.preview_group
