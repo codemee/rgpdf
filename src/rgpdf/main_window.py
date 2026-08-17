@@ -1,3 +1,6 @@
+# Copyright (C) 2026 meebox
+# SPDX-License-Identifier: AGPL-3.0-only
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -141,7 +144,13 @@ class SettingsButton(QToolButton):
             font.setBold(True)
             font.setPixelSize(13 if self.icon_kind == "case" else 14)
             painter.setFont(font)
-            labels = {"language_zh": "中", "language_en": "A", "case": "Aa", "regex": ".*"}
+            labels = {
+                "language_zh": "中",
+                "language_en": "A",
+                "case": "Aa",
+                "regex": ".*",
+                "about": "i",
+            }
             painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, labels.get(self.icon_kind, ""))
         painter.end()
 
@@ -189,6 +198,8 @@ class MainWindow(QMainWindow):
             self.settings.value("search/recursive", True, type=bool)
         )
         self.highlight_button = self._settings_button(checkable=True)
+        self.about_button = self._settings_button()
+        self.about_button.set_icon_kind("about")
         self.search_button = QPushButton()
         self.cancel_button = QPushButton()
         self.cancel_button.setEnabled(False)
@@ -280,6 +291,8 @@ class MainWindow(QMainWindow):
             self.highlight_button,
         ):
             self.settings_toolbar.addWidget(button)
+        self.settings_toolbar.addSeparator()
+        self.settings_toolbar.addWidget(self.about_button)
         self.addToolBar(Qt.ToolBarArea.TopToolBarArea, self.settings_toolbar)
 
         self.highlight_panel = QFrame()
@@ -411,6 +424,7 @@ class MainWindow(QMainWindow):
         self.case_button.toggled.connect(self._case_changed)
         self.regex_button.toggled.connect(self._regex_changed)
         self.highlight_button.toggled.connect(self._toggle_highlight_panel)
+        self.about_button.clicked.connect(self._show_about)
         self.custom_color_button.clicked.connect(self._choose_highlight_color)
         self.file_list.currentItemChanged.connect(self._file_selected)
         self.match_list.currentItemChanged.connect(self._match_selected)
@@ -443,6 +457,8 @@ class MainWindow(QMainWindow):
         self.pattern_help_button.setAccessibleName(self.t("pattern_help"))
         self.pattern_help_content.setText(self.t("pattern_help_content"))
         self.settings_toolbar.setWindowTitle(self.t("settings"))
+        self.about_button.setToolTip(self.t("about"))
+        self.about_button.setAccessibleName(self.t("about"))
         self._refresh_settings_buttons()
         self.highlight_panel_label.setText(self.t("common_colors"))
         self.custom_color_button.setText(self.t("custom_color"))
@@ -465,6 +481,13 @@ class MainWindow(QMainWindow):
         if folder:
             self.folder_edit.setText(folder)
             self.settings.setValue("search/folder", folder)
+
+    def _show_about(self) -> None:
+        QMessageBox.about(
+            self,
+            self.t("about_title"),
+            self.t("about_content", version=__version__),
+        )
 
     def _options(self) -> SearchOptions:
         return SearchOptions(

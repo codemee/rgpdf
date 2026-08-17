@@ -1,3 +1,6 @@
+# Copyright (C) 2026 meebox
+# SPDX-License-Identifier: AGPL-3.0-only
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -66,4 +69,3 @@ class ExtractedDocument:
     text: str
     character_refs: tuple[CharacterRef, ...]
     page_count: int
-

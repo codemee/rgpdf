@@ -1,3 +1,6 @@
+# Copyright (C) 2026 meebox
+# SPDX-License-Identifier: AGPL-3.0-only
+
 from __future__ import annotations
 
 
@@ -28,6 +31,20 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "custom_color": "自訂顏色…",
         "choose_highlight_color": "選擇螢光筆顏色",
         "settings": "設定",
+        "about": "關於 rgpdf",
+        "about_title": "關於 rgpdf",
+        "about_content": (
+            "<h3>rgpdf {version}</h3>"
+            "<p>Copyright © 2026 meebox</p>"
+            "<p>本程式依 GNU Affero General Public License version 3 授權，"
+            "不附帶任何擔保。你可以依該授權使用、研究、修改及重新散布。</p>"
+            "<p><a href=\"https://github.com/codemee/rgpdf/tree/v{version}\">"
+            "取得本版本原始碼</a> · "
+            "<a href=\"https://github.com/codemee/rgpdf/blob/v{version}/LICENSE\">"
+            "完整授權條款</a> · "
+            "<a href=\"https://github.com/codemee/rgpdf/blob/v{version}/THIRD-PARTY-NOTICES.md\">"
+            "第三方授權</a></p>"
+        ),
         "enabled": "啟用",
         "disabled": "停用",
         "search": "搜尋",
@@ -91,6 +108,21 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "custom_color": "Custom color…",
         "choose_highlight_color": "Choose highlight color",
         "settings": "Settings",
+        "about": "About rgpdf",
+        "about_title": "About rgpdf",
+        "about_content": (
+            "<h3>rgpdf {version}</h3>"
+            "<p>Copyright © 2026 meebox</p>"
+            "<p>This program is licensed under the GNU Affero General Public License "
+            "version 3 and comes with absolutely no warranty. You may use, study, "
+            "modify, and redistribute it under that license.</p>"
+            "<p><a href=\"https://github.com/codemee/rgpdf/tree/v{version}\">"
+            "Source for this version</a> · "
+            "<a href=\"https://github.com/codemee/rgpdf/blob/v{version}/LICENSE\">"
+            "Full license</a> · "
+            "<a href=\"https://github.com/codemee/rgpdf/blob/v{version}/THIRD-PARTY-NOTICES.md\">"
+            "Third-party notices</a></p>"
+        ),
         "enabled": "On",
         "disabled": "Off",
         "search": "Search",

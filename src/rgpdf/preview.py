@@ -1,3 +1,6 @@
+# Copyright (C) 2026 meebox
+# SPDX-License-Identifier: AGPL-3.0-only
+
 from __future__ import annotations
 
 from pathlib import Path

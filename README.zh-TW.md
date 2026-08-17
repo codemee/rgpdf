@@ -19,6 +19,14 @@ rgpdf 只搜尋 PDF 已有的文字層，不執行 OCR，也不修改來源檔�
 
 ## 安裝最新版本
 
+### Windows 免安裝版
+
+從 [最新 GitHub Release](https://github.com/codemee/rgpdf/releases/latest)下載有版本編號的 `rgpdf-*-windows-x86_64.exe` 與對應 `.sha256` 檔。執行檔目前未簽章，因此 Windows SmartScreen 可能顯示未知發布者警告；選擇執行前，請先確認 SHA-256 與發布頁提供的值相同。
+
+免安裝版不需要 Python 或 uv。
+
+### 使用 uv 安裝
+
 先安裝 [uv](https://docs.astral.sh/uv/)，再從 PyPI 安裝最新發布版本：
 
 ```shell
@@ -55,8 +63,23 @@ uv run pytest
 uv run rgpdf
 ```
 
+建置不需使用者安裝 Python 或 uv 的 Windows 單一執行檔（只有建置電腦需要）：
+
+```powershell
+uv sync --frozen
+./scripts/build-windows.ps1 -Python .venv/Scripts/python.exe
+```
+
+建置結果為 `dist/rgpdf.exe`。GitHub Actions 也會將執行檔、`LICENSE` 與第三方授權聲明發布為 `rgpdf-windows-x86_64` workflow artifact。正式公開散布前，仍須提供[發布授權檢查清單](docs/RELEASING.zh-TW.md)所列的對應來源材料。
+
 架構、匹配語意、並行處理與發布方式請參閱[技術細節](docs/TECHNICAL.zh-TW.md)，版本歷程請參閱[變更紀錄](CHANGELOG.zh-TW.md)。
 
 ## 發布版本
 
 不可變的發布版本使用 `v0.0.3` 之類的版本標籤；可移動的 `latest` Git 標籤永遠指向最新的原始碼發布版本。PyPI 則提供標準的套件發布版本。
+
+## 授權
+
+rgpdf 依 [GNU Affero General Public License version 3](LICENSE) 授權。你可以依該授權條款使用、研究、修改及重新散布本程式；散布執行檔時，必須同時提供該版本的完整對應原始碼。
+
+本程式依 AGPLv3 使用 PyMuPDF/MuPDF，並依 LGPLv3 使用 PySide6/Qt。詳見[第三方授權聲明](THIRD-PARTY-NOTICES.md)與[發布授權檢查清單](docs/RELEASING.zh-TW.md)。

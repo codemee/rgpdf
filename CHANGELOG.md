@@ -4,6 +4,15 @@
 
 All notable changes are documented here. Immutable releases use `vX.Y.Z`; the moving `latest` tag points to the newest published release.
 
+## 0.0.4 — 2026-08-17
+
+- Licensed rgpdf under GNU AGPLv3 and added complete third-party notices and release compliance guidance.
+- Added an in-app About dialog with exact-version source and license links.
+- Added reproducible PyInstaller packaging for a self-contained Windows x86-64 executable.
+- Added a generated multi-resolution Windows icon, executable version metadata, and packaged-resource checks.
+- Added a GitHub Actions Windows build and GUI startup smoke test.
+- Added unsigned, versioned GitHub Release downloads with SHA-256 verification files.
+
 ## 0.0.3 — 2026-08-15
 
 - Standardized toolbar icons at 20×20 px inside 34×34 px buttons with 4 px padding.

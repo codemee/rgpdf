@@ -37,6 +37,7 @@ def test_main_window_has_three_result_columns(qtbot, monkeypatch, tmp_path) -> N
         window.case_button,
         window.regex_button,
         window.highlight_button,
+        window.about_button,
     )
     assert all(isinstance(button, SettingsButton) for button in settings_buttons)
     assert all(button.size() == QSize(34, 34) for button in settings_buttons)
@@ -44,7 +45,7 @@ def test_main_window_has_three_result_columns(qtbot, monkeypatch, tmp_path) -> N
     assert all(button.contentsMargins() == QMargins(4, 4, 4, 4) for button in settings_buttons)
     assert isinstance(window.settings_toolbar, QToolBar)
     assert window.settings_toolbar.layout().spacing() == 4
-    assert len(window.settings_toolbar.findChildren(SettingsButton)) == 6
+    assert len(window.settings_toolbar.findChildren(SettingsButton)) == 7
     assert window.left_panel is window.main_splitter.widget(0)
     expected_alignment = Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
     assert window.search_form.labelAlignment() == expected_alignment
@@ -53,6 +54,17 @@ def test_main_window_has_three_result_columns(qtbot, monkeypatch, tmp_path) -> N
     assert window.search_form.itemAt(1, window.search_form.ItemRole.FieldRole).widget().layout().contentsMargins().isNull()
     assert window.search_form.itemAt(0, window.search_form.ItemRole.FieldRole).widget().layout().contentsMargins().isNull()
     assert window.pattern_help_button.text() == "?"
+    assert window.about_button.icon_kind == "about"
+    about_calls = []
+    monkeypatch.setattr(
+        "rgpdf.main_window.QMessageBox.about",
+        lambda parent, title, content: about_calls.append((parent, title, content)),
+    )
+    window.about_button.click()
+    assert about_calls[0][0] is window
+    assert about_calls[0][1] == "About rgpdf"
+    assert f"tree/v{__version__}" in about_calls[0][2]
+    assert "GNU Affero General Public License" in about_calls[0][2]
     assert window.pattern_help_button.menu() is None
     assert window.pattern_help_content.openExternalLinks()
     assert "Regular Expression" in window.pattern_help_content.text()
