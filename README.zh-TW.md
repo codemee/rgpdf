@@ -25,6 +25,18 @@ rgpdf 只搜尋 PDF 已有的文字層，不執行 OCR，也不修改來源檔�
 
 免安裝版不需要 Python 或 uv。
 
+### macOS App（Apple Silicon）
+
+從[最新 GitHub Release](https://github.com/codemee/rgpdf/releases/latest)下載有版本編號的 `rgpdf-*-macos-arm64.dmg` 與對應 `.sha256` 檔。先核對下載檔：
+
+```shell
+shasum -a 256 rgpdf-*-macos-arm64.dmg
+```
+
+確認輸出與 `.sha256` 檔相同後，開啟 DMG，將 `rgpdf.app` 拖曳至 Applications。這個版本適用 Apple Silicon（M 系列）Mac，不需要安裝 Python 或 uv。
+
+App 只有 ad-hoc 簽章且未經 Apple 公證。若 macOS 阻擋首次啟動，請在 Finder 的 Applications 中按住 Control 點按 `rgpdf`、選擇「打開」，再於確認視窗選擇「打開」。
+
 ### 使用 uv 安裝
 
 先安裝 [uv](https://docs.astral.sh/uv/)，再從 PyPI 安裝最新發布版本：
@@ -92,8 +104,8 @@ App 建置結果為 `dist/rgpdf.app`，DMG 則為 `dist/rgpdf-X.Y.Z-macos-ARCH.d
 發布流程由 GitHub Actions 自動執行。確認 `pyproject.toml` 與 `src/rgpdf/__init__.py` 的版本一致並推送對應 tag：
 
 ```shell
-git tag v0.0.6
-git push origin v0.0.6
+git tag v0.0.7
+git push origin v0.0.7
 ```
 
 workflow 會平行測試並建置 Windows x86_64 與 macOS arm64，下載並驗證鎖定版本的第三方對應原始碼，建立同一個 GitHub Release、附加 SHA-256 校驗檔，最後透過 Trusted Publishing 發布至 PyPI。若任一測試、建置或來源驗證失敗，就不會建立 Release 或發布 PyPI。

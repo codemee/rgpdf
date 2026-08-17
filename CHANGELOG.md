@@ -4,6 +4,10 @@
 
 All notable changes are documented here. Immutable releases use `vX.Y.Z`; the moving `latest` tag points to the newest published release.
 
+## 0.0.7 — 2026-08-17
+
+- Added macOS Apple Silicon DMG download, SHA-256 verification, drag-to-install, and first-launch instructions to the installation section.
+
 ## 0.0.6 — 2026-08-17
 
 - Changed the macOS GitHub Release download from ZIP to a DMG with an Applications shortcut.

@@ -4,6 +4,10 @@
 
 所有重要變更都記錄於此。不可變的發布版本使用 `vX.Y.Z`；可移動的 `latest` 標籤指向最新發布版本。
 
+## 0.0.7 — 2026-08-17
+
+- 在安裝章節新增 macOS Apple Silicon DMG 的下載、SHA-256 驗證、拖曳安裝與首次開啟說明。
+
 ## 0.0.6 — 2026-08-17
 
 - 將 macOS GitHub Release 下載格式從 ZIP 改為含 Applications 捷徑的 DMG。

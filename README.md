@@ -29,6 +29,24 @@ file before choosing to run it.
 
 No Python or uv installation is required for the standalone executable.
 
+### macOS App (Apple Silicon)
+
+Download the versioned `rgpdf-*-macos-arm64.dmg` and its `.sha256` file from
+the [latest GitHub Release](https://github.com/codemee/rgpdf/releases/latest).
+Verify the download first:
+
+```shell
+shasum -a 256 rgpdf-*-macos-arm64.dmg
+```
+
+After confirming that the output matches the `.sha256` file, open the DMG and
+drag `rgpdf.app` to Applications. This build supports Apple Silicon (M-series)
+Macs and does not require Python or uv.
+
+The App is ad-hoc signed and not notarized by Apple. If macOS blocks its first
+launch, Control-click `rgpdf` in Finder's Applications folder, choose Open,
+then choose Open again in the confirmation dialog.
+
 ### Install with uv
 
 Install [uv](https://docs.astral.sh/uv/), then install the latest release from PyPI:
@@ -105,8 +123,8 @@ Releases are automated with GitHub Actions. After making the versions in
 `pyproject.toml` and `src/rgpdf/__init__.py` match, push the corresponding tag:
 
 ```shell
-git tag v0.0.6
-git push origin v0.0.6
+git tag v0.0.7
+git push origin v0.0.7
 ```
 
 The workflow tests and builds Windows x86_64 and macOS arm64 in parallel,
