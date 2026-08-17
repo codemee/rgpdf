@@ -4,6 +4,10 @@
 
 All notable changes are documented here. Immutable releases use `vX.Y.Z`; the moving `latest` tag points to the newest published release.
 
+## 0.0.6 — 2026-08-17
+
+- Changed the macOS GitHub Release download from ZIP to a DMG with an Applications shortcut.
+
 ## 0.0.5 — 2026-08-17
 
 - Added a self-contained macOS arm64 App bundle, Retina `.icns` icon, and one-command build script.

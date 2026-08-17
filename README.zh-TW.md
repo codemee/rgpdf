@@ -77,10 +77,11 @@ uv sync --frozen
 ```shell
 uv sync --frozen
 ./scripts/build-macos.sh
-open dist/rgpdf.app
+./scripts/package-macos-dmg.sh
+open dist/rgpdf-*-macos-*.dmg
 ```
 
-建置結果為 `dist/rgpdf.app`，架構與建置用的 Mac 相同（Apple Silicon 為 `arm64`、Intel Mac 為 `x86_64`）。本專案不使用 Apple Developer ID，App 只有 ad-hoc 簽章且不做公證；其他使用者首次開啟時可能需要在 Finder 中按右鍵選擇「打開」。
+App 建置結果為 `dist/rgpdf.app`，DMG 則為 `dist/rgpdf-X.Y.Z-macos-ARCH.dmg`，內含可拖曳至 Applications 的 App。架構與建置用的 Mac 相同（Apple Silicon 為 `arm64`、Intel Mac 為 `x86_64`）。本專案不使用 Apple Developer ID，App 只有 ad-hoc 簽章且不做公證；其他使用者首次開啟時可能需要在 Finder 中按右鍵選擇「打開」。
 
 架構、匹配語意、並行處理與發布方式請參閱[技術細節](docs/TECHNICAL.zh-TW.md)，版本歷程請參閱[變更紀錄](CHANGELOG.zh-TW.md)。
 
@@ -91,8 +92,8 @@ open dist/rgpdf.app
 發布流程由 GitHub Actions 自動執行。確認 `pyproject.toml` 與 `src/rgpdf/__init__.py` 的版本一致並推送對應 tag：
 
 ```shell
-git tag v0.0.5
-git push origin v0.0.5
+git tag v0.0.6
+git push origin v0.0.6
 ```
 
 workflow 會平行測試並建置 Windows x86_64 與 macOS arm64，下載並驗證鎖定版本的第三方對應原始碼，建立同一個 GitHub Release、附加 SHA-256 校驗檔，最後透過 Trusted Publishing 發布至 PyPI。若任一測試、建置或來源驗證失敗，就不會建立 Release 或發布 PyPI。

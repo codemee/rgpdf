@@ -85,13 +85,15 @@ On macOS, build a standalone App that does not require Python on the target Mac:
 ```shell
 uv sync --frozen
 ./scripts/build-macos.sh
-open dist/rgpdf.app
+./scripts/package-macos-dmg.sh
+open dist/rgpdf-*-macos-*.dmg
 ```
 
-The result is `dist/rgpdf.app`, built for the current Mac's architecture. This
-small project does not use an Apple Developer ID. The App is ad-hoc signed and
-not notarized, so another user may need to Control-click it and choose Open the
-first time.
+The App is built at `dist/rgpdf.app`; the distributable DMG is
+`dist/rgpdf-X.Y.Z-macos-ARCH.dmg` and contains the App plus an Applications
+shortcut. Both target the current Mac's architecture. This small project does
+not use an Apple Developer ID. The App is ad-hoc signed and not notarized, so
+another user may need to Control-click it and choose Open the first time.
 
 See [Technical details](docs/TECHNICAL.md) for architecture, matching semantics, concurrency, and release engineering. Version history is in the [changelog](CHANGELOG.md).
 
@@ -103,8 +105,8 @@ Releases are automated with GitHub Actions. After making the versions in
 `pyproject.toml` and `src/rgpdf/__init__.py` match, push the corresponding tag:
 
 ```shell
-git tag v0.0.5
-git push origin v0.0.5
+git tag v0.0.6
+git push origin v0.0.6
 ```
 
 The workflow tests and builds Windows x86_64 and macOS arm64 in parallel,

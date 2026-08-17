@@ -4,6 +4,10 @@
 
 所有重要變更都記錄於此。不可變的發布版本使用 `vX.Y.Z`；可移動的 `latest` 標籤指向最新發布版本。
 
+## 0.0.6 — 2026-08-17
+
+- 將 macOS GitHub Release 下載格式從 ZIP 改為含 Applications 捷徑的 DMG。
+
 ## 0.0.5 — 2026-08-17
 
 - 新增自含式 macOS arm64 App bundle、Retina `.icns` 圖示與一鍵建置腳本。

@@ -17,7 +17,7 @@ LGPLv3 的 PySide6/Qt。每次散布執行檔時都要完成以下事項。
 同一個 Release 應提供：
 
 - `rgpdf-X.Y.Z-windows-x86_64.exe`
-- `rgpdf-X.Y.Z-macos-arm64.zip`
+- `rgpdf-X.Y.Z-macos-arm64.dmg`
 - `rgpdf-X.Y.Z-source.tar.gz`：該 tag 的完整 rgpdf 對應原始碼與建置腳本
 - `rgpdf-X.Y.Z-third-party-sources.tar.gz`：建置所用 PyMuPDF/MuPDF、
   PySide6/Shiboken6/Qt 的確切來源與授權文件

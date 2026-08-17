@@ -106,12 +106,13 @@ jobs:
           kill -0 "$app_pid"
           kill "$app_pid"
           wait "$app_pid" || true
-      - name: Verify and package App
+      - name: Verify and package App as DMG
         shell: bash
         run: |
           codesign --verify --deep --strict dist/rgpdf.app
-          filename="rgpdf-${{ needs.validate.outputs.version }}-macos-arm64.zip"
-          ditto -c -k --sequesterRsrc --keepParent dist/rgpdf.app "dist/$filename"
+          filename="rgpdf-${{ needs.validate.outputs.version }}-macos-arm64.dmg"
+          VERSION="${{ needs.validate.outputs.version }}" ARCH=arm64 \
+            ./scripts/package-macos-dmg.sh "dist/$filename"
           cd dist
           shasum -a 256 "$filename" > "$filename.sha256"
       - uses: actions/upload-artifact@v4
@@ -119,8 +120,8 @@ jobs:
           name: release-macos-arm64
           if-no-files-found: error
           path: |
-            dist/rgpdf-*-macos-arm64.zip
-            dist/rgpdf-*-macos-arm64.zip.sha256
+            dist/rgpdf-*-macos-arm64.dmg
+            dist/rgpdf-*-macos-arm64.dmg.sha256
 
   package-python:
     name: Build Python and source distributions
