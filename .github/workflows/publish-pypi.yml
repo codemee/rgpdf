@@ -1,19 +1,46 @@
-name: Publish to PyPI
+name: Release
 
 on:
-  release:
-    types: [published]
-  workflow_dispatch:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
 
 permissions:
   contents: read
 
 jobs:
+  validate:
+    name: Validate release version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: version
+        name: Match package version to tag
+        shell: python
+        run: |
+          import os
+          import pathlib
+          import tomllib
+
+          root = pathlib.Path.cwd()
+          project_version = tomllib.loads((root / "pyproject.toml").read_text())["project"]["version"]
+          namespace = {}
+          exec((root / "src/rgpdf/__init__.py").read_text(), namespace)
+          package_version = namespace["__version__"]
+          tag_version = os.environ["GITHUB_REF_NAME"].removeprefix("v")
+          if len({project_version, package_version, tag_version}) != 1:
+              raise SystemExit(
+                  f"Version mismatch: tag={tag_version}, pyproject={project_version}, package={package_version}"
+              )
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              print(f"version={tag_version}", file=output)
+
   build-windows:
-    name: Build Windows executable
+    name: Build Windows x86_64
+    needs: validate
     runs-on: windows-latest
-    permissions:
-      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
@@ -21,74 +48,168 @@ jobs:
           python-version: "3.12"
       - name: Install locked dependencies
         run: uv sync --frozen
-      - name: Generate Windows icon
-        run: uv run --frozen python scripts/generate_windows_icon.py
-      - name: Build single-file executable
-        run: uv run --frozen pyinstaller --noconfirm --clean rgpdf.spec
+      - name: Run tests
+        run: uv run --frozen pytest
+      - name: Build executable
+        shell: pwsh
+        run: ./scripts/build-windows.ps1 -Python .venv/Scripts/python.exe
       - name: Smoke test executable
         shell: pwsh
         run: |
           try {
             Start-Process -FilePath dist\rgpdf.exe
             Start-Sleep -Seconds 8
-            $processes = Get-Process -Name rgpdf -ErrorAction SilentlyContinue
-            $visible = $processes | Where-Object {
-              $_.MainWindowHandle -ne 0 -and $_.Responding
-            }
-            if (-not $visible) {
-              throw "rgpdf.exe did not create a responsive window"
-            }
+            $visible = Get-Process -Name rgpdf -ErrorAction SilentlyContinue |
+              Where-Object { $_.MainWindowHandle -ne 0 -and $_.Responding }
+            if (-not $visible) { throw "rgpdf.exe did not create a responsive window" }
           } finally {
-            Get-Process -Name rgpdf -ErrorAction SilentlyContinue |
-              Stop-Process -Force
+            Get-Process -Name rgpdf -ErrorAction SilentlyContinue | Stop-Process -Force
           }
-      - name: Prepare versioned download
+      - name: Prepare release assets
         shell: pwsh
         run: |
-          $version = uv run --frozen python -c "from rgpdf import __version__; print(__version__)"
-          $filename = "rgpdf-$version-windows-x86_64.exe"
+          $filename = "rgpdf-${{ needs.validate.outputs.version }}-windows-x86_64.exe"
           Copy-Item dist\rgpdf.exe "dist\$filename"
           $hash = (Get-FileHash "dist\$filename" -Algorithm SHA256).Hash.ToLowerInvariant()
           "$hash  $filename" | Set-Content "dist\$filename.sha256" -Encoding ascii
       - uses: actions/upload-artifact@v4
         with:
-          name: rgpdf-windows-x86_64
+          name: release-windows-x86_64
           if-no-files-found: error
           path: |
             dist/rgpdf-*-windows-x86_64.exe
             dist/rgpdf-*-windows-x86_64.exe.sha256
-            LICENSE
-            THIRD-PARTY-NOTICES.md
-      - name: Attach unsigned executable to GitHub Release
-        if: github.event_name == 'release'
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          $assets = @(
-            (Get-ChildItem dist\rgpdf-*-windows-x86_64.exe).FullName
-            (Get-ChildItem dist\rgpdf-*-windows-x86_64.exe.sha256).FullName
-            (Resolve-Path LICENSE).Path
-            (Resolve-Path THIRD-PARTY-NOTICES.md).Path
-          )
-          gh release upload "${{ github.event.release.tag_name }}" $assets --clobber
 
-  build:
-    name: Build distributions
-    runs-on: ubuntu-latest
+  build-macos:
+    name: Build macOS arm64
+    needs: validate
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
-      - name: Build wheel and source distribution
-        run: uv build
+        with:
+          python-version: "3.12"
+      - name: Require Apple Silicon runner
+        run: test "$(uname -m)" = arm64
+      - name: Install locked dependencies
+        run: uv sync --frozen
+      - name: Run tests
+        run: uv run --frozen pytest
+      - name: Build App
+        run: ./scripts/build-macos.sh
+      - name: Smoke test App
+        shell: bash
+        run: |
+          QT_QPA_PLATFORM=offscreen dist/rgpdf.app/Contents/MacOS/rgpdf &
+          app_pid=$!
+          sleep 8
+          kill -0 "$app_pid"
+          kill "$app_pid"
+          wait "$app_pid" || true
+      - name: Verify and package App
+        shell: bash
+        run: |
+          codesign --verify --deep --strict dist/rgpdf.app
+          filename="rgpdf-${{ needs.validate.outputs.version }}-macos-arm64.zip"
+          ditto -c -k --sequesterRsrc --keepParent dist/rgpdf.app "dist/$filename"
+          cd dist
+          shasum -a 256 "$filename" > "$filename.sha256"
       - uses: actions/upload-artifact@v4
         with:
-          name: python-package-distributions
+          name: release-macos-arm64
+          if-no-files-found: error
+          path: |
+            dist/rgpdf-*-macos-arm64.zip
+            dist/rgpdf-*-macos-arm64.zip.sha256
+
+  package-python:
+    name: Build Python and source distributions
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v6
+      - name: Build wheel and source distribution
+        run: uv build
+      - name: Create corresponding source archive
+        run: |
+          git archive \
+            --format=tar.gz \
+            --prefix="rgpdf-${{ needs.validate.outputs.version }}/" \
+            --output="dist/rgpdf-${{ needs.validate.outputs.version }}-source.tar.gz" \
+            "${{ github.ref_name }}"
+          cd dist
+          sha256sum "rgpdf-${{ needs.validate.outputs.version }}-source.tar.gz" \
+            > "rgpdf-${{ needs.validate.outputs.version }}-source.tar.gz.sha256"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: python-distributions
+          if-no-files-found: error
           path: dist/
 
-  publish:
-    name: Publish distributions
-    needs: build
+  package-third-party-sources:
+    name: Package corresponding third-party sources
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download, verify, and package sources
+        run: |
+          python scripts/package_third_party_sources.py \
+            --project-version "${{ needs.validate.outputs.version }}" \
+            --output-dir dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: third-party-sources
+          if-no-files-found: error
+          compression-level: 0
+          path: |
+            dist/rgpdf-*-third-party-sources.tar.gz
+            dist/rgpdf-*-third-party-sources.tar.gz.sha256
+
+  release:
+    name: Publish GitHub Release
+    needs: [validate, build-windows, build-macos, package-python, package-third-party-sources]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          path: release-assets
+          merge-multiple: true
+      - uses: actions/download-artifact@v4
+        with:
+          name: python-distributions
+          path: python-dist
+      - uses: actions/download-artifact@v4
+        with:
+          name: third-party-sources
+          path: third-party-sources
+      - name: Collect GitHub Release assets
+        run: |
+          cp python-dist/rgpdf-*-source.tar.gz release-assets/
+          cp python-dist/rgpdf-*-source.tar.gz.sha256 release-assets/
+          cp third-party-sources/* release-assets/
+          cp LICENSE THIRD-PARTY-NOTICES.md release-assets/
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            release-assets/* \
+            --verify-tag \
+            --generate-notes \
+            --title "rgpdf ${{ needs.validate.outputs.version }}"
+
+  publish-pypi:
+    name: Publish to PyPI
+    needs: [release, package-python]
     runs-on: ubuntu-latest
     environment:
       name: pypi
@@ -98,7 +219,9 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: python-package-distributions
+          name: python-distributions
           path: dist/
-      - name: Publish to PyPI
+      - name: Remove GitHub-only source archive
+        run: rm dist/rgpdf-*-source.tar.gz dist/rgpdf-*-source.tar.gz.sha256
+      - name: Publish distributions
         uses: pypa/gh-action-pypi-publish@release/v1

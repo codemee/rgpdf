@@ -4,6 +4,14 @@
 
 All notable changes are documented here. Immutable releases use `vX.Y.Z`; the moving `latest` tag points to the newest published release.
 
+## 0.0.5 — 2026-08-17
+
+- Added a self-contained macOS arm64 App bundle, Retina `.icns` icon, and one-command build script.
+- Added macOS App launch, bundle metadata, architecture, and ad-hoc signature verification.
+- Changed releases to trigger from `vX.Y.Z` tags, testing and building Windows x86-64 and macOS arm64 in parallel.
+- Automated a single GitHub Release with versioned downloads, SHA-256 files, and subsequent PyPI publication.
+- Added SHA-256-verified corresponding source archives for PyMuPDF, MuPDF, PySide6, Shiboken6, and Qt.
+
 ## 0.0.4 — 2026-08-17
 
 - Licensed rgpdf under GNU AGPLv3 and added complete third-party notices and release compliance guidance.

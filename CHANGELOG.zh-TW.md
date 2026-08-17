@@ -4,6 +4,14 @@
 
 所有重要變更都記錄於此。不可變的發布版本使用 `vX.Y.Z`；可移動的 `latest` 標籤指向最新發布版本。
 
+## 0.0.5 — 2026-08-17
+
+- 新增自含式 macOS arm64 App bundle、Retina `.icns` 圖示與一鍵建置腳本。
+- 新增 macOS App 啟動、bundle metadata、架構與 ad-hoc 簽章驗證。
+- 將發布流程改為由 `vX.Y.Z` tag 自動觸發，平行測試並建置 Windows x86-64 與 macOS arm64。
+- 自動建立同一個 GitHub Release、版本化下載檔、SHA-256 校驗檔及 PyPI 發布。
+- 新增經 SHA-256 驗證的 PyMuPDF、MuPDF、PySide6、Shiboken6 與 Qt 對應原始碼封存。
+
 ## 0.0.4 — 2026-08-17
 
 - 將 rgpdf 以 GNU AGPLv3 授權，並新增完整第三方聲明與發布合規指引。

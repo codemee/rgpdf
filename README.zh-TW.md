@@ -72,11 +72,30 @@ uv sync --frozen
 
 建置結果為 `dist/rgpdf.exe`。GitHub Actions 也會將執行檔、`LICENSE` 與第三方授權聲明發布為 `rgpdf-windows-x86_64` workflow artifact。正式公開散布前，仍須提供[發布授權檢查清單](docs/RELEASING.zh-TW.md)所列的對應來源材料。
 
+在 macOS 建置可直接開啟、無需另裝 Python 的 App：
+
+```shell
+uv sync --frozen
+./scripts/build-macos.sh
+open dist/rgpdf.app
+```
+
+建置結果為 `dist/rgpdf.app`，架構與建置用的 Mac 相同（Apple Silicon 為 `arm64`、Intel Mac 為 `x86_64`）。本專案不使用 Apple Developer ID，App 只有 ad-hoc 簽章且不做公證；其他使用者首次開啟時可能需要在 Finder 中按右鍵選擇「打開」。
+
 架構、匹配語意、並行處理與發布方式請參閱[技術細節](docs/TECHNICAL.zh-TW.md)，版本歷程請參閱[變更紀錄](CHANGELOG.zh-TW.md)。
 
 ## 發布版本
 
 不可變的發布版本使用 `v0.0.3` 之類的版本標籤；可移動的 `latest` Git 標籤永遠指向最新的原始碼發布版本。PyPI 則提供標準的套件發布版本。
+
+發布流程由 GitHub Actions 自動執行。確認 `pyproject.toml` 與 `src/rgpdf/__init__.py` 的版本一致並推送對應 tag：
+
+```shell
+git tag v0.0.5
+git push origin v0.0.5
+```
+
+workflow 會平行測試並建置 Windows x86_64 與 macOS arm64，下載並驗證鎖定版本的第三方對應原始碼，建立同一個 GitHub Release、附加 SHA-256 校驗檔，最後透過 Trusted Publishing 發布至 PyPI。若任一測試、建置或來源驗證失敗，就不會建立 Release 或發布 PyPI。
 
 ## 授權
 

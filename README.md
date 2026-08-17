@@ -80,11 +80,37 @@ The result is `dist/rgpdf.exe`. GitHub Actions also publishes the executable,
 artifact. Public release distribution additionally requires the corresponding
 source materials listed in the release compliance checklist.
 
+On macOS, build a standalone App that does not require Python on the target Mac:
+
+```shell
+uv sync --frozen
+./scripts/build-macos.sh
+open dist/rgpdf.app
+```
+
+The result is `dist/rgpdf.app`, built for the current Mac's architecture. This
+small project does not use an Apple Developer ID. The App is ad-hoc signed and
+not notarized, so another user may need to Control-click it and choose Open the
+first time.
+
 See [Technical details](docs/TECHNICAL.md) for architecture, matching semantics, concurrency, and release engineering. Version history is in the [changelog](CHANGELOG.md).
 
 ## Releases
 
 Immutable releases use version tags such as `v0.0.3`. The movable `latest` Git tag always points to the newest published source release. PyPI provides the canonical packaged release.
+
+Releases are automated with GitHub Actions. After making the versions in
+`pyproject.toml` and `src/rgpdf/__init__.py` match, push the corresponding tag:
+
+```shell
+git tag v0.0.5
+git push origin v0.0.5
+```
+
+The workflow tests and builds Windows x86_64 and macOS arm64 in parallel,
+downloads and verifies the locked third-party corresponding sources, creates
+one GitHub Release with checksums, then publishes to PyPI through Trusted
+Publishing. A failed test, build, or source verification prevents publication.
 
 ## License
 

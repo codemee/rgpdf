@@ -1,0 +1,29 @@
+# Source archives corresponding to the native dependencies locked in uv.lock.
+# Update versions, URLs, and SHA-256 values whenever PyMuPDF or PySide6 changes.
+
+pymupdf_version = "1.28.2"
+pyside6_version = "6.11.1"
+
+[[archive]]
+name = "PyMuPDF"
+filename = "pymupdf-1.28.2.tar.gz"
+url = "https://files.pythonhosted.org/packages/a3/fb/b6761fa2d5266f2cdb24c3b91f4023070ab7848381417678e7a289a1d52a/pymupdf-1.28.2.tar.gz"
+sha256 = "5e0be7908a715aa20333caddd73f1d6f01e4cd0c26e869fa2dd0b7f344da2249"
+
+[[archive]]
+name = "MuPDF"
+filename = "mupdf-1.28.2-source.tar.gz"
+url = "https://mupdf.com/downloads/archive/mupdf-1.28.2-source.tar.gz"
+sha256 = "44075a84e329db55b9bef5f342a70fd26d69e48ad1d33cb89d9664581c641156"
+
+[[archive]]
+name = "PySide6 and Shiboken6"
+filename = "pyside-setup-everywhere-src-6.11.1.tar.xz"
+url = "https://download.qt.io/official_releases/QtForPython/pyside6/PySide6-6.11.1-src/pyside-setup-everywhere-src-6.11.1.tar.xz"
+sha256 = "6ffd9835bb0dd2c56f061d62f1616bb1707cfc0202b80e3165d6be087f3965e2"
+
+[[archive]]
+name = "Qt"
+filename = "qt-everywhere-src-6.11.1.tar.xz"
+url = "https://download.qt.io/official_releases/qt/6.11/6.11.1/single/qt-everywhere-src-6.11.1.tar.xz"
+sha256 = "252acef8c5ae68074d91cadba2ee4a83465051bbb970dd26e8f0daa0f3904e03"
