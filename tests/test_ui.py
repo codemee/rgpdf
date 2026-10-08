@@ -20,7 +20,7 @@ def test_main_window_has_three_result_columns(qtbot, monkeypatch, tmp_path) -> N
     applied_themes = []
     window = MainWindow(applied_themes.append, settings=settings)
     qtbot.addWidget(window)
-    assert window.windowTitle() == f"rgpdf {__version__} — PDF Search"
+    assert window.windowTitle() == f"rgpdf {__version__} — Document Search"
     assert window.main_splitter.count() == 2
     assert window.main_splitter.handleWidth() == 12
     assert window.main_splitter.widget(1) is window.preview_group
@@ -35,8 +35,10 @@ def test_main_window_has_three_result_columns(qtbot, monkeypatch, tmp_path) -> N
         window.theme_button,
         window.recursive_button,
         window.case_button,
+        window.scope_button,
         window.regex_button,
         window.highlight_button,
+        window.cache_button,
         window.about_button,
     )
     assert all(isinstance(button, SettingsButton) for button in settings_buttons)
@@ -45,7 +47,25 @@ def test_main_window_has_three_result_columns(qtbot, monkeypatch, tmp_path) -> N
     assert all(button.contentsMargins() == QMargins(4, 4, 4, 4) for button in settings_buttons)
     assert isinstance(window.settings_toolbar, QToolBar)
     assert window.settings_toolbar.layout().spacing() == 4
-    assert len(window.settings_toolbar.findChildren(SettingsButton)) == 7
+    assert len(window.settings_toolbar.findChildren(SettingsButton)) == 9
+    toolbar_buttons = [
+        widget
+        for action in window.settings_toolbar.actions()
+        if isinstance(
+            (widget := window.settings_toolbar.widgetForAction(action)), SettingsButton
+        )
+    ]
+    assert toolbar_buttons == [
+        window.recursive_button,
+        window.scope_button,
+        window.case_button,
+        window.regex_button,
+        window.highlight_button,
+        window.cache_button,
+        window.language_button,
+        window.theme_button,
+        window.about_button,
+    ]
     assert window.left_panel is window.main_splitter.widget(0)
     expected_alignment = Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
     assert window.search_form.labelAlignment() == expected_alignment
@@ -53,8 +73,20 @@ def test_main_window_has_three_result_columns(qtbot, monkeypatch, tmp_path) -> N
     assert window.pattern_label.alignment() == expected_alignment
     assert window.search_form.itemAt(1, window.search_form.ItemRole.FieldRole).widget().layout().contentsMargins().isNull()
     assert window.search_form.itemAt(0, window.search_form.ItemRole.FieldRole).widget().layout().contentsMargins().isNull()
+    assert window.search_scope == "pdf"
+    assert window.scope_button.icon_kind == "scope_pdf"
+    window.scope_button.click()
+    assert window.search_scope == "word"
+    assert window.scope_button.icon_kind == "scope_word"
+    window.scope_button.click()
+    assert window.search_scope == "all"
+    assert window.scope_button.icon_kind == "scope_all"
+    settings.sync()
+    assert settings.value("search/scope") == "all"
     assert window.pattern_help_button.text() == "?"
     assert window.about_button.icon_kind == "about"
+    assert window.cache_button.icon_kind == "cache"
+    assert window.cache_button.toolTip() == "Clear Word cache"
     about_calls = []
     monkeypatch.setattr(
         "rgpdf.main_window.QMessageBox.about",

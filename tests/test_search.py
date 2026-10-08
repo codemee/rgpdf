@@ -10,6 +10,7 @@ from rgpdf.search import (
     _context,
     SearchInputError,
     compile_pattern,
+    discover_documents,
     discover_pdfs,
     extract_document,
     find_matches,
@@ -81,6 +82,23 @@ def test_discover_pdfs_honors_recursive_flag(tmp_path: Path) -> None:
     assert discover_pdfs(tmp_path, recursive=True) == [
         nested / "inside.pdf",
         tmp_path / "top.PDF",
+    ]
+
+
+def test_discover_documents_filters_pdf_word_or_both(tmp_path: Path) -> None:
+    for name in ("one.pdf", "two.docx", "three.DOC", "ignore.docm", "ignore.txt"):
+        (tmp_path / name).touch()
+    assert [path.name for path in discover_documents(tmp_path, False, "pdf")] == [
+        "one.pdf"
+    ]
+    assert [path.name for path in discover_documents(tmp_path, False, "word")] == [
+        "three.DOC",
+        "two.docx",
+    ]
+    assert [path.name for path in discover_documents(tmp_path, False, "all")] == [
+        "one.pdf",
+        "three.DOC",
+        "two.docx",
     ]
 
 
@@ -157,14 +175,32 @@ def test_search_folder_reports_matching_documents_incrementally(tmp_path: Path) 
     report = search_folder(
         SearchOptions(tmp_path, "find me"),
         document_found=found_documents.append,
-        match_found=lambda path, relative, match: found_matches.append(
-            (path.name, str(relative), match.matched_text)
+        match_found=lambda path, relative, preview, match: found_matches.append(
+            (path.name, str(relative), preview.name, match.matched_text)
         ),
     )
     assert [item.path.name for item in found_documents] == ["first.pdf", "second.pdf"]
     assert found_documents == report.documents
     assert found_matches == [
-        ("first.pdf", "first.pdf", "find me"),
-        ("first.pdf", "first.pdf", "find me"),
-        ("second.pdf", "second.pdf", "find me"),
+        ("first.pdf", "first.pdf", "first.pdf", "find me"),
+        ("first.pdf", "first.pdf", "first.pdf", "find me"),
+        ("second.pdf", "second.pdf", "second.pdf", "find me"),
     ]
+
+
+def test_search_word_uses_converted_pdf_for_matching_and_preview(
+    tmp_path: Path, monkeypatch
+) -> None:
+    source = tmp_path / "sample.docx"
+    source.touch()
+    converted = tmp_path / "converted.pdf"
+    _write_pdf(converted, [[((72, 72), "find this")]])
+    monkeypatch.setattr("rgpdf.search.convert_word_to_pdf", lambda *args, **kwargs: converted)
+
+    report = search_folder(SearchOptions(tmp_path, "find", search_scope="word"))
+
+    assert report.scanned_files == 1
+    assert report.documents[0].path == source
+    assert report.documents[0].relative_path == Path("sample.docx")
+    assert report.documents[0].preview_path == converted
+    assert report.documents[0].matches[0].matched_text == "find"

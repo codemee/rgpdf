@@ -40,6 +40,7 @@ from rgpdf.preview import PdfPreview
 from rgpdf.resources import application_icon
 from rgpdf.search import SearchInputError, compile_pattern
 from rgpdf.worker import SearchWorker
+from rgpdf.word_conversion import clear_word_cache
 
 
 class SettingsButton(QToolButton):
@@ -121,13 +122,32 @@ class SettingsButton(QToolButton):
             painter.drawPath(moon)
             painter.restore()
         elif self.icon_kind == "recursive":
-            center.setY(center.y() + 2)
-            painter.drawRoundedRect(QRectF(center.x() - 8, center.y() - 5, 14, 10), 2, 2)
-            painter.drawLine(QLineF(center.x() - 6, center.y() - 5, center.x() - 3, center.y() - 8))
-            painter.drawLine(QLineF(center.x() - 3, center.y() - 8, center.x() + 1, center.y() - 8))
-            painter.drawLine(QLineF(center.x(), center.y() + 1, center.x() + 8, center.y() + 1))
-            painter.drawLine(QLineF(center.x() + 8, center.y() + 1, center.x() + 5, center.y() - 2))
-            painter.drawLine(QLineF(center.x() + 8, center.y() + 1, center.x() + 5, center.y() + 4))
+            folder_fill = (
+                QColor("#e8bd62")
+                if self.isEnabled()
+                else self.palette().color(QPalette.ColorRole.Window)
+            )
+            folder_fill.setAlpha(255)
+            painter.setBrush(folder_fill)
+            parent = QPainterPath()
+            parent.moveTo(center.x() - 8, center.y() - 6)
+            parent.lineTo(center.x() - 3, center.y() - 6)
+            parent.lineTo(center.x() - 1, center.y() - 4)
+            parent.lineTo(center.x() + 7, center.y() - 4)
+            parent.lineTo(center.x() + 7, center.y() + 3)
+            parent.lineTo(center.x() - 8, center.y() + 3)
+            parent.closeSubpath()
+            painter.drawPath(parent)
+            child = QPainterPath()
+            child.moveTo(center.x() - 2, center.y())
+            child.lineTo(center.x() + 2, center.y())
+            child.lineTo(center.x() + 4, center.y() + 2)
+            child.lineTo(center.x() + 9, center.y() + 2)
+            child.lineTo(center.x() + 9, center.y() + 8)
+            child.lineTo(center.x() - 2, center.y() + 8)
+            child.closeSubpath()
+            painter.drawPath(child)
+            painter.setBrush(Qt.BrushStyle.NoBrush)
         elif self.icon_kind == "highlighter":
             painter.save()
             painter.translate(center)
@@ -139,6 +159,59 @@ class SettingsButton(QToolButton):
             painter.drawLine(3.5, 4, 1.5, 8)
             painter.drawLine(-1.5, 8, 1.5, 8)
             painter.restore()
+        elif self.icon_kind == "cache":
+            painter.drawRoundedRect(QRectF(center.x() - 6, center.y() - 5, 12, 11), 1, 1)
+            painter.drawLine(QLineF(center.x() - 8, center.y() - 7, center.x() + 8, center.y() - 7))
+            painter.drawLine(QLineF(center.x() - 3, center.y() - 9, center.x() + 3, center.y() - 9))
+            painter.drawLine(QLineF(center.x() - 2, center.y() - 2, center.x() - 2, center.y() + 3))
+            painter.drawLine(QLineF(center.x() + 2, center.y() - 2, center.x() + 2, center.y() + 3))
+        elif self.icon_kind == "scope_pdf":
+            painter.setPen(QPen(QColor("#d93025"), 1.4))
+            painter.drawRoundedRect(QRectF(center.x() - 9, center.y() - 7, 18, 14), 2, 2)
+            font = painter.font()
+            font.setBold(True)
+            font.setPixelSize(7)
+            painter.setFont(font)
+            painter.drawText(
+                QRectF(center.x() - 9, center.y() - 7, 18, 14),
+                Qt.AlignmentFlag.AlignCenter,
+                "PDF",
+            )
+        elif self.icon_kind == "scope_word":
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(QColor("#2b579a"))
+            painter.drawRoundedRect(QRectF(center.x() - 8, center.y() - 8, 16, 16), 2, 2)
+            painter.setPen(QColor("white"))
+            font = painter.font()
+            font.setBold(True)
+            font.setPixelSize(11)
+            painter.setFont(font)
+            painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "W")
+        elif self.icon_kind == "scope_all":
+            font = painter.font()
+            font.setBold(True)
+            font.setPixelSize(6)
+            painter.setFont(font)
+            painter.setPen(QPen(QColor("#d93025"), 1.1))
+            pdf_rect = QRectF(center.x() - 11, center.y() - 9, 14, 11)
+            painter.drawRoundedRect(pdf_rect, 1.5, 1.5)
+            painter.drawText(
+                pdf_rect,
+                Qt.AlignmentFlag.AlignCenter,
+                "PDF",
+            )
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(QColor("#2b579a"))
+            word_rect = QRectF(center.x() + 1, center.y() - 1, 11, 12)
+            painter.drawRoundedRect(word_rect, 1.5, 1.5)
+            painter.setPen(QColor("white"))
+            font.setPixelSize(8)
+            painter.setFont(font)
+            painter.drawText(
+                word_rect,
+                Qt.AlignmentFlag.AlignCenter,
+                "W",
+            )
         else:
             font = painter.font()
             font.setBold(True)
@@ -182,6 +255,11 @@ class MainWindow(QMainWindow):
         self.folder_edit = QLineEdit()
         self.folder_edit.setReadOnly(True)
         self.browse_button = QPushButton()
+        stored_scope = self.settings.value("search/scope", "pdf", type=str)
+        if stored_scope not in {"pdf", "word", "all"}:
+            stored_scope = "pdf"
+        self.search_scope = stored_scope
+        self.scope_button = self._settings_button()
         self.pattern_edit = QLineEdit()
         self.pattern_edit.setText(self.settings.value("search/pattern", "", type=str))
         use_regex = self.settings.value("search/use_regex", True, type=bool)
@@ -198,6 +276,8 @@ class MainWindow(QMainWindow):
             self.settings.value("search/recursive", True, type=bool)
         )
         self.highlight_button = self._settings_button(checkable=True)
+        self.cache_button = self._settings_button()
+        self.cache_button.set_icon_kind("cache")
         self.about_button = self._settings_button()
         self.about_button.set_icon_kind("about")
         self.search_button = QPushButton()
@@ -275,13 +355,8 @@ class MainWindow(QMainWindow):
         self.settings_toolbar.setFloatable(False)
         self.settings_toolbar.layout().setSpacing(4)
         for button in (
-            self.language_button,
-            self.theme_button,
-        ):
-            self.settings_toolbar.addWidget(button)
-        self.settings_toolbar.addSeparator()
-        for button in (
             self.recursive_button,
+            self.scope_button,
             self.case_button,
             self.regex_button,
         ):
@@ -289,6 +364,13 @@ class MainWindow(QMainWindow):
         self.settings_toolbar.addSeparator()
         for button in (
             self.highlight_button,
+            self.cache_button,
+        ):
+            self.settings_toolbar.addWidget(button)
+        self.settings_toolbar.addSeparator()
+        for button in (
+            self.language_button,
+            self.theme_button,
         ):
             self.settings_toolbar.addWidget(button)
         self.settings_toolbar.addSeparator()
@@ -423,7 +505,9 @@ class MainWindow(QMainWindow):
         self.recursive_button.toggled.connect(self._recursive_changed)
         self.case_button.toggled.connect(self._case_changed)
         self.regex_button.toggled.connect(self._regex_changed)
+        self.scope_button.clicked.connect(self._cycle_search_scope)
         self.highlight_button.toggled.connect(self._toggle_highlight_panel)
+        self.cache_button.clicked.connect(self._clear_word_cache)
         self.about_button.clicked.connect(self._show_about)
         self.custom_color_button.clicked.connect(self._choose_highlight_color)
         self.file_list.currentItemChanged.connect(self._file_selected)
@@ -459,6 +543,8 @@ class MainWindow(QMainWindow):
         self.settings_toolbar.setWindowTitle(self.t("settings"))
         self.about_button.setToolTip(self.t("about"))
         self.about_button.setAccessibleName(self.t("about"))
+        self.cache_button.setToolTip(self.t("clear_word_cache"))
+        self.cache_button.setAccessibleName(self.t("clear_word_cache"))
         self._refresh_settings_buttons()
         self.highlight_panel_label.setText(self.t("common_colors"))
         self.custom_color_button.setText(self.t("custom_color"))
@@ -496,6 +582,7 @@ class MainWindow(QMainWindow):
             use_regex=self.regex_button.isChecked(),
             case_sensitive=self.case_button.isChecked(),
             recursive=self.recursive_button.isChecked(),
+            search_scope=self.search_scope,
         )
 
     def _start_search(self) -> None:
@@ -513,6 +600,7 @@ class MainWindow(QMainWindow):
         self.settings.setValue("search/folder", str(options.root))
         self._save_pattern()
         self.settings.setValue("search/recursive", options.recursive)
+        self.settings.setValue("search/scope", options.search_scope)
         self.documents = []
         self._document_indexes = {}
         self.file_list.clear()
@@ -542,6 +630,8 @@ class MainWindow(QMainWindow):
             self.regex_button,
             self.case_button,
             self.recursive_button,
+            self.scope_button,
+            self.cache_button,
             self.search_button,
         ):
             widget.setEnabled(not active)
@@ -552,18 +642,22 @@ class MainWindow(QMainWindow):
         self.progress_bar.setValue(current - 1)
         self.status_label.setText(self.t("searching", current=current, total=total, name=name))
 
-    def _match_found(self, path: Path, relative_path: Path, match) -> None:
+    def _match_found(
+        self, path: Path, relative_path: Path, preview_path: Path, match
+    ) -> None:
         index = self._document_indexes.get(path)
         if index is None:
             index = len(self.documents)
             self._document_indexes[path] = index
-            document = DocumentMatch(path, relative_path, (match,))
+            document = DocumentMatch(path, relative_path, (match,), preview_path)
             self.documents.append(document)
             self._append_file(document, index)
             return
 
         previous = self.documents[index]
-        document = DocumentMatch(path, relative_path, previous.matches + (match,))
+        document = DocumentMatch(
+            path, relative_path, previous.matches + (match,), preview_path
+        )
         self.documents[index] = document
         file_item = self.file_list.topLevelItem(index)
         file_item.setText(1, str(len(document.matches)))
@@ -672,7 +766,9 @@ class MainWindow(QMainWindow):
         if row < 0 or row >= len(document.matches):
             self.preview.clear()
             return
-        self.preview.show_match(str(document.path), document.matches[row])
+        self.preview.show_match(
+            str(document.preview_path or document.path), document.matches[row]
+        )
 
     def _refresh_result_labels(self) -> None:
         if not self.documents:
@@ -717,8 +813,37 @@ class MainWindow(QMainWindow):
         self.settings.setValue("search/use_regex", checked)
         self._refresh_settings_buttons()
 
+    def _cycle_search_scope(self) -> None:
+        scopes = ("pdf", "word", "all")
+        self.search_scope = scopes[(scopes.index(self.search_scope) + 1) % len(scopes)]
+        self.settings.setValue("search/scope", self.search_scope)
+        self._refresh_settings_buttons()
+
     def _save_pattern(self) -> None:
         self.settings.setValue("search/pattern", self.pattern_edit.text())
+
+    def _clear_word_cache(self) -> None:
+        answer = QMessageBox.question(
+            self,
+            self.t("clear_word_cache"),
+            self.t("clear_cache_confirm"),
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        if answer != QMessageBox.StandardButton.Yes:
+            return
+        self.preview.clear()
+        result = clear_word_cache()
+        QMessageBox.information(
+            self,
+            self.t("clear_word_cache"),
+            self.t(
+                "cache_cleared_body",
+                count=result.removed_files,
+                size=f"{result.removed_bytes / (1024 * 1024):.1f}",
+                failed=result.failed_files,
+            ),
+        )
 
     def _show_pattern_help(self) -> None:
         position = self.pattern_help_button.rect().bottomLeft()
@@ -769,6 +894,11 @@ class MainWindow(QMainWindow):
             f"{self.t('regex')}：{self.t('enabled' if self.regex_button.isChecked() else 'disabled')}"
         )
         self.regex_button.setAccessibleName(self.regex_button.toolTip())
+        self.scope_button.set_icon_kind(f"scope_{self.search_scope}")
+        self.scope_button.setToolTip(
+            f"{self.t('file_types')}：{self.t(f'scope_{self.search_scope}')}"
+        )
+        self.scope_button.setAccessibleName(self.scope_button.toolTip())
         self.highlight_button.set_icon_kind("highlighter")
         self.highlight_button.setToolTip(self.t("highlight_settings"))
         self.highlight_button.setAccessibleName(self.highlight_button.toolTip())

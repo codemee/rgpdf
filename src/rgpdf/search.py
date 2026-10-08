@@ -20,6 +20,7 @@ from rgpdf.models import (
     SearchWarning,
     TextMatch,
 )
+from rgpdf.word_conversion import ConversionCancelled, WordConversionError, convert_word_to_pdf
 
 
 class SearchInputError(ValueError):
@@ -34,12 +35,32 @@ class NoSearchableText(RuntimeError):
     """Raised when a PDF has no usable text layer."""
 
 
-def discover_pdfs(root: Path, recursive: bool) -> list[Path]:
+SEARCH_EXTENSIONS = {
+    "pdf": frozenset({".pdf"}),
+    "word": frozenset({".doc", ".docx"}),
+    "all": frozenset({".pdf", ".doc", ".docx"}),
+}
+
+
+def discover_documents(root: Path, recursive: bool, search_scope: str = "pdf") -> list[Path]:
+    try:
+        extensions = SEARCH_EXTENSIONS[search_scope]
+    except KeyError as exc:
+        raise SearchInputError(f"Unsupported search scope: {search_scope}") from exc
     iterator = root.rglob("*") if recursive else root.glob("*")
     return sorted(
-        (path for path in iterator if path.is_file() and path.suffix.casefold() == ".pdf"),
+        (
+            path
+            for path in iterator
+            if path.is_file() and path.suffix.casefold() in extensions
+        ),
         key=lambda path: str(path.relative_to(root)).casefold(),
     )
+
+
+def discover_pdfs(root: Path, recursive: bool) -> list[Path]:
+    """Backward-compatible PDF-only discovery helper."""
+    return discover_documents(root, recursive, "pdf")
 
 
 def compile_pattern(options: SearchOptions) -> regex.Pattern[str]:
@@ -212,7 +233,10 @@ def search_pdf(
     options: SearchOptions,
     compiled: regex.Pattern[str],
     match_found: Callable[[TextMatch], None] | None = None,
+    *,
+    source_path: Path | None = None,
 ) -> DocumentMatch:
+    original_path = source_path or path
     with fitz.open(path) as document:
         if document.needs_pass:
             raise PermissionError("The PDF is password protected.")
@@ -222,7 +246,40 @@ def search_pdf(
     matches = find_matches(
         extracted, compiled, options.regex_timeout_seconds, match_found=match_found
     )
-    return DocumentMatch(path=path, relative_path=path.relative_to(root), matches=matches)
+    return DocumentMatch(
+        path=original_path,
+        relative_path=original_path.relative_to(root),
+        matches=matches,
+        preview_path=path,
+    )
+
+
+def search_document(
+    path: Path,
+    root: Path,
+    options: SearchOptions,
+    compiled: regex.Pattern[str],
+    *,
+    cancel_event: Event | None = None,
+    match_found: Callable[[Path, TextMatch], None] | None = None,
+) -> DocumentMatch:
+    if path.suffix.casefold() == ".pdf":
+        return search_pdf(
+            path,
+            root,
+            options,
+            compiled,
+            (lambda match: match_found(path, match)) if match_found else None,
+        )
+    preview_path = convert_word_to_pdf(path, cancel_event=cancel_event)
+    return search_pdf(
+        preview_path,
+        root,
+        options,
+        compiled,
+        (lambda match: match_found(preview_path, match)) if match_found else None,
+        source_path=path,
+    )
 
 
 def search_folder(
@@ -231,31 +288,38 @@ def search_folder(
     cancel_event: Event | None = None,
     progress: Callable[[int, int, Path], None] | None = None,
     document_found: Callable[[DocumentMatch], None] | None = None,
-    match_found: Callable[[Path, Path, TextMatch], None] | None = None,
+    match_found: Callable[[Path, Path, Path, TextMatch], None] | None = None,
     paths: Iterable[Path] | None = None,
 ) -> SearchReport:
     if not options.root.is_dir():
         raise SearchInputError("The selected folder does not exist.")
     compiled = compile_pattern(options)
-    pdfs = list(paths) if paths is not None else discover_pdfs(options.root, options.recursive)
+    documents = (
+        list(paths)
+        if paths is not None
+        else discover_documents(options.root, options.recursive, options.search_scope)
+    )
     report = SearchReport()
-    for index, path in enumerate(pdfs, start=1):
+    for index, path in enumerate(documents, start=1):
         if cancel_event and cancel_event.is_set():
             report.cancelled = True
             break
         if progress:
-            progress(index, len(pdfs), path)
+            progress(index, len(documents), path)
         try:
             relative_path = path.relative_to(options.root)
-            result = search_pdf(
+            result = search_document(
                 path,
                 options.root,
                 options,
                 compiled,
+                cancel_event=cancel_event,
                 match_found=(
-                    (lambda match, current=path, relative=relative_path: match_found(
-                        current, relative, match
-                    ))
+                    (
+                        lambda preview_path, match, current=path, relative=relative_path: match_found(
+                            current, relative, preview_path, match
+                        )
+                    )
                     if match_found
                     else None
                 ),
@@ -270,9 +334,13 @@ def search_folder(
             PermissionError,
             SearchTimedOut,
             NoSearchableText,
+            WordConversionError,
             OSError,
             ValueError,
         ) as exc:
             report.warnings.append(SearchWarning(path, str(exc) or type(exc).__name__))
+        except ConversionCancelled:
+            report.cancelled = True
+            break
         report.scanned_files += 1
     return report

@@ -14,7 +14,7 @@ from rgpdf.search import search_folder
 class WorkerSignals(QObject):
     progress = Signal(int, int, str)
     document_found = Signal(object)
-    match_found = Signal(object, object, object)
+    match_found = Signal(object, object, object, object)
     finished = Signal(object)
     failed = Signal(str)
 

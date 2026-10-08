@@ -4,6 +4,15 @@
 
 All notable changes are documented here. Immutable releases use `vX.Y.Z`; the moving `latest` tag points to the newest published release.
 
+## 0.0.8 — 2026-10-09
+
+- Added a persisted three-state toolbar button for PDF-only, Word-only, or combined search, with distinct PDF and Word marks.
+- Reordered toolbar groups so language and color theme sit immediately before About, and replaced the recursive-search glyph with nested folders.
+- Added `.doc` and `.docx` search through cached PDF conversion, preferring Microsoft Word on Windows and falling back to LibreOffice.
+- Word results now reuse the existing page preview, regular-expression matching, and precise highlighting pipeline without modifying source documents or running macros.
+- Added startup cache expiration after 30 unused days, a 500 MB least-recently-used cap, and a toolbar action for clearing Word conversion cache.
+- Added a README toolbar guide using icons exported from the application; executable builds now run only in the remote release workflow.
+
 ## 0.0.7 — 2026-08-17
 
 - Added macOS Apple Silicon DMG download, SHA-256 verification, drag-to-install, and first-launch instructions to the installation section.

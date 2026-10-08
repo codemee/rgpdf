@@ -11,6 +11,7 @@ from PySide6.QtWidgets import QApplication
 
 from rgpdf.main_window import MainWindow
 from rgpdf.resources import application_icon
+from rgpdf.word_conversion import cleanup_word_cache
 
 
 BASE_STYLE = """
@@ -141,6 +142,7 @@ def apply_application_theme(app: QApplication, theme: str) -> None:
 
 
 def main() -> int:
+    cleanup_word_cache()
     QApplication.setHighDpiScaleFactorRoundingPolicy(
         Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
     )

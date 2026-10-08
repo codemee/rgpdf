@@ -2,11 +2,11 @@
 
 [繁體中文](README.zh-TW.md) · English
 
-rgpdf is a cross-platform desktop application for searching text-layer PDFs with plain text or regular expressions. Matches appear as they are found and can be opened in an asynchronous page preview with precise, configurable highlighting.
+rgpdf is a cross-platform desktop application for searching text-layer PDFs and Word documents with plain text or regular expressions. Matches appear as they are found and can be opened in an asynchronous page preview with precise, configurable highlighting.
 
 ## Features
 
-- Search multiple PDFs in a folder, optionally including subfolders.
+- Search PDFs, Word documents (`.doc` and `.docx`), or both in a folder, optionally including subfolders.
 - Plain-text and regular-expression modes with optional case sensitivity.
 - Matches across lines and page boundaries, including line-end dehyphenation.
 - Incremental per-match results without blocking the interface.
@@ -15,7 +15,30 @@ rgpdf is a cross-platform desktop application for searching text-layer PDFs with
 - English and Traditional Chinese interfaces, plus system/light/dark themes.
 - Persistent search and appearance preferences.
 
-rgpdf searches existing PDF text layers. It does not perform OCR or modify source files.
+rgpdf searches existing PDF text layers. Word documents are converted to a cached PDF and then use the same search and preview pipeline. On Windows, Microsoft Word is tried first; LibreOffice is the cross-platform fallback. At least one of them must already be installed to search Word files. Cached conversions unused for 30 days are removed at startup; the cache is reduced by least-recent use when it exceeds 500 MB, and it can be cleared from the toolbar. rgpdf never runs document macros, does not perform OCR, and does not modify source files.
+
+## Usage
+
+Choose a folder with **Browse**, enter text or a regular expression, and click
+**Search**. Select a file and matching passage to preview its page and highlight.
+The toolbar controls below are listed in their on-screen order. Hover over a
+button to see its current setting; clicking a three-state button cycles modes.
+
+| Toolbar icon | Control | Usage |
+| --- | --- | --- |
+| <img src="docs/toolbar/recursive.png" width="34" alt="Nested folders"> | Include subfolders | Toggle recursive folder search. |
+| <img src="docs/toolbar/scope_pdf.png" width="34" alt="PDF"> <img src="docs/toolbar/scope_word.png" width="34" alt="Word"> <img src="docs/toolbar/scope_all.png" width="34" alt="PDF and Word"> | File types | Cycle PDF → Word (DOC/DOCX) → both. Word requires Microsoft Word on Windows or LibreOffice. |
+| <img src="docs/toolbar/case.png" width="34" alt="Aa"> | Case sensitive | Toggle case-sensitive matching. |
+| <img src="docs/toolbar/regex.png" width="34" alt="Regular expression"> | Regular expression | Toggle regex; use the **?** beside the search field for examples. |
+| <img src="docs/toolbar/highlighter.png" width="34" alt="Highlighter"> | Highlight color | Choose a preset or custom color. |
+| <img src="docs/toolbar/cache.png" width="34" alt="Trash can"> | Clear Word cache | Confirm deletion of conversion PDFs; original Word files are preserved. Disabled during search. |
+| <img src="docs/toolbar/language_system.png" width="34" alt="System language"> <img src="docs/toolbar/language_zh.png" width="34" alt="Chinese"> <img src="docs/toolbar/language_en.png" width="34" alt="English"> | Language | Cycle system → Traditional Chinese → English. |
+| <img src="docs/toolbar/theme_system.png" width="34" alt="System theme"> <img src="docs/toolbar/sun.png" width="34" alt="Light theme"> <img src="docs/toolbar/moon.png" width="34" alt="Dark theme"> | Color theme | Cycle system → light → dark. |
+| <img src="docs/toolbar/about.png" width="34" alt="Information"> | About | View version, license, and source links. |
+
+Search settings are saved between sessions. Conversion cache is cleaned at
+startup: entries unused for 30 days expire, then the oldest entries are removed
+if total size exceeds 500 MB. Use **Cancel** to stop a search.
 
 ## Install the latest release
 
@@ -27,7 +50,7 @@ The executable is currently unsigned, so Windows SmartScreen may show an
 unknown-publisher warning. Verify that the SHA-256 value matches the published
 file before choosing to run it.
 
-No Python or uv installation is required for the standalone executable.
+No Python or uv installation is required for the standalone executable. PDF search has no additional requirement. Word search requires an existing Microsoft Word installation on Windows or an existing LibreOffice installation.
 
 ### macOS App (Apple Silicon)
 
@@ -85,33 +108,13 @@ uv run pytest
 uv run rgpdf
 ```
 
-Build a self-contained Windows executable (Python and uv are only required on
-the build machine):
+Local development runs tests and the application with uv. Executable and App
+artifacts are built remotely by GitHub Actions when a version tag is pushed;
+do not build them locally. The release includes a Windows single executable,
+a macOS Apple Silicon DMG, checksums, and corresponding source archives.
 
-```powershell
-uv sync --frozen
-./scripts/build-windows.ps1 -Python .venv/Scripts/python.exe
-```
-
-The result is `dist/rgpdf.exe`. GitHub Actions also publishes the executable,
-`LICENSE`, and third-party notices as the `rgpdf-windows-x86_64` workflow
-artifact. Public release distribution additionally requires the corresponding
-source materials listed in the release compliance checklist.
-
-On macOS, build a standalone App that does not require Python on the target Mac:
-
-```shell
-uv sync --frozen
-./scripts/build-macos.sh
-./scripts/package-macos-dmg.sh
-open dist/rgpdf-*-macos-*.dmg
-```
-
-The App is built at `dist/rgpdf.app`; the distributable DMG is
-`dist/rgpdf-X.Y.Z-macos-ARCH.dmg` and contains the App plus an Applications
-shortcut. Both target the current Mac's architecture. This small project does
-not use an Apple Developer ID. The App is ad-hoc signed and not notarized, so
-another user may need to Control-click it and choose Open the first time.
+After toolbar artwork changes, regenerate the README images with
+`uv run python scripts/generate_toolbar_icons.py`.
 
 See [Technical details](docs/TECHNICAL.md) for architecture, matching semantics, concurrency, and release engineering. Version history is in the [changelog](CHANGELOG.md).
 
@@ -123,8 +126,8 @@ Releases are automated with GitHub Actions. After making the versions in
 `pyproject.toml` and `src/rgpdf/__init__.py` match, push the corresponding tag:
 
 ```shell
-git tag v0.0.7
-git push origin v0.0.7
+git tag v0.0.8
+git push origin v0.0.8
 ```
 
 The workflow tests and builds Windows x86_64 and macOS arm64 in parallel,

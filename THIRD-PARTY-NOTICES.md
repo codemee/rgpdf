@@ -38,6 +38,17 @@ Python license terms.
 - Project: <https://github.com/mrabarnett/mrab-regex>
 - License: <https://github.com/mrabarnett/mrab-regex/blob/hg/LICENSE.txt>
 
+## pywin32 (Windows builds only)
+
+Copyright Mark Hammond and contributors.
+
+pywin32 is distributed under the Python Software Foundation License and other
+permissive component licenses. rgpdf uses it to request PDF export from an
+existing Microsoft Word installation; Microsoft Word itself is not included.
+
+- Project: <https://github.com/mhammond/pywin32>
+- License: <https://github.com/mhammond/pywin32/blob/main/win32/License.txt>
+
 ## Release source availability
 
 Binary distributors must provide the complete corresponding source for the

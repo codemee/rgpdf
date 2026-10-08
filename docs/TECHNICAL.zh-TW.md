@@ -4,13 +4,14 @@
 
 ## 技術與模組邊界
 
-rgpdf 支援 Python 3.12–3.13，並由 uv 管理。PySide6 提供桌面介面，PyMuPDF 負責 PDF 文字抽取與頁面渲染，第三方 `regex` 套件則提供 Unicode 規則表達式與單檔逾時限制。
+rgpdf 支援 Python 3.12–3.13，並由 uv 管理。PySide6 提供桌面介面，PyMuPDF 負責 PDF 文字抽取與頁面渲染，第三方 `regex` 套件則提供 Unicode 規則表達式與單檔逾時限制。Windows 建置使用 pywin32，要求既有的 Microsoft Word 執行固定格式匯出。
 
 | 模組 | 職責 |
 | --- | --- |
 | `app.py` | QApplication 生命週期、調色盤、扁平樣式與啟動流程 |
 | `main_window.py` | 搜尋控制、設定工具列、漸進式結果模型與畫面連動 |
-| `search.py` | 檔案探索、PDF 抽取、正規化、比對及座標映射 |
+| `search.py` | 檔案探索、轉換分派、PDF 抽取、正規化、比對及座標映射 |
+| `word_conversion.py` | Word／LibreOffice 轉換器選擇與本機 PDF 快取 |
 | `worker.py` | 背景搜尋工作與跨執行緒 Qt signal |
 | `preview.py` | 非同步頁面渲染、過時請求淘汰、縮放與螢光筆 |
 | `models.py` | 不可變搜尋選項、結果、頁面反白與抽取映射 |
@@ -21,14 +22,15 @@ rgpdf 支援 Python 3.12–3.13，並由 uv 管理。PySide6 提供桌面介面�
 
 ## 搜尋管線
 
-1. `discover_pdfs` 依穩定的相對路徑順序列舉 `.pdf`，是否遞迴由 `SearchOptions.recursive` 控制。
-2. 每份 PDF 獨立開啟；加密、損壞、空白或沒有文字層的檔案會成為不中斷搜尋的警告。
-3. 每頁透過 PyMuPDF `rawdict` 抽取，並明確停用 `TEXT_PRESERVE_IMAGES`，避免搜尋文字時解碼圖片資料。
-4. 依閱讀順序走訪文字區塊、行、span 與字元，每個可見字元都保存頁碼與精確 bounding box。
-5. 行內空白會合併，一般換行與頁面邊界轉成空格；若行尾是連字號，會先移除再接續下一行。
-6. 在完整正規化文件上搜尋。純文字會先跳脫；規則表達式採 Unicode `VERSION1`、可選完整大小寫折疊，以及單檔逾時。
-7. 忽略零寬度命中；其他命中只映射實際涵蓋字元的方框。
-8. 段落摘要以最近的中英文標點（`，。！？；：、,.!?;:`）為界；沒有標點時才使用有限字數與省略號。
+1. `discover_documents` 依 `SearchOptions.search_scope` 選定的檔案類型，以穩定的相對路徑順序列舉；是否遞迴由 `SearchOptions.recursive` 控制。
+2. Word 文件會轉換到使用者本機快取目錄。Windows 優先使用 Microsoft Word，LibreOffice 為備援；快取識別包含來源路徑、大小、修改時間及轉換器。巨集與自動更新外部連結會停用，來源則以唯讀開啟。啟動時會刪除 30 天未使用的項目，並依最久未使用順序移除檔案，直到快取不超過 500 MB；未搜尋時也可由工具列清除全部 Word 轉換快取。
+3. 每份產生的 PDF 獨立開啟；加密、損壞、空白、沒有文字層或無法轉換的檔案會成為不中斷搜尋的警告。
+4. 每頁透過 PyMuPDF `rawdict` 抽取，並明確停用 `TEXT_PRESERVE_IMAGES`，避免搜尋文字時解碼圖片資料。
+5. 依閱讀順序走訪文字區塊、行、span 與字元，每個可見字元都保存頁碼與精確 bounding box。
+6. 行內空白會合併，一般換行與頁面邊界轉成空格；若行尾是連字號，會先移除再接續下一行。
+7. 在完整正規化文件上搜尋。純文字會先跳脫；規則表達式採 Unicode `VERSION1`、可選完整大小寫折疊，以及單檔逾時。
+8. 忽略零寬度命中；其他命中只映射實際涵蓋字元的方框。
+9. 段落摘要以最近的中英文標點（`，。！？；：、,.!?;:`）為界；沒有標點時才使用有限字數與省略號。
 
 正規化文字與 `CharacterRef` tuple 的長度永遠相同。人工加入的分隔空格帶有頁面參照但沒有方框，因此規則表達式可以跨頁，又不會產生不存在的反白區域。
 
@@ -44,7 +46,7 @@ rgpdf 支援 Python 3.12–3.13，並由 uv 管理。PySide6 提供桌面介面�
 
 主畫面使用頂端設定工具列與水平 splitter：
 
-- 左側：上方是資料夾／樣式，下方是檔案與命中結果表。
+- 左側：上方是資料夾／樣式，下方是檔案與命中結果表；工具列三態按鈕可選擇 PDF、Word 或兩者。
 - 右側：完整高度的 PDF 預覽、命中頁切換、符合寬度與縮放。
 
 設定使用 `QSettings("rgpdf", "rgpdf")`：
@@ -59,6 +61,7 @@ rgpdf 支援 Python 3.12–3.13，並由 uv 管理。PySide6 提供桌面介面�
 | `search/use_regex` | 規則表達式模式 |
 | `search/case_sensitive` | 區分大小寫 |
 | `search/recursive` | 包含子資料夾 |
+| `search/scope` | `pdf`、`word` 或 `all` |
 | `window/geometry` | 視窗位置與大小 |
 | `window/main_splitter` | 左側／預覽比例 |
 | `window/result_splitter` | 檔案／命中項目比例 |
@@ -81,9 +84,9 @@ uv build
 
 1. 在 `pyproject.toml` 與 `src/rgpdf/__init__.py` 設定相同版本。
 2. 行為變更時同步更新中英文變更紀錄、README 與技術文件。
-3. 執行測試與 `uv build`。
-4. 提交到 `main`，建立不可變的 `vX.Y.Z` 標籤並發布對應 GitHub Release。
-5. GitHub Release 事件會執行 `.github/workflows/publish-pypi.yml`，建置兩種發布檔並透過 Trusted Publishing 發布到 `pypi` environment。
-6. 將 `latest` 標籤強制移到相同 commit，再用 `git push origin refs/tags/latest --force` 推送。
+3. 本機執行測試並啟動 `uv run rgpdf` 供手動測試；執行檔只在遠端建置。
+4. 提交並推送 `main`，建立並推送不可變的 `vX.Y.Z` 標籤。
+5. tag 推送會觸發 `.github/workflows/publish-pypi.yml`，遠端測試與建置 Windows／macOS 發布檔、建立 GitHub Release，再透過 Trusted Publishing 發布至 PyPI。
+6. 發布工作流程成功後，將 `latest` 原始碼標籤移至相同 commit。
 
 安裝文件必須使用 PyPI 的最新發布版本或會移動的 `latest` 原始碼標籤，不得寫死版本標籤；不可變版本標籤則保留給可重現的原始碼 checkout 與發布歷程。PyPI 專案必須信任儲存庫 `codemee/rgpdf`、工作流程 `publish-pypi.yml` 與 environment `pypi`，GitHub 不保存長效上傳 token。

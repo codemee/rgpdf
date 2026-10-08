@@ -18,6 +18,7 @@ class SearchOptions:
     case_sensitive: bool = False
     recursive: bool = True
     regex_timeout_seconds: float = 1.0
+    search_scope: str = "pdf"
 
 
 @dataclass(frozen=True, slots=True)
@@ -42,6 +43,7 @@ class DocumentMatch:
     path: Path
     relative_path: Path
     matches: tuple[TextMatch, ...]
+    preview_path: Path | None = None
 
 
 @dataclass(frozen=True, slots=True)

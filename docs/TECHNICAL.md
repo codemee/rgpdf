@@ -4,13 +4,14 @@
 
 ## Technology and module boundaries
 
-rgpdf targets Python 3.12–3.13 and is managed by uv. PySide6 provides the desktop UI, PyMuPDF extracts and renders PDF content, and the third-party `regex` package provides Unicode-aware matching with per-document timeouts.
+rgpdf targets Python 3.12–3.13 and is managed by uv. PySide6 provides the desktop UI, PyMuPDF extracts and renders PDF content, and the third-party `regex` package provides Unicode-aware matching with per-document timeouts. Windows builds use pywin32 to request fixed-format export from an existing Microsoft Word installation.
 
 | Module | Responsibility |
 | --- | --- |
 | `app.py` | QApplication lifecycle, palettes, flat styling, and application startup |
 | `main_window.py` | Search controls, settings toolbar, incremental result models, and view coordination |
-| `search.py` | File discovery, PDF extraction, normalization, matching, and coordinate mapping |
+| `search.py` | File discovery, conversion routing, PDF extraction, normalization, matching, and coordinate mapping |
+| `word_conversion.py` | Word/LibreOffice conversion selection and local PDF cache |
 | `worker.py` | Background search runnable and cross-thread Qt signals |
 | `preview.py` | Asynchronous page rendering, stale-request rejection, zoom, and highlighting |
 | `models.py` | Immutable search options, results, page highlights, and extraction mappings |
@@ -21,14 +22,15 @@ The search core has no dependency on UI widgets. It can be exercised directly by
 
 ## Search pipeline
 
-1. `discover_pdfs` enumerates `.pdf` files in stable relative-path order. Recursion is controlled by `SearchOptions.recursive`.
-2. Each PDF is opened independently. Password-protected, corrupt, empty, and textless files become non-fatal warnings.
-3. Each page is extracted with PyMuPDF `rawdict`. `TEXT_PRESERVE_IMAGES` is explicitly disabled so image payloads are never decoded during text search.
-4. Text blocks, lines, spans, and characters are traversed in reading order. Every visible character retains its page index and exact bounding box.
-5. Whitespace within a line is collapsed, ordinary line and page boundaries become spaces, and a line-ending hyphen is removed before joining the next line.
-6. The complete normalized document is searched. Plain text is escaped before compilation; regular expressions use Unicode `VERSION1`, optional full case folding, and a per-document timeout.
-7. Zero-width matches are ignored. Each non-empty match is mapped back to the bounding boxes of only the characters it covers.
-8. Match context is bounded by the nearest CJK or ASCII punctuation (`，。！？；：、,.!?;:`), with a limited-radius fallback when punctuation is absent.
+1. `discover_documents` enumerates the file types selected by `SearchOptions.search_scope` in stable relative-path order. Recursion is controlled by `SearchOptions.recursive`.
+2. Word documents are converted to a cache under the user's local cache directory. Microsoft Word is preferred on Windows; LibreOffice is the fallback. Cache identity includes the source path, size, modification time, and converter. Macros and automatic external-link updates are disabled, and sources are opened read-only. At startup, entries unused for 30 days are removed and least-recently-used entries are evicted until the cache is no larger than 500 MB. A toolbar action can clear all Word conversion cache while no search is active.
+3. Each resulting PDF is opened independently. Password-protected, corrupt, empty, textless, and unconvertible files become non-fatal warnings.
+4. Each page is extracted with PyMuPDF `rawdict`. `TEXT_PRESERVE_IMAGES` is explicitly disabled so image payloads are never decoded during text search.
+5. Text blocks, lines, spans, and characters are traversed in reading order. Every visible character retains its page index and exact bounding box.
+6. Whitespace within a line is collapsed, ordinary line and page boundaries become spaces, and a line-ending hyphen is removed before joining the next line.
+7. The complete normalized document is searched. Plain text is escaped before compilation; regular expressions use Unicode `VERSION1`, optional full case folding, and a per-document timeout.
+8. Zero-width matches are ignored. Each non-empty match is mapped back to the bounding boxes of only the characters it covers.
+9. Match context is bounded by the nearest CJK or ASCII punctuation (`，。！？；：、,.!?;:`), with a limited-radius fallback when punctuation is absent.
 
 The normalized text string and `CharacterRef` tuple always have identical lengths. Synthetic separators have a page reference but no rectangle, so expressions can cross pages without producing artificial highlights.
 
@@ -44,7 +46,7 @@ Cancellation uses a thread-safe event checked between documents. Regex execution
 
 The main window uses a top settings toolbar and a horizontal splitter:
 
-- Left: folder/pattern controls above file and match result tables.
+- Left: folder/pattern controls above file and match result tables. A three-state toolbar button selects PDF, Word, or combined discovery.
 - Right: full-height PDF preview with matched-page navigation, fit-to-width, and zoom.
 
 Settings use `QSettings("rgpdf", "rgpdf")`:
@@ -59,6 +61,7 @@ Settings use `QSettings("rgpdf", "rgpdf")`:
 | `search/use_regex` | Regular-expression mode |
 | `search/case_sensitive` | Case-sensitive matching |
 | `search/recursive` | Include subfolders |
+| `search/scope` | `pdf`, `word`, or `all` |
 | `window/geometry` | Window geometry |
 | `window/main_splitter` | Left/preview split |
 | `window/result_splitter` | File/match split |
@@ -81,9 +84,9 @@ uv build
 
 1. Set the same version in `pyproject.toml` and `src/rgpdf/__init__.py`.
 2. Update both changelogs and both README/technical-document variants when behavior changes.
-3. Run tests and `uv build`.
-4. Commit to `main`, create the immutable `vX.Y.Z` tag, and publish its GitHub Release.
-5. The GitHub Release event runs `.github/workflows/publish-pypi.yml`, builds both distributions, and publishes them to the `pypi` environment through Trusted Publishing.
-6. Force-move the `latest` tag to the same commit and push it with `git push origin refs/tags/latest --force`.
+3. Run tests locally and launch `uv run rgpdf` for manual testing. Executable builds run only remotely.
+4. Commit and push `main`, then create and push the immutable `vX.Y.Z` tag.
+5. The tag push runs `.github/workflows/publish-pypi.yml`, tests and builds Windows/macOS artifacts remotely, creates the GitHub Release, and publishes to PyPI through Trusted Publishing.
+6. Move the `latest` source tag to the same commit after the release workflow succeeds.
 
 Install documentation must use PyPI's latest release or the moving `latest` source tag, never a hard-coded version tag. Immutable version tags remain available for reproducible source checkout and release history. The PyPI project must trust repository `codemee/rgpdf`, workflow `publish-pypi.yml`, and environment `pypi`; no long-lived upload token is stored in GitHub.
