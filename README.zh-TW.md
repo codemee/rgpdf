@@ -39,7 +39,7 @@ rgPDF 只搜尋 PDF 已有的文字層。Word 文件會先轉成快取 PDF，再
 | <img src="docs/toolbar/theme_system.png" width="34" alt="系統配色"> <img src="docs/toolbar/sun.png" width="34" alt="淺色"> <img src="docs/toolbar/moon.png" width="34" alt="深色"> | 配色 | 循環切換跟隨系統 → 淺色 → 深色。 |
 | <img src="docs/toolbar/about.png" width="34" alt="資訊"> | 關於 | 查看版本、授權與原始碼連結。 |
 
-所有操作按鈕皆以圖示顯示；滑鼠停留時會顯示原本的中英文文字。搜尋、顏色設定與預覽按鈕如下：
+所有操作按鈕皆以 1 px 細線描邊圖示顯示；滑鼠停留時會顯示原本的中英文文字。搜尋、顏色設定與預覽按鈕如下：
 
 | 圖示 | Tooltip／功能 |
 | --- | --- |

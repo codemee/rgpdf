@@ -15,6 +15,7 @@ class SettingsButton(QToolButton):
     BUTTON_SIZE = 34
     PADDING = 4
     SPACING = 4
+    STROKE_WIDTH = 1.0
 
     def __init__(self, kind: str = "", *, checkable: bool = False) -> None:
         super().__init__()
@@ -43,7 +44,7 @@ class SettingsButton(QToolButton):
         )
         if not self.isEnabled():
             color = self.palette().color(QPalette.ColorRole.PlaceholderText)
-        painter.setPen(QPen(color, 1.5, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
+        painter.setPen(QPen(color, self.STROKE_WIDTH, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
         painter.setBrush(Qt.BrushStyle.NoBrush)
         center = QPointF(self.width() / 2, self.height() / 2)
         # Center asymmetric glyphs by their visible bounds, not their path origin.
@@ -204,7 +205,7 @@ class SettingsButton(QToolButton):
             painter.drawLine(QLineF(center.x() - 2, center.y() - 2, center.x() - 2, center.y() + 3))
             painter.drawLine(QLineF(center.x() + 2, center.y() - 2, center.x() + 2, center.y() + 3))
         elif self.icon_kind == "scope_pdf":
-            painter.setPen(QPen(QColor("#d93025"), 1.4))
+            painter.setPen(QPen(QColor("#d93025"), self.STROKE_WIDTH))
             painter.drawRoundedRect(QRectF(center.x() - 9, center.y() - 7, 18, 14), 2, 2)
             font = painter.font()
             font.setBold(True)
@@ -230,7 +231,7 @@ class SettingsButton(QToolButton):
             font.setBold(True)
             font.setPixelSize(6)
             painter.setFont(font)
-            painter.setPen(QPen(QColor("#d93025"), 1.1))
+            painter.setPen(QPen(QColor("#d93025"), self.STROKE_WIDTH))
             pdf_rect = QRectF(center.x() - 11, center.y() - 9, 14, 11)
             painter.drawRoundedRect(pdf_rect, 1.5, 1.5)
             painter.drawText(

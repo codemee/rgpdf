@@ -21,7 +21,7 @@ QToolBar#settingsToolbar {
     background: palette(alternate-base);
     border: 0;
     border-bottom: 1px solid palette(mid);
-    padding: 2px 7px;
+    padding: 0;
     spacing: 4px;
 }
 QToolBar#settingsToolbar::separator {

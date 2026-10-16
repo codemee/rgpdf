@@ -42,6 +42,24 @@ from rgpdf.worker import SearchWorker
 from rgpdf.word_conversion import clear_word_cache
 
 
+class SettingsToolBar(QToolBar):
+    """Keep control spacing and margins stable when Qt reapplies style metrics."""
+
+    def event(self, event) -> bool:
+        handled = super().event(event)
+        if event.type() in (
+            QEvent.Type.Polish,
+            QEvent.Type.Show,
+            QEvent.Type.StyleChange,
+        ):
+            layout = self.layout()
+            if layout is not None:
+                layout.setSpacing(SettingsButton.SPACING)
+                padding = SettingsButton.PADDING
+                layout.setContentsMargins(padding, padding, padding, padding)
+        return handled
+
+
 class MainWindow(QMainWindow):
     LANGUAGE_CYCLE = ("system", "zh_TW", "en")
     THEME_CYCLE = ("system", "light", "dark")
@@ -153,7 +171,7 @@ class MainWindow(QMainWindow):
         search_area_layout.setContentsMargins(10, 8, 10, 8)
         search_area_layout.addLayout(self.search_form)
 
-        self.settings_toolbar = QToolBar()
+        self.settings_toolbar = SettingsToolBar()
         self.settings_toolbar.setObjectName("settingsToolbar")
         self.settings_toolbar.setMovable(False)
         self.settings_toolbar.setFloatable(False)

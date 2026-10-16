@@ -40,7 +40,7 @@ button to see its current setting; clicking a three-state button cycles modes.
 | <img src="docs/toolbar/theme_system.png" width="34" alt="System theme"> <img src="docs/toolbar/sun.png" width="34" alt="Light theme"> <img src="docs/toolbar/moon.png" width="34" alt="Dark theme"> | Color theme | Cycle system → light → dark. |
 | <img src="docs/toolbar/about.png" width="34" alt="Information"> | About | View version, license, and source links. |
 
-All action buttons use icons; hover to see their original labels in the selected language. Search, color, and preview controls:
+All action buttons use icons with 1 px outlines; hover to see their original labels in the selected language. Search, color, and preview controls:
 
 | Icon | Tooltip / action |
 | --- | --- |

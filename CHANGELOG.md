@@ -4,6 +4,12 @@
 
 All notable changes are documented here. Immutable releases use `vX.Y.Z`; the moving `latest` tag points to the newest published release.
 
+## 0.0.10 — 2026-10-16
+
+- Kept the toolbar height at 42 px with symmetric 4 px margins across startup and theme changes.
+- Changed action icon outlines to a shared 1 px stroke and regenerated the README icons.
+- Fixed Qt resetting toolbar button spacing to zero when showing the window or changing themes; actual spacing within each button group now remains 4 px.
+
 ## 0.0.9 — 2026-10-16
 
 - Standardized action-control spacing at 4 px across the search, help, preview, toolbar, and color panels; retained compact circular color swatches.
