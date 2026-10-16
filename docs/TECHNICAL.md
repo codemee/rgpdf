@@ -84,7 +84,7 @@ uv run pytest
 uv build
 ```
 
-`uv build` produces an sdist and wheel. The SVG application icon lives inside the Python package so both editable and built installations can resolve it through `importlib.resources`.
+`uv build` produces an sdist and wheel. The SVG application icon uses an equal-width/height silhouette with balanced margins, retaining the blue folded-document and `.*` mark. It lives inside the Python package so both editable and built installations can resolve it through `importlib.resources`.
 
 ## Release process
 

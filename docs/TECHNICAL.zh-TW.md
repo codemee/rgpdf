@@ -86,6 +86,8 @@ uv build
 
 `uv build` 會產生 sdist 與 wheel。SVG 程式圖示存放在 Python package 內，因此 editable 與正式建置都能透過 `importlib.resources` 取得。
 
+應用程式的 SVG 圖示採等寬高輪廓與均衡留白，保留藍色折角文件及 `.*` 標誌；Windows 與 macOS 圖示產生器都沿用同一份 SVG。
+
 ## 發布流程
 
 1. 在 `pyproject.toml` 與 `src/rgpdf/__init__.py` 設定相同版本。

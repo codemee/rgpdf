@@ -16,6 +16,7 @@ rgPDF is a cross-platform desktop application for searching text-layer PDFs and 
 - Per-character highlight geometry and configurable highlight colors.
 - English and Traditional Chinese interfaces, plus system/light/dark themes.
 - Persistent search and appearance preferences.
+- Square application icon with the blue folded-document and `.*` search mark.
 
 rgPDF searches existing PDF text layers. Word documents are converted to a cached PDF and then use the same search and preview pipeline. On Windows, Microsoft Word is tried first; LibreOffice is the cross-platform fallback. At least one of them must already be installed to search Word files. Cached conversions unused for 30 days are removed at startup; the cache is reduced by least-recent use when it exceeds 500 MB, and it can be cleared from the toolbar. rgPDF never runs document macros, does not perform OCR, and does not modify source files.
 

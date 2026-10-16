@@ -4,6 +4,10 @@
 
 All notable changes are documented here. Immutable releases use `vX.Y.Z`; the moving `latest` tag points to the newest published release.
 
+## 0.0.11 — 2026-10-16
+
+- Reshaped the application icon into an equal-width/height silhouette with balanced margins, preserving the blue folded-document and `.*` mark.
+
 ## 0.0.10 — 2026-10-16
 
 - Kept the toolbar height at 42 px with symmetric 4 px margins across startup and theme changes.
