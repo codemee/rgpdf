@@ -4,6 +4,18 @@
 
 All notable changes are documented here. Immutable releases use `vX.Y.Z`; the moving `latest` tag points to the newest published release.
 
+## 0.0.9 — 2026-10-16
+
+- Standardized action-control spacing at 4 px across the search, help, preview, toolbar, and color panels; retained compact circular color swatches.
+- Aligned asymmetric toolbar glyphs by their visible vertical centers so language and theme controls line up visually with neighboring icons.
+- Fixed clipped file match counts in narrow result panes by honoring content-sized numeric columns instead of forcing the final column to stretch.
+- Aligned both help icons immediately to the left of their input fields. Added a help icon for the filename-stem filter, opening localized Glob syntax and examples in the same popup style as Search pattern help.
+- Added a persisted filename-stem glob filter below Document folder, supporting `*`, `?`, and character classes before PDF reading or Word conversion; empty means no filter.
+- Changed all application action buttons to shared vector icons, moving their labels to localized tooltips and accessible names; exported the additional icons for the README guide.
+- Added a Fit page preview button that fits the whole page within the pane and adapts to resizing and page navigation, alongside Fit width.
+- Changed preview arrows to browse every document page, including pages without matches, with boundary-aware button states. Use the match pane to jump between matches.
+- Named the application rgPDF throughout the UI, documentation, and release display metadata; the command and Python package remain `rgpdf`.
+
 ## 0.0.8 — 2026-10-09
 
 - Added a persisted three-state toolbar button for PDF-only, Word-only, or combined search, with distinct PDF and Word marks.
@@ -31,7 +43,7 @@ All notable changes are documented here. Immutable releases use `vX.Y.Z`; the mo
 
 ## 0.0.4 — 2026-08-17
 
-- Licensed rgpdf under GNU AGPLv3 and added complete third-party notices and release compliance guidance.
+- Licensed rgPDF under GNU AGPLv3 and added complete third-party notices and release compliance guidance.
 - Added an in-app About dialog with exact-version source and license links.
 - Added reproducible PyInstaller packaging for a self-contained Windows x86-64 executable.
 - Added a generated multi-resolution Windows icon, executable version metadata, and packaged-resource checks.

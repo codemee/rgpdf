@@ -51,8 +51,8 @@ app = BUNDLE(
     bundle_identifier="io.github.codemee.rgpdf",
     version=version,
     info_plist={
-        "CFBundleDisplayName": "rgpdf",
-        "CFBundleName": "rgpdf",
+        "CFBundleDisplayName": "rgPDF",
+        "CFBundleName": "rgPDF",
         "CFBundleShortVersionString": version,
         "CFBundleVersion": version,
         "NSHighResolutionCapable": True,

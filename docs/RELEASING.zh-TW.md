@@ -1,6 +1,6 @@
 # 發布與授權檢查清單
 
-rgpdf 以 `AGPL-3.0-only` 授權，並使用 AGPLv3 的 PyMuPDF/MuPDF 與
+rgPDF 以 `AGPL-3.0-only` 授權，並使用 AGPLv3 的 PyMuPDF/MuPDF 與
 LGPLv3 的 PySide6/Qt。每次散布執行檔時都要完成以下事項。
 
 ## 建置
@@ -8,7 +8,7 @@ LGPLv3 的 PySide6/Qt。每次散布執行檔時都要完成以下事項。
 1. 本機只執行測試與程式；由 GitHub Actions 從不可變的 `vX.Y.Z` tag 遠端建置，不在本機產生執行檔。
 2. 使用 `uv sync --frozen`，確保相依版本與 `uv.lock` 完全一致。
 3. 保存產生執行檔所使用的 spec、工作流程、資源與所有建置腳本。
-4. 在乾淨的 Windows 環境確認「關於 rgpdf」顯示正確版本、授權與原始碼連結。
+4. 在乾淨的 Windows 環境確認「關於 rgPDF」顯示正確版本、授權與原始碼連結。
 
 推送與專案版本相同的 `vX.Y.Z` tag 後，`.github/workflows/publish-pypi.yml` 會自動完成版本驗證、測試、Windows x86_64 與 macOS arm64 建置、第三方對應來源封裝、GitHub Release 及 PyPI 發布。這個小型專案不使用 Apple Developer ID；macOS App 保留 PyInstaller 的 ad-hoc 簽章且不做公證，因此其他使用者首次開啟時可能需要在 Finder 中按右鍵選擇「打開」。
 
@@ -18,7 +18,7 @@ LGPLv3 的 PySide6/Qt。每次散布執行檔時都要完成以下事項。
 
 - `rgpdf-X.Y.Z-windows-x86_64.exe`
 - `rgpdf-X.Y.Z-macos-arm64.dmg`
-- `rgpdf-X.Y.Z-source.tar.gz`：該 tag 的完整 rgpdf 對應原始碼與建置腳本
+- `rgpdf-X.Y.Z-source.tar.gz`：該 tag 的完整 rgPDF 對應原始碼與建置腳本
 - `rgpdf-X.Y.Z-third-party-sources.tar.gz`：建置所用 PyMuPDF/MuPDF、
   PySide6/Shiboken6/Qt 的確切來源與授權文件
 - `LICENSE`
@@ -36,7 +36,7 @@ PySide6/Qt 採 LGPLv3 選項。使用者必須能修改、替換或重新連結 
 且不得以額外條款禁止反向工程或修改 Qt 元件。
 
 真正的單檔封裝會增加替換 Qt DLL 的難度。正式採用單檔格式前，應驗證公開的
-建置材料足以讓接收者以修改後的 Qt/PySide6 重建並執行 rgpdf；若無法確保，
+建置材料足以讓接收者以修改後的 Qt/PySide6 重建並執行 rgPDF；若無法確保，
 應改發可替換 DLL 的資料夾版，或取得 Qt 商業授權。
 
 ## 保存期限

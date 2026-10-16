@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Sequence
+from fnmatch import fnmatchcase
 from pathlib import Path
 from threading import Event
 
@@ -42,7 +43,9 @@ SEARCH_EXTENSIONS = {
 }
 
 
-def discover_documents(root: Path, recursive: bool, search_scope: str = "pdf") -> list[Path]:
+def discover_documents(
+    root: Path, recursive: bool, search_scope: str = "pdf", stem_glob: str = ""
+) -> list[Path]:
     try:
         extensions = SEARCH_EXTENSIONS[search_scope]
     except KeyError as exc:
@@ -52,10 +55,17 @@ def discover_documents(root: Path, recursive: bool, search_scope: str = "pdf") -
         (
             path
             for path in iterator
-            if path.is_file() and path.suffix.casefold() in extensions
+            if path.is_file()
+            and path.suffix.casefold() in extensions
+            and _matches_stem(path, stem_glob)
         ),
         key=lambda path: str(path.relative_to(root)).casefold(),
     )
+
+
+def _matches_stem(path: Path, stem_glob: str) -> bool:
+    """Match the complete filename stem, consistently ignoring case on every OS."""
+    return not stem_glob or fnmatchcase(path.stem.casefold(), stem_glob.casefold())
 
 
 def discover_pdfs(root: Path, recursive: bool) -> list[Path]:
@@ -295,9 +305,11 @@ def search_folder(
         raise SearchInputError("The selected folder does not exist.")
     compiled = compile_pattern(options)
     documents = (
-        list(paths)
+        [path for path in paths if _matches_stem(path, options.stem_glob)]
         if paths is not None
-        else discover_documents(options.root, options.recursive, options.search_scope)
+        else discover_documents(
+            options.root, options.recursive, options.search_scope, options.stem_glob
+        )
     )
     report = SearchReport()
     for index, path in enumerate(documents, start=1):

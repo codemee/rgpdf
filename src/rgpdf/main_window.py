@@ -5,8 +5,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import QEvent, QLineF, QLocale, QPointF, QRectF, QSettings, QSize, Qt, QThreadPool
-from PySide6.QtGui import QCloseEvent, QColor, QPainter, QPainterPath, QPalette, QPen
+from PySide6.QtCore import QEvent, QLocale, QSettings, Qt, QThreadPool
+from PySide6.QtGui import QCloseEvent, QColor
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QFileDialog,
@@ -21,11 +21,9 @@ from PySide6.QtWidgets import (
     QMainWindow,
     QMenu,
     QMessageBox,
-    QPushButton,
     QProgressBar,
     QSplitter,
     QToolBar,
-    QToolButton,
     QTreeWidget,
     QTreeWidgetItem,
     QVBoxLayout,
@@ -34,6 +32,7 @@ from PySide6.QtWidgets import (
 )
 
 from rgpdf import __version__
+from rgpdf.buttons import SettingsButton
 from rgpdf.i18n import translate
 from rgpdf.models import DocumentMatch, SearchOptions, SearchReport
 from rgpdf.preview import PdfPreview
@@ -41,191 +40,6 @@ from rgpdf.resources import application_icon
 from rgpdf.search import SearchInputError, compile_pattern
 from rgpdf.worker import SearchWorker
 from rgpdf.word_conversion import clear_word_cache
-
-
-class SettingsButton(QToolButton):
-    """Flat settings button with a crisp, palette-aware vector glyph."""
-
-    ICON_SIZE = 20
-    BUTTON_SIZE = 34
-    PADDING = 4
-
-    def __init__(self, *, checkable: bool = False) -> None:
-        super().__init__()
-        self.icon_kind = ""
-        self.icon_foreground: QColor | None = None
-        self.setCheckable(checkable)
-        self.setIconSize(QSize(self.ICON_SIZE, self.ICON_SIZE))
-        self.setFixedSize(self.BUTTON_SIZE, self.BUTTON_SIZE)
-        self.setContentsMargins(self.PADDING, self.PADDING, self.PADDING, self.PADDING)
-
-    def set_icon_kind(self, kind: str) -> None:
-        self.icon_kind = kind
-        self.update()
-
-    def paintEvent(self, event) -> None:  # noqa: N802 - Qt API
-        super().paintEvent(event)
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        color = self.icon_foreground or self.palette().color(
-            QPalette.ColorRole.PlaceholderText
-        )
-        if not self.isEnabled():
-            color = self.palette().color(QPalette.ColorRole.PlaceholderText)
-        painter.setPen(QPen(color, 1.5, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
-        painter.setBrush(Qt.BrushStyle.NoBrush)
-        center = QPointF(self.width() / 2, self.height() / 2)
-
-        if self.icon_kind == "language_system":
-            painter.drawEllipse(center, 7, 7)
-            painter.drawEllipse(QRectF(center.x() - 3.5, center.y() - 7, 7, 14))
-            painter.drawLine(QLineF(center.x() - 6, center.y() - 2.5, center.x() + 6, center.y() - 2.5))
-            painter.drawLine(QLineF(center.x() - 6, center.y() + 2.5, center.x() + 6, center.y() + 2.5))
-        elif self.icon_kind == "theme_system":
-            painter.setBrush(color)
-            painter.drawPie(QRectF(center.x() - 7, center.y() - 7, 14, 14), 90 * 16, 180 * 16)
-            painter.setBrush(Qt.BrushStyle.NoBrush)
-            painter.drawEllipse(center, 7, 7)
-        elif self.icon_kind == "sun":
-            painter.drawEllipse(center, 3.5, 3.5)
-            for dx, dy in ((0, -7), (5, -5), (7, 0), (5, 5), (0, 7), (-5, 5), (-7, 0), (-5, -5)):
-                painter.drawLine(
-                    QLineF(
-                        center.x() + dx * 0.7,
-                        center.y() + dy * 0.7,
-                        center.x() + dx,
-                        center.y() + dy,
-                    )
-                )
-        elif self.icon_kind == "moon":
-            painter.save()
-            painter.translate(center)
-            painter.rotate(-45)
-            moon = QPainterPath()
-            moon.moveTo(3, -7)
-            moon.cubicTo(
-                -7,
-                -5,
-                -7,
-                5,
-                3,
-                7,
-            )
-            moon.cubicTo(
-                -1,
-                3.5,
-                -1,
-                -3.5,
-                3,
-                -7,
-            )
-            painter.drawPath(moon)
-            painter.restore()
-        elif self.icon_kind == "recursive":
-            folder_fill = (
-                QColor("#e8bd62")
-                if self.isEnabled()
-                else self.palette().color(QPalette.ColorRole.Window)
-            )
-            folder_fill.setAlpha(255)
-            painter.setBrush(folder_fill)
-            parent = QPainterPath()
-            parent.moveTo(center.x() - 8, center.y() - 6)
-            parent.lineTo(center.x() - 3, center.y() - 6)
-            parent.lineTo(center.x() - 1, center.y() - 4)
-            parent.lineTo(center.x() + 7, center.y() - 4)
-            parent.lineTo(center.x() + 7, center.y() + 3)
-            parent.lineTo(center.x() - 8, center.y() + 3)
-            parent.closeSubpath()
-            painter.drawPath(parent)
-            child = QPainterPath()
-            child.moveTo(center.x() - 2, center.y())
-            child.lineTo(center.x() + 2, center.y())
-            child.lineTo(center.x() + 4, center.y() + 2)
-            child.lineTo(center.x() + 9, center.y() + 2)
-            child.lineTo(center.x() + 9, center.y() + 8)
-            child.lineTo(center.x() - 2, center.y() + 8)
-            child.closeSubpath()
-            painter.drawPath(child)
-            painter.setBrush(Qt.BrushStyle.NoBrush)
-        elif self.icon_kind == "highlighter":
-            painter.save()
-            painter.translate(center)
-            painter.rotate(-38)
-            painter.setBrush(color)
-            painter.drawRoundedRect(QRectF(-3.5, -9, 7, 13), 1.5, 1.5)
-            painter.drawLine(-3.5, 1, 3.5, 1)
-            painter.drawLine(-3.5, 4, -1.5, 8)
-            painter.drawLine(3.5, 4, 1.5, 8)
-            painter.drawLine(-1.5, 8, 1.5, 8)
-            painter.restore()
-        elif self.icon_kind == "cache":
-            painter.drawRoundedRect(QRectF(center.x() - 6, center.y() - 5, 12, 11), 1, 1)
-            painter.drawLine(QLineF(center.x() - 8, center.y() - 7, center.x() + 8, center.y() - 7))
-            painter.drawLine(QLineF(center.x() - 3, center.y() - 9, center.x() + 3, center.y() - 9))
-            painter.drawLine(QLineF(center.x() - 2, center.y() - 2, center.x() - 2, center.y() + 3))
-            painter.drawLine(QLineF(center.x() + 2, center.y() - 2, center.x() + 2, center.y() + 3))
-        elif self.icon_kind == "scope_pdf":
-            painter.setPen(QPen(QColor("#d93025"), 1.4))
-            painter.drawRoundedRect(QRectF(center.x() - 9, center.y() - 7, 18, 14), 2, 2)
-            font = painter.font()
-            font.setBold(True)
-            font.setPixelSize(7)
-            painter.setFont(font)
-            painter.drawText(
-                QRectF(center.x() - 9, center.y() - 7, 18, 14),
-                Qt.AlignmentFlag.AlignCenter,
-                "PDF",
-            )
-        elif self.icon_kind == "scope_word":
-            painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(QColor("#2b579a"))
-            painter.drawRoundedRect(QRectF(center.x() - 8, center.y() - 8, 16, 16), 2, 2)
-            painter.setPen(QColor("white"))
-            font = painter.font()
-            font.setBold(True)
-            font.setPixelSize(11)
-            painter.setFont(font)
-            painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "W")
-        elif self.icon_kind == "scope_all":
-            font = painter.font()
-            font.setBold(True)
-            font.setPixelSize(6)
-            painter.setFont(font)
-            painter.setPen(QPen(QColor("#d93025"), 1.1))
-            pdf_rect = QRectF(center.x() - 11, center.y() - 9, 14, 11)
-            painter.drawRoundedRect(pdf_rect, 1.5, 1.5)
-            painter.drawText(
-                pdf_rect,
-                Qt.AlignmentFlag.AlignCenter,
-                "PDF",
-            )
-            painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(QColor("#2b579a"))
-            word_rect = QRectF(center.x() + 1, center.y() - 1, 11, 12)
-            painter.drawRoundedRect(word_rect, 1.5, 1.5)
-            painter.setPen(QColor("white"))
-            font.setPixelSize(8)
-            painter.setFont(font)
-            painter.drawText(
-                word_rect,
-                Qt.AlignmentFlag.AlignCenter,
-                "W",
-            )
-        else:
-            font = painter.font()
-            font.setBold(True)
-            font.setPixelSize(13 if self.icon_kind == "case" else 14)
-            painter.setFont(font)
-            labels = {
-                "language_zh": "中",
-                "language_en": "A",
-                "case": "Aa",
-                "regex": ".*",
-                "about": "i",
-            }
-            painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, labels.get(self.icon_kind, ""))
-        painter.end()
 
 
 class MainWindow(QMainWindow):
@@ -254,7 +68,11 @@ class MainWindow(QMainWindow):
 
         self.folder_edit = QLineEdit()
         self.folder_edit.setReadOnly(True)
-        self.browse_button = QPushButton()
+        self.browse_button = SettingsButton("browse")
+        self.stem_filter_edit = QLineEdit()
+        self.stem_filter_edit.setText(
+            self.settings.value("search/stem_glob", "", type=str)
+        )
         stored_scope = self.settings.value("search/scope", "pdf", type=str)
         if stored_scope not in {"pdf", "word", "all"}:
             stored_scope = "pdf"
@@ -280,8 +98,8 @@ class MainWindow(QMainWindow):
         self.cache_button.set_icon_kind("cache")
         self.about_button = self._settings_button()
         self.about_button.set_icon_kind("about")
-        self.search_button = QPushButton()
-        self.cancel_button = QPushButton()
+        self.search_button = SettingsButton("search")
+        self.cancel_button = SettingsButton("cancel")
         self.cancel_button.setEnabled(False)
         self.progress_bar = QProgressBar()
         self.progress_bar.setVisible(False)
@@ -296,12 +114,23 @@ class MainWindow(QMainWindow):
         )
         folder_row = QHBoxLayout()
         folder_row.setContentsMargins(0, 0, 0, 0)
+        folder_row.setSpacing(SettingsButton.SPACING)
         folder_row.addWidget(self.folder_edit, 1)
         folder_row.addWidget(self.browse_button)
         folder_container = QWidget()
         folder_container.setLayout(folder_row)
         self.folder_label = self._make_label("folder")
         self.search_form.addRow(self.folder_label, folder_container)
+
+        self.stem_filter_label = self._make_label("stem_filter")
+        self.stem_filter_label.setBuddy(self.stem_filter_edit)
+        self.stem_filter_help_button, self.stem_filter_help_menu, self.stem_filter_help_content = (
+            self._make_help_control("stemFilter")
+        )
+        self.search_form.addRow(
+            self.stem_filter_label,
+            self._field_with_help(self.stem_filter_edit, self.stem_filter_help_button),
+        )
 
         pattern_row = QHBoxLayout()
         pattern_row.setContentsMargins(0, 0, 0, 0)
@@ -311,37 +140,12 @@ class MainWindow(QMainWindow):
         pattern_container = QWidget()
         pattern_container.setLayout(pattern_row)
         self.pattern_label = self._make_label("pattern")
-        self.pattern_help_button = QToolButton()
-        self.pattern_help_button.setObjectName("patternHelpButton")
-        self.pattern_help_button.setText("?")
-        self.pattern_help_button.setAutoRaise(True)
-        self.pattern_help_button.setFixedSize(20, 20)
-        self.pattern_help_button.setCursor(Qt.CursorShape.PointingHandCursor)
-
-        self.pattern_help_menu = QMenu(self)
-        self.pattern_help_menu.setObjectName("patternHelpMenu")
-        self.pattern_help_content = QLabel()
-        self.pattern_help_content.setObjectName("patternHelpContent")
-        self.pattern_help_content.setTextFormat(Qt.TextFormat.RichText)
-        self.pattern_help_content.setTextInteractionFlags(
-            Qt.TextInteractionFlag.TextBrowserInteraction
+        self.pattern_help_button, self.pattern_help_menu, self.pattern_help_content = (
+            self._make_help_control("pattern")
         )
-        self.pattern_help_content.setOpenExternalLinks(True)
-        self.pattern_help_content.setWordWrap(True)
-        self.pattern_help_content.setFixedWidth(390)
-        self.pattern_help_content.setContentsMargins(10, 8, 10, 8)
-        pattern_help_action = QWidgetAction(self.pattern_help_menu)
-        pattern_help_action.setDefaultWidget(self.pattern_help_content)
-        self.pattern_help_menu.addAction(pattern_help_action)
-
-        pattern_label_layout = QHBoxLayout()
-        pattern_label_layout.setContentsMargins(0, 0, 0, 0)
-        pattern_label_layout.setSpacing(4)
-        pattern_label_layout.addWidget(self.pattern_label)
-        pattern_label_layout.addWidget(self.pattern_help_button)
-        pattern_label_container = QWidget()
-        pattern_label_container.setLayout(pattern_label_layout)
-        self.search_form.addRow(pattern_label_container, pattern_container)
+        pattern_row.insertWidget(0, self.pattern_help_button)
+        pattern_row.setSpacing(SettingsButton.SPACING)
+        self.search_form.addRow(self.pattern_label, pattern_container)
 
         self.search_area = QFrame()
         self.search_area.setObjectName("searchArea")
@@ -353,7 +157,7 @@ class MainWindow(QMainWindow):
         self.settings_toolbar.setObjectName("settingsToolbar")
         self.settings_toolbar.setMovable(False)
         self.settings_toolbar.setFloatable(False)
-        self.settings_toolbar.layout().setSpacing(4)
+        self.settings_toolbar.layout().setSpacing(SettingsButton.SPACING)
         for button in (
             self.recursive_button,
             self.scope_button,
@@ -381,18 +185,19 @@ class MainWindow(QMainWindow):
         self.highlight_panel.setObjectName("highlightPanel")
         self.highlight_panel.setVisible(False)
         highlight_layout = QHBoxLayout(self.highlight_panel)
+        highlight_layout.setSpacing(SettingsButton.SPACING)
         highlight_layout.setContentsMargins(10, 7, 10, 7)
         self.highlight_panel_label = QLabel()
         highlight_layout.addWidget(self.highlight_panel_label)
-        self.highlight_swatches: dict[str, QPushButton] = {}
+        self.highlight_swatches: dict[str, SettingsButton] = {}
         for color in ("#ffe128", "#8ee6a1", "#7dddf2", "#f7a8ca", "#ffb36b"):
-            button = QPushButton()
+            button = SettingsButton()
             button.setFixedSize(28, 28)
             button.setProperty("highlight_swatch", True)
             button.clicked.connect(lambda _checked=False, value=color: self._set_highlight_color(value))
             self.highlight_swatches[color] = button
             highlight_layout.addWidget(button)
-        self.custom_color_button = QPushButton()
+        self.custom_color_button = SettingsButton("custom_color")
         self.highlight_color_value = QLabel()
         highlight_layout.addWidget(self.custom_color_button)
         highlight_layout.addWidget(self.highlight_color_value)
@@ -461,10 +266,43 @@ class MainWindow(QMainWindow):
         layout.addWidget(widget)
         return layout
 
+    def _make_help_control(self, name: str) -> tuple[SettingsButton, QMenu, QLabel]:
+        button = SettingsButton("help")
+        button.setObjectName(f"{name}HelpButton")
+        button.setAutoRaise(True)
+        button.setCursor(Qt.CursorShape.PointingHandCursor)
+        menu = QMenu(self)
+        menu.setObjectName(f"{name}HelpMenu")
+        content = QLabel()
+        content.setObjectName(f"{name}HelpContent")
+        content.setTextFormat(Qt.TextFormat.RichText)
+        content.setTextInteractionFlags(Qt.TextInteractionFlag.TextBrowserInteraction)
+        content.setOpenExternalLinks(True)
+        content.setWordWrap(True)
+        content.setFixedWidth(390)
+        content.setContentsMargins(10, 8, 10, 8)
+        action = QWidgetAction(menu)
+        action.setDefaultWidget(content)
+        menu.addAction(action)
+        return button, menu, content
+
+    @staticmethod
+    def _field_with_help(field: QWidget, button: SettingsButton) -> QWidget:
+        layout = QHBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(SettingsButton.SPACING)
+        layout.addWidget(button)
+        layout.addWidget(field, 1)
+        container = QWidget()
+        container.setLayout(layout)
+        return container
+
     @staticmethod
     def _result_table() -> QTreeWidget:
         table = QTreeWidget()
         table.setColumnCount(2)
+        # Honor each column's resize mode instead of stretching the final column.
+        table.header().setStretchLastSection(False)
         table.setRootIsDecorated(False)
         table.setItemsExpandable(False)
         table.setUniformRowHeights(True)
@@ -498,8 +336,11 @@ class MainWindow(QMainWindow):
         self.search_button.clicked.connect(self._start_search)
         self.cancel_button.clicked.connect(self._cancel_search)
         self.pattern_edit.returnPressed.connect(self._start_search)
+        self.stem_filter_edit.returnPressed.connect(self._start_search)
+        self.stem_filter_edit.editingFinished.connect(self._save_stem_filter)
         self.pattern_edit.editingFinished.connect(self._save_pattern)
         self.pattern_help_button.clicked.connect(self._show_pattern_help)
+        self.stem_filter_help_button.clicked.connect(self._show_stem_filter_help)
         self.language_button.clicked.connect(self._cycle_language)
         self.theme_button.clicked.connect(self._cycle_theme)
         self.recursive_button.toggled.connect(self._recursive_changed)
@@ -535,7 +376,12 @@ class MainWindow(QMainWindow):
             key = label.property("translation_key")
             if key:
                 label.setText(self.t(key))
-        self.browse_button.setText(self.t("browse"))
+        self.browse_button.setToolTip(self.t("browse"))
+        self.stem_filter_edit.setPlaceholderText(self.t("stem_filter_hint"))
+        self.stem_filter_edit.setToolTip(self.t("stem_filter_help"))
+        self.stem_filter_edit.setAccessibleName(self.t("stem_filter"))
+        self.stem_filter_help_button.setToolTip(self.t("stem_filter_help_title"))
+        self.stem_filter_help_content.setText(self.t("stem_filter_help_content"))
         self.pattern_edit.setPlaceholderText(self.t("pattern_hint"))
         self.pattern_help_button.setToolTip(self.t("pattern_help"))
         self.pattern_help_button.setAccessibleName(self.t("pattern_help"))
@@ -547,9 +393,9 @@ class MainWindow(QMainWindow):
         self.cache_button.setAccessibleName(self.t("clear_word_cache"))
         self._refresh_settings_buttons()
         self.highlight_panel_label.setText(self.t("common_colors"))
-        self.custom_color_button.setText(self.t("custom_color"))
-        self.search_button.setText(self.t("search"))
-        self.cancel_button.setText(self.t("cancel"))
+        self.custom_color_button.setToolTip(self.t("custom_color"))
+        self.search_button.setToolTip(self.t("search"))
+        self.cancel_button.setToolTip(self.t("cancel"))
         self.file_group.setTitle(self.t("files"))
         self.match_group.setTitle(self.t("matches"))
         self.file_list.setHeaderLabels([self.t("filename"), self.t("count")])
@@ -583,6 +429,7 @@ class MainWindow(QMainWindow):
             case_sensitive=self.case_button.isChecked(),
             recursive=self.recursive_button.isChecked(),
             search_scope=self.search_scope,
+            stem_glob=self.stem_filter_edit.text(),
         )
 
     def _start_search(self) -> None:
@@ -599,6 +446,7 @@ class MainWindow(QMainWindow):
 
         self.settings.setValue("search/folder", str(options.root))
         self._save_pattern()
+        self._save_stem_filter()
         self.settings.setValue("search/recursive", options.recursive)
         self.settings.setValue("search/scope", options.search_scope)
         self.documents = []
@@ -626,6 +474,7 @@ class MainWindow(QMainWindow):
     def _set_searching(self, active: bool) -> None:
         for widget in (
             self.browse_button,
+            self.stem_filter_edit,
             self.pattern_edit,
             self.regex_button,
             self.case_button,
@@ -819,6 +668,9 @@ class MainWindow(QMainWindow):
         self.settings.setValue("search/scope", self.search_scope)
         self._refresh_settings_buttons()
 
+    def _save_stem_filter(self) -> None:
+        self.settings.setValue("search/stem_glob", self.stem_filter_edit.text())
+
     def _save_pattern(self) -> None:
         self.settings.setValue("search/pattern", self.pattern_edit.text())
 
@@ -844,6 +696,10 @@ class MainWindow(QMainWindow):
                 failed=result.failed_files,
             ),
         )
+
+    def _show_stem_filter_help(self) -> None:
+        position = self.stem_filter_help_button.rect().bottomLeft()
+        self.stem_filter_help_menu.popup(self.stem_filter_help_button.mapToGlobal(position))
 
     def _show_pattern_help(self) -> None:
         position = self.pattern_help_button.rect().bottomLeft()
@@ -931,10 +787,11 @@ class MainWindow(QMainWindow):
         self.highlight_color_value.setText(selected.upper())
         for color, button in self.highlight_swatches.items():
             is_selected = color == selected
-            button.setText("✓" if is_selected else "")
+            button.set_icon_kind("check" if is_selected else "")
+            button.icon_foreground = QColor("#202124")
             button.setToolTip(color.upper())
             button.setStyleSheet(
-                "QPushButton {"
+                "QToolButton {"
                 f"background-color: {color}; color: #202124;"
                 f"border: {'2px solid #3578e5' if is_selected else '1px solid #777'};"
                 "border-radius: 14px; padding: 0; font-weight: 700;"
@@ -948,6 +805,7 @@ class MainWindow(QMainWindow):
         self.settings.setValue("window/main_splitter", self.main_splitter.saveState())
         self.settings.setValue("window/result_splitter", self.result_splitter.saveState())
         self._save_pattern()
+        self._save_stem_filter()
         self.preview.clear()
         super().closeEvent(event)
 

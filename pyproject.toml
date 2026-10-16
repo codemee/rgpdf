@@ -1,7 +1,7 @@
 [project]
 name = "rgpdf"
-version = "0.0.8"
-description = "Cross-platform PDF and Word text and regular-expression search desktop app"
+version = "0.0.9"
+description = "rgPDF: Cross-platform PDF and Word text and regular-expression search desktop app"
 readme = "README.md"
 license = "AGPL-3.0-only"
 license-files = ["LICENSE", "THIRD-PARTY-NOTICES.md"]

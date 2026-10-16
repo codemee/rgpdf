@@ -1,14 +1,15 @@
-# rgpdf 技術細節
+# rgPDF 技術細節
 
 繁體中文 · [English](TECHNICAL.md)
 
 ## 技術與模組邊界
 
-rgpdf 支援 Python 3.12–3.13，並由 uv 管理。PySide6 提供桌面介面，PyMuPDF 負責 PDF 文字抽取與頁面渲染，第三方 `regex` 套件則提供 Unicode 規則表達式與單檔逾時限制。Windows 建置使用 pywin32，要求既有的 Microsoft Word 執行固定格式匯出。
+rgPDF 支援 Python 3.12–3.13，並由 uv 管理。PySide6 提供桌面介面，PyMuPDF 負責 PDF 文字抽取與頁面渲染，第三方 `regex` 套件則提供 Unicode 規則表達式與單檔逾時限制。Windows 建置使用 pywin32，要求既有的 Microsoft Word 執行固定格式匯出。
 
 | 模組 | 職責 |
 | --- | --- |
 | `app.py` | QApplication 生命週期、調色盤、扁平樣式與啟動流程 |
+| `buttons.py` | 共用且配合主題的向量操作按鈕、中英文 tooltip 與無障礙名稱 |
 | `main_window.py` | 搜尋控制、設定工具列、漸進式結果模型與畫面連動 |
 | `search.py` | 檔案探索、轉換分派、PDF 抽取、正規化、比對及座標映射 |
 | `word_conversion.py` | Word／LibreOffice 轉換器選擇與本機 PDF 快取 |
@@ -22,7 +23,7 @@ rgpdf 支援 Python 3.12–3.13，並由 uv 管理。PySide6 提供桌面介面�
 
 ## 搜尋管線
 
-1. `discover_documents` 依 `SearchOptions.search_scope` 選定的檔案類型，以穩定的相對路徑順序列舉；是否遞迴由 `SearchOptions.recursive` 控制。
+1. `discover_documents` 依 `SearchOptions.search_scope` 選定的檔案類型，以穩定的相對路徑順序列舉；是否遞迴由 `SearchOptions.recursive` 控制。`SearchOptions.stem_glob` 可使用大小寫折疊後的 `fnmatchcase` glob 語法比對完整 `Path.stem`（只移除最後一個副檔名），留空不篩選。明確傳入 `paths` 時同樣會在讀取或轉換前篩選，因此進度與已搜尋檔案數只包含符合的檔案；此功能不受內文 Regex／大小寫設定影響，也不比對父資料夾名稱。
 2. Word 文件會轉換到使用者本機快取目錄。Windows 優先使用 Microsoft Word，LibreOffice 為備援；快取識別包含來源路徑、大小、修改時間及轉換器。巨集與自動更新外部連結會停用，來源則以唯讀開啟。啟動時會刪除 30 天未使用的項目，並依最久未使用順序移除檔案，直到快取不超過 500 MB；未搜尋時也可由工具列清除全部 Word 轉換快取。
 3. 每份產生的 PDF 獨立開啟；加密、損壞、空白、沒有文字層或無法轉換的檔案會成為不中斷搜尋的警告。
 4. 每頁透過 PyMuPDF `rawdict` 抽取，並明確停用 `TEXT_PRESERVE_IMAGES`，避免搜尋文字時解碼圖片資料。
@@ -46,8 +47,12 @@ rgpdf 支援 Python 3.12–3.13，並由 uv 管理。PySide6 提供桌面介面�
 
 主畫面使用頂端設定工具列與水平 splitter：
 
-- 左側：上方是資料夾／樣式，下方是檔案與命中結果表；工具列三態按鈕可選擇 PDF、Word 或兩者。
-- 右側：完整高度的 PDF 預覽、命中頁切換、符合寬度與縮放。
+- 左側：上方是資料夾／主檔名篩選／樣式，下方是檔案與命中結果表；工具列三態按鈕可選擇 PDF、Word 或兩者。
+- 右側：完整高度的 PDF 預覽、整份文件的上一頁／下一頁切換、符合寬度、符合頁面與縮放。
+
+正式顯示名稱為 rgPDF；命令、Python 套件、快取路徑與設定識別名稱維持 `rgpdf`。選取命中項目時開啟其起始頁；預覽箭頭逐頁瀏覽文件（包含未命中頁），並在文件邊界停用。螢光標示仍對應目前選取的命中項目。「符合頁面」取可用預覽寬度／頁寬與高度／頁高的較小比例，不受手動縮放下限限制，確保大尺寸頁面也能完整顯示。兩種符合模式都會在窗格調整大小或換頁時重新計算；手動縮放會離開符合模式。
+
+結果表停用標頭預設的最後一欄伸展，讓各欄的調整模式生效：檔案筆數依內容取寬，檔名使用剩餘寬度。
 
 設定使用 `QSettings("rgpdf", "rgpdf")`：
 
@@ -57,6 +62,7 @@ rgpdf 支援 Python 3.12–3.13，並由 uv 管理。PySide6 提供桌面介面�
 | `appearance/theme` | `system`、`light` 或 `dark` |
 | `appearance/highlight_color` | `#rrggbb` 螢光筆顏色 |
 | `search/folder` | 上次選取的資料夾 |
+| `search/stem_glob` | 主檔名 glob 篩選；留空不篩選 |
 | `search/pattern` | 上次搜尋樣式 |
 | `search/use_regex` | 規則表達式模式 |
 | `search/case_sensitive` | 區分大小寫 |
@@ -66,7 +72,7 @@ rgpdf 支援 Python 3.12–3.13，並由 uv 管理。PySide6 提供桌面介面�
 | `window/main_splitter` | 左側／預覽比例 |
 | `window/result_splitter` | 檔案／命中項目比例 |
 
-語言與主題按鈕各自循環三種模式；切換設定使用中性色的啟用樣式。螢光筆按鈕只有筆形圖示使用所選顏色，色彩面板提供常用色與原生 `QColorDialog`。
+主檔名篩選與搜尋樣式的說明圖示在各自輸入欄位左側垂直對齊，並共用 rich-text 說明彈窗，提供中英文語法說明與範例。各窗格操作按鈕共用 34×34 px 尺寸、4 px 內距與 4 px 元件間距；圓形色票保留 28×28 px 尺寸。工具列的不對稱圖示以小幅垂直位移校正可見中心，與語言及配色圖示水平對齊。語言與主題按鈕各自循環三種模式；切換設定使用中性色的啟用樣式。螢光筆按鈕只有筆形圖示使用所選顏色，色彩面板提供常用色與原生 `QColorDialog`。
 
 ## 測試與封裝
 

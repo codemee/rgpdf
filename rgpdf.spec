@@ -42,12 +42,12 @@ version_info = VSVersionInfo(
                     "040904B0",
                     [
                         StringStruct("CompanyName", "meebox"),
-                        StringStruct("FileDescription", "rgpdf — PDF Search"),
+                        StringStruct("FileDescription", "rgPDF — Document Search"),
                         StringStruct("FileVersion", version),
                         StringStruct("InternalName", "rgpdf"),
                         StringStruct("LegalCopyright", "Copyright (C) 2026 meebox"),
                         StringStruct("OriginalFilename", "rgpdf.exe"),
-                        StringStruct("ProductName", "rgpdf"),
+                        StringStruct("ProductName", "rgPDF"),
                         StringStruct("ProductVersion", version),
                     ],
                 )

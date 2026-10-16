@@ -147,7 +147,8 @@ def main() -> int:
         Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
     )
     app = QApplication(sys.argv)
-    app.setApplicationName("rgpdf")
+    app.setApplicationName("rgPDF")
+    app.setApplicationDisplayName("rgPDF")
     app.setOrganizationName("rgpdf")
     app.setWindowIcon(application_icon())
     app.setStyle("Fusion")

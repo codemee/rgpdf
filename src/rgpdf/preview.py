@@ -11,13 +11,13 @@ from PySide6.QtGui import QColor, QImage, QPainter, QPixmap
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
-    QPushButton,
     QScrollArea,
     QSizePolicy,
     QVBoxLayout,
     QWidget,
 )
 
+from rgpdf.buttons import SettingsButton
 from rgpdf.i18n import translate
 from rgpdf.models import TextMatch
 
@@ -36,7 +36,9 @@ class PreviewRenderWorker(QRunnable):
         match: TextMatch,
         zoom: float,
         fit_width: bool,
+        fit_page: bool,
         available_width: int,
+        available_height: int,
         highlight_color: str,
     ) -> None:
         super().__init__()
@@ -46,7 +48,9 @@ class PreviewRenderWorker(QRunnable):
         self.match = match
         self.zoom = zoom
         self.fit_width = fit_width
+        self.fit_page = fit_page
         self.available_width = available_width
+        self.available_height = available_height
         self.highlight_color = highlight_color
         self.signals = PreviewRenderSignals()
 
@@ -56,8 +60,14 @@ class PreviewRenderWorker(QRunnable):
             with fitz.open(self.path) as document:
                 page = document.load_page(self.page_index)
                 zoom = self.zoom
-                if self.fit_width:
-                    zoom = min(3.0, max(0.35, self.available_width / page.rect.width))
+                if self.fit_page:
+                    zoom = min(
+                        3.0,
+                        self.available_width / page.rect.width,
+                        self.available_height / page.rect.height,
+                    )
+                elif self.fit_width:
+                    zoom = min(3.0, max(0.35, max(200, self.available_width) / page.rect.width))
                 pix = page.get_pixmap(matrix=fitz.Matrix(zoom, zoom), alpha=False)
                 page_count = document.page_count
             image = QImage(
@@ -94,11 +104,11 @@ class PdfPreview(QWidget):
         super().__init__(parent)
         self._path: Path | None = None
         self._match: TextMatch | None = None
-        self._matched_pages: list[int] = []
-        self._matched_page_position = 0
+        self._page_index = 0
         self._page_count = 0
         self._zoom = 1.4
         self._fit_width = True
+        self._fit_page = False
         self._language = "en"
         self._highlight_color = "#ffe128"
         self._request_id = 0
@@ -109,22 +119,16 @@ class PdfPreview(QWidget):
         self._resize_timer.setInterval(120)
         self._resize_timer.timeout.connect(self._render)
 
-        self.previous_button = QPushButton("‹")
-        self.next_button = QPushButton("›")
-        self.zoom_out_button = QPushButton("−")
-        self.zoom_in_button = QPushButton("+")
-        self.fit_button = QPushButton("Fit")
+        self.previous_button = SettingsButton("previous_page")
+        self.next_button = SettingsButton("next_page")
+        self.zoom_out_button = SettingsButton("zoom_out")
+        self.zoom_in_button = SettingsButton("zoom_in")
+        self.fit_button = SettingsButton("fit_width")
+        self.fit_page_button = SettingsButton("fit_page")
         self.page_label = QLabel()
-        for button in (
-            self.previous_button,
-            self.next_button,
-            self.zoom_out_button,
-            self.zoom_in_button,
-        ):
-            button.setFixedWidth(34)
-
         toolbar = QHBoxLayout()
         toolbar.setContentsMargins(0, 0, 0, 0)
+        toolbar.setSpacing(SettingsButton.SPACING)
         toolbar.addWidget(self.previous_button)
         toolbar.addWidget(self.next_button)
         toolbar.addWidget(self.page_label)
@@ -132,6 +136,7 @@ class PdfPreview(QWidget):
         toolbar.addWidget(self.zoom_out_button)
         toolbar.addWidget(self.zoom_in_button)
         toolbar.addWidget(self.fit_button)
+        toolbar.addWidget(self.fit_page_button)
 
         self.image_label = QLabel()
         self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -151,6 +156,8 @@ class PdfPreview(QWidget):
         self.zoom_out_button.clicked.connect(lambda: self._change_zoom(0.8))
         self.zoom_in_button.clicked.connect(lambda: self._change_zoom(1.25))
         self.fit_button.clicked.connect(self._fit)
+        self.fit_page_button.clicked.connect(self._fit_entire_page)
+        self.set_language(self._language)
         self.clear()
 
     def set_language(self, language: str) -> None:
@@ -159,7 +166,8 @@ class PdfPreview(QWidget):
         self.next_button.setToolTip(translate(language, "next_page"))
         self.zoom_out_button.setToolTip(translate(language, "zoom_out"))
         self.zoom_in_button.setToolTip(translate(language, "zoom_in"))
-        self.fit_button.setText(translate(language, "fit"))
+        self.fit_button.setToolTip(translate(language, "fit"))
+        self.fit_page_button.setToolTip(translate(language, "fit_page"))
         self._update_page_label()
 
     def set_highlight_color(self, color: str) -> None:
@@ -175,7 +183,7 @@ class PdfPreview(QWidget):
         self._resize_timer.stop()
         self._path = None
         self._match = None
-        self._matched_pages = []
+        self._page_index = 0
         self._page_count = 0
         self.image_label.clear()
         self.page_label.clear()
@@ -185,45 +193,55 @@ class PdfPreview(QWidget):
         self.clear()
         self._path = Path(path)
         self._match = match
-        self._matched_pages = [highlight.page_index for highlight in match.highlights]
-        if not self._matched_pages:
-            self._matched_pages = [match.start_page]
-        self._matched_page_position = 0
+        self._page_index = match.start_page
         self._fit_width = True
+        self._fit_page = False
         self._update_controls()
         self._update_page_label()
         self._render()
 
     def _move_page(self, delta: int) -> None:
-        target = self._matched_page_position + delta
-        if 0 <= target < len(self._matched_pages):
-            self._matched_page_position = target
+        target = self._page_index + delta
+        if 0 <= target < self._page_count:
+            self._page_index = target
+            self._update_controls()
+            self._update_page_label()
             self._render()
 
     def _change_zoom(self, factor: float) -> None:
         self._fit_width = False
+        self._fit_page = False
         self._zoom = min(5.0, max(0.35, self._zoom * factor))
         self._render()
 
     def _fit(self) -> None:
         self._fit_width = True
+        self._fit_page = False
+        self._render()
+
+    def _fit_entire_page(self) -> None:
+        self._fit_width = False
+        self._fit_page = True
         self._render()
 
     def _render(self) -> None:
-        if self._path is None or self._match is None or not self._matched_pages:
+        if self._path is None or self._match is None:
             return
         self._request_id += 1
         request_id = self._request_id
-        page_index = self._matched_pages[self._matched_page_position]
-        available = max(200, self.scroll_area.viewport().width() - 24)
+        viewport = self.scroll_area.viewport()
+        available_width = max(1, viewport.width() - 24)
+        available_height = max(1, viewport.height() - 24)
         worker = PreviewRenderWorker(
             request_id,
             self._path,
-            page_index,
+            self._page_index,
             self._match,
             self._zoom,
             self._fit_width,
-            available,
+            self._fit_page,
+            available_width,
+            available_height,
             self._highlight_color,
         )
         worker.signals.finished.connect(self._render_finished)
@@ -241,6 +259,7 @@ class PdfPreview(QWidget):
         self._zoom = zoom
         self.image_label.setPixmap(QPixmap.fromImage(image))
         self.image_label.adjustSize()
+        self._update_controls()
         self._update_page_label()
 
     def _render_failed(self, request_id: int) -> None:
@@ -249,26 +268,29 @@ class PdfPreview(QWidget):
             self.image_label.clear()
 
     def _update_page_label(self) -> None:
-        if not self._matched_pages:
+        if self._path is None:
             self.page_label.clear()
             return
-        page = self._matched_pages[self._matched_page_position] + 1
+        page = self._page_index + 1
         total: int | str = self._page_count if self._page_count else "…"
         self.page_label.setText(
             translate(self._language, "page", page=page, total=total)
         )
 
     def _update_controls(self) -> None:
-        has_page = bool(self._matched_pages)
-        self.previous_button.setEnabled(has_page and self._matched_page_position > 0)
+        has_page = self._path is not None and self._match is not None
+        self.previous_button.setEnabled(
+            has_page and self._page_count > 0 and self._page_index > 0
+        )
         self.next_button.setEnabled(
-            has_page and self._matched_page_position < len(self._matched_pages) - 1
+            has_page and self._page_index < self._page_count - 1
         )
         self.zoom_out_button.setEnabled(has_page)
         self.zoom_in_button.setEnabled(has_page)
         self.fit_button.setEnabled(has_page)
+        self.fit_page_button.setEnabled(has_page)
 
     def resizeEvent(self, event) -> None:  # noqa: N802 - Qt API
         super().resizeEvent(event)
-        if self._fit_width and self._path is not None:
+        if (self._fit_width or self._fit_page) and self._path is not None:
             self._resize_timer.start()

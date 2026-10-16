@@ -206,7 +206,7 @@ jobs:
             release-assets/* \
             --verify-tag \
             --generate-notes \
-            --title "rgpdf ${{ needs.validate.outputs.version }}"
+            --title "rgPDF ${{ needs.validate.outputs.version }}"
 
   publish-pypi:
     name: Publish to PyPI

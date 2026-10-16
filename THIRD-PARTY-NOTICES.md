@@ -1,6 +1,6 @@
 # Third-party notices
 
-rgpdf incorporates the following third-party software. The exact versions used
+rgPDF incorporates the following third-party software. The exact versions used
 for a release are recorded in `uv.lock` and in that release's corresponding
 source archive.
 
@@ -9,7 +9,7 @@ source archive.
 Copyright Artifex Software, Inc. and contributors.
 
 PyMuPDF and MuPDF are available under the GNU Affero General Public License
-version 3 or a commercial license from Artifex. rgpdf uses them under the
+version 3 or a commercial license from Artifex. rgPDF uses them under the
 GNU AGPLv3 option.
 
 - Project: <https://pymupdf.readthedocs.io/>
@@ -20,7 +20,7 @@ GNU AGPLv3 option.
 
 Copyright The Qt Company Ltd. and contributors.
 
-rgpdf uses the open-source PySide6 distribution under the GNU Lesser General
+rgPDF uses the open-source PySide6 distribution under the GNU Lesser General
 Public License version 3 option. Qt recipients retain all rights granted by
 that license, including the right to replace or relink the Qt libraries.
 
@@ -43,7 +43,7 @@ Python license terms.
 Copyright Mark Hammond and contributors.
 
 pywin32 is distributed under the Python Software Foundation License and other
-permissive component licenses. rgpdf uses it to request PDF export from an
+permissive component licenses. rgPDF uses it to request PDF export from an
 existing Microsoft Word installation; Microsoft Word itself is not included.
 
 - Project: <https://github.com/mhammond/pywin32>

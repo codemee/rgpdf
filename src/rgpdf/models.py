@@ -19,6 +19,7 @@ class SearchOptions:
     recursive: bool = True
     regex_timeout_seconds: float = 1.0
     search_scope: str = "pdf"
+    stem_glob: str = ""
 
 
 @dataclass(frozen=True, slots=True)

@@ -6,8 +6,27 @@ from __future__ import annotations
 
 TRANSLATIONS: dict[str, dict[str, str]] = {
     "zh_TW": {
-        "app_title": "rgpdf {version} — 文件搜尋",
+        "app_title": "rgPDF {version} — 文件搜尋",
         "folder": "文件資料夾",
+        "stem_filter": "主檔名篩選",
+        "stem_filter_hint": "例如 ch0*；留空搜尋所有主檔名",
+        "stem_filter_help_title": "主檔名篩選說明",
+        "stem_filter_help_content": (
+            "<b>主檔名篩選（Glob）</b><br>"
+            "留空時不篩選。只比對不含最後一個副檔名的完整主檔名，不比對資料夾名稱，且不區分大小寫。<br>"
+            "• <code>*</code>：任意長度字串（可為空）<br>"
+            "• <code>?</code>：單一字元<br>"
+            "• <code>[abc]</code>：集合中的任一字元<br>"
+            "• <code>[0-9]</code>：範圍中的任一字元<br>"
+            "• <code>[!abc]</code>：集合以外的單一字元<br>"
+            "<b>範例</b><br>"
+            "• <code>ch0*</code>：符合 ch01、ch02，不符合 ch1、ch2<br>"
+            "• <code>ch0?</code>：符合 ch01，不符合 ch001<br>"
+            "• <code>ch0[1-3]</code>：符合 ch01、ch02、ch03<br>"
+            "• <code>ch01</code>：只符合完整主檔名 ch01（例如 ch01.pdf、ch01.docx）<br>"
+            "此欄位使用 Glob 語法，不受內文搜尋的規則表達式與區分大小寫設定影響。"
+        ),
+        "stem_filter_help": "只比對不含副檔名的主檔名，不區分大小寫。支援 *（任意字串）、?（單一字元）、[abc]、[0-9]、[!abc]。例如 ch0* 比對 ch01、ch02，不比對 ch1、ch2。留空不篩選。",
         "file_types": "搜尋檔案",
         "scope_pdf": "僅 PDF",
         "scope_word": "僅 Word（DOC、DOCX）",
@@ -38,10 +57,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "clear_cache_confirm": "要刪除所有 Word 轉換產生的快取 PDF 嗎？這不會刪除原始文件。",
         "cache_cleared_body": "已刪除 {count} 個快取檔案，釋放 {size} MB。無法刪除：{failed} 個。",
         "settings": "設定",
-        "about": "關於 rgpdf",
-        "about_title": "關於 rgpdf",
+        "about": "關於 rgPDF",
+        "about_title": "關於 rgPDF",
         "about_content": (
-            "<h3>rgpdf {version}</h3>"
+            "<h3>rgPDF {version}</h3>"
             "<p>Copyright © 2026 meebox</p>"
             "<p>本程式依 GNU Affero General Public License version 3 授權，"
             "不附帶任何擔保。你可以依該授權使用、研究、修改及重新散布。</p>"
@@ -80,18 +99,38 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "traditional_chinese": "繁體中文",
         "english": "English",
         "page": "第 {page} 頁，共 {total} 頁",
-        "previous_page": "上一個命中頁",
-        "next_page": "下一個命中頁",
+        "previous_page": "上一頁",
+        "next_page": "下一頁",
         "zoom_out": "縮小",
         "zoom_in": "放大",
         "fit": "符合寬度",
+        "fit_page": "符合頁面",
         "page_single": "第 {start} 頁",
         "page_range": "第 {start}–{end} 頁",
         "match_count": "{count} 筆",
     },
     "en": {
-        "app_title": "rgpdf {version} — Document Search",
+        "app_title": "rgPDF {version} — Document Search",
         "folder": "Document folder",
+        "stem_filter": "Filename stem filter",
+        "stem_filter_hint": "e.g. ch0*; leave empty to search all stems",
+        "stem_filter_help_title": "Filename stem filter help",
+        "stem_filter_help_content": (
+            "<b>Filename stem filter (Glob)</b><br>"
+            "Leave empty for no filter. Matches the entire filename without its last extension, ignoring case; folder names are excluded.<br>"
+            "• <code>*</code>: any string, including an empty string<br>"
+            "• <code>?</code>: one character<br>"
+            "• <code>[abc]</code>: one character from the set<br>"
+            "• <code>[0-9]</code>: one character in the range<br>"
+            "• <code>[!abc]</code>: one character outside the set<br>"
+            "<b>Examples</b><br>"
+            "• <code>ch0*</code>: matches ch01 and ch02, but not ch1 or ch2<br>"
+            "• <code>ch0?</code>: matches ch01, but not ch001<br>"
+            "• <code>ch0[1-3]</code>: matches ch01, ch02, and ch03<br>"
+            "• <code>ch01</code>: matches only the exact stem ch01 (e.g. ch01.pdf or ch01.docx)<br>"
+            "This field uses Glob syntax, independently of content search’s regular-expression and case settings."
+        ),
+        "stem_filter_help": "Match the filename without its extension, ignoring case. Supports * (any string), ? (one character), [abc], [0-9], and [!abc]. For example, ch0* matches ch01 and ch02, but not ch1 or ch2. Leave empty for no filter.",
         "file_types": "Search files",
         "scope_pdf": "PDF only",
         "scope_word": "Word only (DOC, DOCX)",
@@ -122,10 +161,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "clear_cache_confirm": "Delete every cached PDF created from Word documents? Original documents will not be deleted.",
         "cache_cleared_body": "Removed {count} cache files and freed {size} MB. Could not remove: {failed}.",
         "settings": "Settings",
-        "about": "About rgpdf",
-        "about_title": "About rgpdf",
+        "about": "About rgPDF",
+        "about_title": "About rgPDF",
         "about_content": (
-            "<h3>rgpdf {version}</h3>"
+            "<h3>rgPDF {version}</h3>"
             "<p>Copyright © 2026 meebox</p>"
             "<p>This program is licensed under the GNU Affero General Public License "
             "version 3 and comes with absolutely no warranty. You may use, study, "
@@ -165,11 +204,12 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "traditional_chinese": "繁體中文",
         "english": "English",
         "page": "Page {page} of {total}",
-        "previous_page": "Previous matched page",
-        "next_page": "Next matched page",
+        "previous_page": "Previous page",
+        "next_page": "Next page",
         "zoom_out": "Zoom out",
         "zoom_in": "Zoom in",
         "fit": "Fit width",
+        "fit_page": "Fit page",
         "page_single": "Page {start}",
         "page_range": "Pages {start}–{end}",
         "match_count": "{count} matches",

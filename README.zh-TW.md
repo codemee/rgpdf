@@ -1,8 +1,10 @@
-# rgpdf
+# rgPDF
 
 繁體中文 · [English](README.md)
 
-rgpdf 是一套跨平台桌面工具，可使用純文字或規則表達式搜尋具有文字層的 PDF 與 Word 文件。每筆命中會在找到時立即顯示，並可在非同步頁面預覽中查看精確且可自訂顏色的螢光筆標示。
+正式應用程式名稱為 **rgPDF**，命令與 Python 套件名稱仍為 `rgpdf`。
+
+rgPDF 是一套跨平台桌面工具，可使用純文字或規則表達式搜尋具有文字層的 PDF 與 Word 文件。每筆命中會在找到時立即顯示，並可在非同步頁面預覽中查看精確且可自訂顏色的螢光筆標示。
 
 ## 功能
 
@@ -15,9 +17,13 @@ rgpdf 是一套跨平台桌面工具，可使用純文字或規則表達式搜�
 - 繁體中文／英文介面，以及系統／淺色／深色主題。
 - 保存搜尋與外觀偏好。
 
-rgpdf 只搜尋 PDF 已有的文字層。Word 文件會先轉成快取 PDF，再沿用相同的搜尋與預覽流程；Windows 優先使用 Microsoft Word，其他情況則使用跨平台的 LibreOffice，搜尋 Word 時必須已安裝其中之一。啟動時會刪除 30 天未使用的轉換快取；快取超過 500 MB 時依最久未使用順序縮減，也可從工具列手動清除。rgpdf 不會執行文件巨集、不執行 OCR，也不修改來源檔案。
+rgPDF 只搜尋 PDF 已有的文字層。Word 文件會先轉成快取 PDF，再沿用相同的搜尋與預覽流程；Windows 優先使用 Microsoft Word，其他情況則使用跨平台的 LibreOffice，搜尋 Word 時必須已安裝其中之一。啟動時會刪除 30 天未使用的轉換快取；快取超過 500 MB 時依最久未使用順序縮減，也可從工具列手動清除。rgPDF 不會執行文件巨集、不執行 OCR，也不修改來源檔案。
 
 ## 使用方式
+
+「文件資料夾」下方的「主檔名篩選」可限制要搜尋的檔案，留空時不篩選。點擊輸入欄位左側的說明圖示，可像搜尋樣式欄位一樣開啟語法說明與範例。此欄位比對不含最後一個副檔名的完整主檔名，不區分大小寫；支援 `*`（任意字串）、`?`（單一字元）、`[abc]`、`[0-9]` 與 `[!abc]`。例如 `ch0*` 會包含 `ch01.pdf`、`ch02.docx`，排除 `ch1.pdf`、`ch2.docx`；`ch01` 則只比對完全相同的主檔名。篩選會在讀取 PDF 或轉換 Word 前執行，並搭配檔案類型與子資料夾設定；此欄位會保存至下次啟動，不受文字搜尋的 Regex 與區分大小寫設定影響。
+
+預覽窗格的「上一頁／下一頁」會逐頁瀏覽整份文件，包含未命中頁；選取命中項目窗格中的其他段落即可跳至其命中頁面。「符合頁面」會依預覽區域的寬度與高度完整顯示整頁，並隨窗格大小調整；「符合寬度」則可用較大尺寸閱讀。
 
 按「瀏覽」選取資料夾，輸入文字或規則表達式後按「搜尋」。選取檔案及命中段落即可查看頁面與螢光標示。下表依工具列由左至右排列；滑鼠停留可查看目前設定，三態按鈕每按一次切換一個狀態。
 
@@ -26,12 +32,28 @@ rgpdf 只搜尋 PDF 已有的文字層。Word 文件會先轉成快取 PDF，再
 | <img src="docs/toolbar/recursive.png" width="34" alt="父子資料夾"> | 包含子資料夾 | 切換是否遞迴搜尋子資料夾。 |
 | <img src="docs/toolbar/scope_pdf.png" width="34" alt="PDF"> <img src="docs/toolbar/scope_word.png" width="34" alt="Word"> <img src="docs/toolbar/scope_all.png" width="34" alt="PDF 與 Word"> | 搜尋檔案類型 | 循環切換 PDF → Word（DOC／DOCX）→ 兩者。搜尋 Word 需已有 Windows Microsoft Word 或 LibreOffice。 |
 | <img src="docs/toolbar/case.png" width="34" alt="Aa"> | 區分大小寫 | 切換搜尋時是否區分大小寫。 |
-| <img src="docs/toolbar/regex.png" width="34" alt="規則表達式"> | 規則表達式 | 切換 Regex；搜尋欄旁的「?」提供語法範例。 |
+| <img src="docs/toolbar/regex.png" width="34" alt="規則表達式"> | 規則表達式 | 切換 Regex；搜尋欄旁的說明圖示提供語法範例。 |
 | <img src="docs/toolbar/highlighter.png" width="34" alt="螢光筆"> | 螢光筆顏色 | 選取預設色或自訂顏色。 |
 | <img src="docs/toolbar/cache.png" width="34" alt="垃圾桶"> | 清除 Word 快取 | 確認後刪除轉換產生的 PDF，保留原始 Word 文件；搜尋期間停用。 |
 | <img src="docs/toolbar/language_system.png" width="34" alt="系統語言"> <img src="docs/toolbar/language_zh.png" width="34" alt="中文"> <img src="docs/toolbar/language_en.png" width="34" alt="英文"> | 語言 | 循環切換跟隨系統 → 繁體中文 → English。 |
 | <img src="docs/toolbar/theme_system.png" width="34" alt="系統配色"> <img src="docs/toolbar/sun.png" width="34" alt="淺色"> <img src="docs/toolbar/moon.png" width="34" alt="深色"> | 配色 | 循環切換跟隨系統 → 淺色 → 深色。 |
 | <img src="docs/toolbar/about.png" width="34" alt="資訊"> | 關於 | 查看版本、授權與原始碼連結。 |
+
+所有操作按鈕皆以圖示顯示；滑鼠停留時會顯示原本的中英文文字。搜尋、顏色設定與預覽按鈕如下：
+
+| 圖示 | Tooltip／功能 |
+| --- | --- |
+| <img src="docs/toolbar/browse.png" width="34" alt="瀏覽…"> | 瀏覽… |
+| <img src="docs/toolbar/search.png" width="34" alt="搜尋"> | 搜尋 |
+| <img src="docs/toolbar/cancel.png" width="34" alt="取消"> | 取消 |
+| <img src="docs/toolbar/help.png" width="34" alt="搜尋樣式說明"> | 搜尋樣式說明 |
+| <img src="docs/toolbar/custom_color.png" width="34" alt="自訂顏色…"> | 自訂顏色… |
+| <img src="docs/toolbar/previous_page.png" width="34" alt="上一頁"> | 上一頁 |
+| <img src="docs/toolbar/next_page.png" width="34" alt="下一頁"> | 下一頁 |
+| <img src="docs/toolbar/zoom_out.png" width="34" alt="縮小"> | 縮小 |
+| <img src="docs/toolbar/zoom_in.png" width="34" alt="放大"> | 放大 |
+| <img src="docs/toolbar/fit_width.png" width="34" alt="符合寬度"> | 符合寬度 |
+| <img src="docs/toolbar/fit_page.png" width="34" alt="符合頁面"> | 符合頁面 |
 
 搜尋設定會保存至下次啟動。啟動時會刪除 30 天未使用的轉換快取，若總量仍超過 500 MB，優先刪除最久未使用的項目。搜尋期間可按「取消」停止。
 
@@ -114,6 +136,6 @@ workflow 會平行測試並建置 Windows x86_64 與 macOS arm64，下載並驗�
 
 ## 授權
 
-rgpdf 依 [GNU Affero General Public License version 3](LICENSE) 授權。你可以依該授權條款使用、研究、修改及重新散布本程式；散布執行檔時，必須同時提供該版本的完整對應原始碼。
+rgPDF 依 [GNU Affero General Public License version 3](LICENSE) 授權。你可以依該授權條款使用、研究、修改及重新散布本程式；散布執行檔時，必須同時提供該版本的完整對應原始碼。
 
 本程式依 AGPLv3 使用 PyMuPDF/MuPDF，並依 LGPLv3 使用 PySide6/Qt。詳見[第三方授權聲明](THIRD-PARTY-NOTICES.md)與[發布授權檢查清單](docs/RELEASING.zh-TW.md)。

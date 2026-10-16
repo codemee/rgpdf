@@ -12,6 +12,7 @@ from rgpdf.preview import PdfPreview
 from rgpdf.resources import application_icon
 
 import pymupdf as fitz
+import pytest
 
 
 def test_main_window_has_three_result_columns(qtbot, monkeypatch, tmp_path) -> None:
@@ -20,7 +21,7 @@ def test_main_window_has_three_result_columns(qtbot, monkeypatch, tmp_path) -> N
     applied_themes = []
     window = MainWindow(applied_themes.append, settings=settings)
     qtbot.addWidget(window)
-    assert window.windowTitle() == f"rgpdf {__version__} — Document Search"
+    assert window.windowTitle() == f"rgPDF {__version__} — Document Search"
     assert window.main_splitter.count() == 2
     assert window.main_splitter.handleWidth() == 12
     assert window.main_splitter.widget(1) is window.preview_group
@@ -71,7 +72,7 @@ def test_main_window_has_three_result_columns(qtbot, monkeypatch, tmp_path) -> N
     assert window.search_form.labelAlignment() == expected_alignment
     assert window.folder_label.alignment() == expected_alignment
     assert window.pattern_label.alignment() == expected_alignment
-    assert window.search_form.itemAt(1, window.search_form.ItemRole.FieldRole).widget().layout().contentsMargins().isNull()
+    assert window.search_form.itemAt(2, window.search_form.ItemRole.FieldRole).widget().layout().contentsMargins().isNull()
     assert window.search_form.itemAt(0, window.search_form.ItemRole.FieldRole).widget().layout().contentsMargins().isNull()
     assert window.search_scope == "pdf"
     assert window.scope_button.icon_kind == "scope_pdf"
@@ -83,10 +84,28 @@ def test_main_window_has_three_result_columns(qtbot, monkeypatch, tmp_path) -> N
     assert window.scope_button.icon_kind == "scope_all"
     settings.sync()
     assert settings.value("search/scope") == "all"
-    assert window.pattern_help_button.text() == "?"
+    assert window.pattern_help_button.text() == ""
     assert window.about_button.icon_kind == "about"
     assert window.cache_button.icon_kind == "cache"
     assert window.cache_button.toolTip() == "Clear Word cache"
+    action_labels = (
+        (window.browse_button, "Browse…"),
+        (window.search_button, "Search"),
+        (window.cancel_button, "Cancel"),
+        (window.custom_color_button, "Custom color…"),
+        (window.pattern_help_button, "Search pattern help"),
+        (window.preview.previous_button, "Previous page"),
+        (window.preview.next_button, "Next page"),
+        (window.preview.zoom_out_button, "Zoom out"),
+        (window.preview.zoom_in_button, "Zoom in"),
+        (window.preview.fit_button, "Fit width"),
+        (window.preview.fit_page_button, "Fit page"),
+    )
+    for button, label in action_labels:
+        assert button.text() == ""
+        assert button.toolTip() == label
+        assert button.accessibleName() == label
+        assert button.icon_kind
     about_calls = []
     monkeypatch.setattr(
         "rgpdf.main_window.QMessageBox.about",
@@ -94,7 +113,7 @@ def test_main_window_has_three_result_columns(qtbot, monkeypatch, tmp_path) -> N
     )
     window.about_button.click()
     assert about_calls[0][0] is window
-    assert about_calls[0][1] == "About rgpdf"
+    assert about_calls[0][1] == "About rgPDF"
     assert f"tree/v{__version__}" in about_calls[0][2]
     assert "GNU Affero General Public License" in about_calls[0][2]
     assert window.pattern_help_button.menu() is None
@@ -150,6 +169,61 @@ def test_theme_switch_recolors_entire_application(qapp) -> None:
     assert light.name() == "#f5f6f8"
 
 
+def test_stem_filter_searches_matching_files_and_persists(qtbot, tmp_path):
+    for name in ("ch01.pdf", "ch02.pdf", "ch1.pdf", "ch2.pdf"):
+        with fitz.open() as document:
+            page = document.new_page()
+            page.insert_text((72, 72), "needle")
+            document.save(tmp_path / name)
+    settings = QSettings(str(tmp_path / "settings.ini"), QSettings.Format.IniFormat)
+    settings.setValue("appearance/language", "en")
+    window = MainWindow(lambda theme: None, settings=settings)
+    qtbot.addWidget(window)
+    assert window.stem_filter_edit.text() == ""
+    assert window.search_form.itemAt(1, window.search_form.ItemRole.FieldRole).widget().layout().indexOf(window.stem_filter_edit) == 1
+    assert window.stem_filter_label.text() == "Filename stem filter"
+    assert window.stem_filter_help_button.toolTip() == "Filename stem filter help"
+    assert window.stem_filter_help_button.accessibleName() == "Filename stem filter help"
+    assert window.stem_filter_help_button.icon_kind == "help"
+    assert "<code>ch0*</code>" in window.stem_filter_help_content.text()
+    assert "<code>[!abc]</code>" in window.stem_filter_help_content.text()
+    assert "Leave empty for no filter" in window.stem_filter_help_content.text()
+    window.show()
+    qtbot.mouseClick(window.stem_filter_help_button, Qt.MouseButton.LeftButton)
+    qtbot.waitUntil(window.stem_filter_help_menu.isVisible)
+    window.stem_filter_help_menu.close()
+    window.language = "zh_TW"
+    window.retranslate_ui()
+    assert window.stem_filter_help_button.toolTip() == "主檔名篩選說明"
+    assert "留空時不篩選" in window.stem_filter_help_content.text()
+    window.folder_edit.setText(str(tmp_path))
+    window.pattern_edit.setText("needle")
+    window.stem_filter_edit.setText("ch0*")
+    window._start_search()
+    assert not window.stem_filter_edit.isEnabled()
+    qtbot.waitUntil(lambda: window.worker is None, timeout=5000)
+    assert window.stem_filter_edit.isEnabled()
+    assert [doc.path.name for doc in window.documents] == ["ch01.pdf", "ch02.pdf"]
+    window.close()
+    qtbot.waitUntil(lambda: not window.preview._workers, timeout=5000)
+    settings.sync()
+    assert settings.value("search/stem_glob") == "ch0*"
+
+    reopened = MainWindow(lambda theme: None, settings=settings)
+    qtbot.addWidget(reopened)
+    assert reopened.stem_filter_edit.text() == "ch0*"
+    assert reopened._options().stem_glob == "ch0*"
+    reopened.stem_filter_edit.clear()
+    reopened.stem_filter_edit.returnPressed.emit()
+    qtbot.waitUntil(lambda: reopened.worker is None, timeout=5000)
+    assert [doc.path.name for doc in reopened.documents] == [
+        "ch01.pdf", "ch02.pdf", "ch1.pdf", "ch2.pdf"
+    ]
+    assert settings.value("search/stem_glob") == ""
+    reopened.close()
+    qtbot.waitUntil(lambda: not reopened.preview._workers, timeout=5000)
+
+
 def test_application_icon_is_available() -> None:
     icon = application_icon()
     assert not icon.isNull()
@@ -179,4 +253,122 @@ def test_preview_renders_selected_match_asynchronously(qtbot, tmp_path) -> None:
     preview.show_match(str(path), match)
     qtbot.waitUntil(lambda: not preview.image_label.pixmap().isNull(), timeout=5000)
     assert not preview.image_label.pixmap().isNull()
+    preview.close()
+
+
+@pytest.mark.parametrize("page_size", [(595, 842), (842, 595), (6000, 9000)])
+def test_fit_page_shows_entire_page_and_tracks_resize(qtbot, tmp_path, page_size):
+    path = tmp_path / "fit-page.pdf"
+    with fitz.open() as document:
+        document.new_page(width=page_size[0], height=page_size[1])
+        document.new_page(width=page_size[1], height=page_size[0])
+        document.save(path)
+    match = TextMatch(
+        matched_text="match", context="match", start=0, end=5,
+        start_page=0, end_page=0, highlights=(),
+    )
+    preview = PdfPreview()
+    qtbot.addWidget(preview)
+    preview.set_language("zh_TW")
+    assert preview.fit_page_button.toolTip() == "符合頁面"
+    assert not preview.fit_page_button.isEnabled()
+    preview.set_language("en")
+    assert preview.fit_page_button.toolTip() == "Fit page"
+    preview.resize(700, 650)
+    preview.show()
+    preview.show_match(str(path), match)
+    qtbot.waitUntil(lambda: not preview._workers, timeout=5000)
+    preview.fit_page_button.click()
+
+    def entire_page_visible():
+        image = preview.image_label.pixmap()
+        viewport = preview.scroll_area.viewport()
+        return (
+            not preview._resize_timer.isActive()
+            and not preview._workers
+            and not image.isNull()
+            and image.width() <= viewport.width()
+            and image.height() <= viewport.height()
+            and preview.scroll_area.horizontalScrollBar().maximum() == 0
+            and preview.scroll_area.verticalScrollBar().maximum() == 0
+        )
+
+    qtbot.waitUntil(entire_page_visible, timeout=5000)
+    original_size = preview.image_label.pixmap().size()
+    preview.resize(600, 400)
+    qtbot.waitUntil(entire_page_visible, timeout=5000)
+    assert preview.image_label.pixmap().size() != original_size
+    preview.next_button.click()
+    qtbot.waitUntil(entire_page_visible, timeout=5000)
+    preview.fit_button.click()
+    qtbot.waitUntil(lambda: not preview._workers, timeout=5000)
+    width_zoom = preview._zoom
+    preview.zoom_in_button.click()
+    qtbot.waitUntil(lambda: not preview._workers, timeout=5000)
+    assert preview._zoom > width_zoom
+    preview.fit_page_button.click()
+    qtbot.waitUntil(entire_page_visible, timeout=5000)
+    preview.clear()
+    assert not preview.fit_page_button.isEnabled()
+    preview.close()
+
+
+@pytest.mark.parametrize("page_count,start_page", [(1, 0), (3, 0), (3, 1), (3, 2)])
+def test_preview_browses_all_pages_and_resets_for_selection(
+    qtbot, tmp_path, page_count, start_page
+) -> None:
+    path = tmp_path / "navigation.pdf"
+    with fitz.open() as document:
+        for index in range(page_count):
+            page = document.new_page()
+            page.insert_text((72, 72), f"Page {index + 1}")
+        document.save(path)
+    match = TextMatch(
+        matched_text="Page",
+        context="Page",
+        start=0,
+        end=4,
+        start_page=start_page,
+        end_page=start_page,
+        highlights=(PageHighlight(start_page, ((72.0, 60.0, 105.0, 75.0),)),),
+    )
+    preview = PdfPreview()
+    qtbot.addWidget(preview)
+    preview.set_language("en")
+    assert not preview.previous_button.isEnabled()
+    assert not preview.next_button.isEnabled()
+    assert preview.previous_button.toolTip() == "Previous page"
+    assert preview.next_button.toolTip() == "Next page"
+    preview.show_match(str(path), match)
+
+    def check_page(index):
+        qtbot.waitUntil(lambda: not preview._workers, timeout=5000)
+        assert not preview.image_label.pixmap().isNull()
+        assert preview.page_label.text() == f"Page {index + 1} of {page_count}"
+        assert preview.previous_button.isEnabled() == (index > 0)
+        assert preview.next_button.isEnabled() == (index < page_count - 1)
+
+    check_page(start_page)
+    for index in range(start_page - 1, -1, -1):
+        preview.previous_button.click()
+        check_page(index)
+    preview.previous_button.click()
+    check_page(0)
+    for index in range(1, page_count):
+        preview.next_button.click()
+        check_page(index)
+    preview.next_button.click()
+    check_page(page_count - 1)
+    # Several navigation requests may be in flight when another match is selected.
+    for _ in range(page_count - 1):
+        preview.previous_button.click()
+    preview.show_match(str(path), match)
+    check_page(start_page)
+    preview.next_button.click()
+    preview.clear()
+    qtbot.waitUntil(lambda: not preview._workers, timeout=5000)
+    assert preview.page_label.text() == ""
+    assert preview.image_label.pixmap().isNull()
+    assert not preview.previous_button.isEnabled()
+    assert not preview.next_button.isEnabled()
     preview.close()

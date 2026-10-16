@@ -102,6 +102,69 @@ def test_discover_documents_filters_pdf_word_or_both(tmp_path: Path) -> None:
     ]
 
 
+@pytest.mark.parametrize(
+    "stem_glob,expected",
+    [
+        ("", ["ch01.notes.pdf", "ch01.pdf", "ch02.DOCX", "ch1.doc", "ch2.pdf"]),
+        ("*", ["ch01.notes.pdf", "ch01.pdf", "ch02.DOCX", "ch1.doc", "ch2.pdf"]),
+        ("ch0*", ["ch01.notes.pdf", "ch01.pdf", "ch02.DOCX"]),
+        ("CH0?", ["ch01.pdf", "ch02.DOCX"]),
+        ("ch0[12]", ["ch01.pdf", "ch02.DOCX"]),
+        ("ch[!0]", ["ch1.doc", "ch2.pdf"]),
+        ("ch01", ["ch01.pdf"]),
+        ("ch01.pdf", []),
+    ],
+)
+def test_stem_glob_matches_whole_stem_without_extension(tmp_path, stem_glob, expected):
+    for name in ("ch01.pdf", "ch02.DOCX", "ch1.doc", "ch2.pdf", "ch01.notes.pdf", "ch03.txt"):
+        (tmp_path / name).touch()
+    assert [p.name for p in discover_documents(tmp_path, False, "all", stem_glob)] == expected
+
+
+def test_stem_glob_respects_scope_and_recursion_without_matching_parent_folder(tmp_path):
+    (tmp_path / "ch01.pdf").touch()
+    (tmp_path / "ch02.docx").touch()
+    nested = tmp_path / "ch0-folder"
+    nested.mkdir()
+    (nested / "ch03.pdf").touch()
+    (nested / "ch1.pdf").touch()
+    assert discover_documents(tmp_path, False, "pdf", "ch0*") == [tmp_path / "ch01.pdf"]
+    assert discover_documents(tmp_path, True, "pdf", "ch0*") == [
+        nested / "ch03.pdf", tmp_path / "ch01.pdf"
+    ]
+    assert discover_documents(tmp_path, True, "word", "ch0*") == [tmp_path / "ch02.docx"]
+
+
+@pytest.mark.parametrize("explicit_paths", [False, True])
+def test_stem_glob_filters_before_reading_or_converting_documents(tmp_path, monkeypatch, explicit_paths):
+    root = tmp_path / "documents"
+    root.mkdir()
+    _write_pdf(root / "ch01.pdf", [[((72, 72), "needle")]])
+    (root / "ch02.docx").touch()
+    (root / "ch1.doc").touch()
+    (root / "ch2.pdf").write_bytes(b"invalid PDF that should never be read")
+    converted = tmp_path / "converted.pdf"
+    _write_pdf(converted, [[((72, 72), "needle")]])
+    conversions = []
+
+    def convert(path, **kwargs):
+        conversions.append(path.name)
+        return converted
+
+    monkeypatch.setattr("rgpdf.search.convert_word_to_pdf", convert)
+    progress = []
+    report = search_folder(
+        SearchOptions(root, "needle", search_scope="all", stem_glob="ch0*"),
+        paths=sorted(root.iterdir()) if explicit_paths else None,
+        progress=lambda current, total, path: progress.append((current, total, path.name)),
+    )
+    assert conversions == ["ch02.docx"]
+    assert report.scanned_files == 2
+    assert not report.warnings
+    assert [doc.path.name for doc in report.documents] == ["ch01.pdf", "ch02.docx"]
+    assert progress == [(1, 2, "ch01.pdf"), (2, 2, "ch02.docx")]
+
+
 def test_find_matches_reports_cross_page_highlights(tmp_path: Path) -> None:
     refs = tuple(
         [CharacterRef(0, (1, 1, 2, 2)) for _ in "alpha"]

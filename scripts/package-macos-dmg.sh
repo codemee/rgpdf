@@ -23,7 +23,7 @@ ditto "$APP" "$staging/rgpdf.app"
 ln -s /Applications "$staging/Applications"
 mkdir -p "$(dirname "$OUTPUT")"
 hdiutil create \
-    -volname "rgpdf $VERSION" \
+    -volname "rgPDF $VERSION" \
     -srcfolder "$staging" \
     -format UDZO \
     -ov \
