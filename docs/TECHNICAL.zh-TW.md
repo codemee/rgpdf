@@ -74,6 +74,8 @@ rgPDF 支援 Python 3.12–3.13，並由 uv 管理。PySide6 提供桌面介面�
 
 主檔名篩選與搜尋樣式的說明圖示在各自輸入欄位左側垂直對齊，並共用 rich-text 說明彈窗，提供中英文語法說明與範例。圖示描邊共用 `SettingsButton.STROKE_WIDTH`，統一為 1 邏輯像素，包含 PDF 標誌外框。各窗格操作按鈕共用 34×34 px 尺寸、4 px 內距與 4 px 元件間距；圓形色票保留 28×28 px 尺寸。`SettingsToolBar` 在 Qt 的 polish、show 與 style-change 事件後重新套用共用間距與四邊各 4 px 留白。工具列高度維持 42 px（34 px 按鈕加上、下各 4 px），切換主題後也不改變。工具列的不對稱圖示以小幅垂直位移校正可見中心，與語言及配色圖示水平對齊。語言與主題按鈕各自循環三種模式；切換設定使用中性色的啟用樣式。螢光筆按鈕只有筆形圖示使用所選顏色，色彩面板提供常用色與原生 `QColorDialog`。
 
+README 圖示由 `uv run python scripts/generate_toolbar_icons.py` 匯出：淺色圖片位於 `docs/toolbar/`，深色圖片位於 `docs/toolbar/dark/`。兩套圖片都使用共用按鈕繪製器，搭配主題的高對比文字色與不透明底板，以 2× 解析度輸出（68×68 px，顯示為 34×34 px）。README 的 `<picture>` 透過 `prefers-color-scheme: dark` 選擇深色圖片，並保留可讀的淺色備用圖，供忽略來源選擇的 viewer 使用。
+
 ## 測試與封裝
 
 測試涵蓋純文字與 Regex、大小寫、跨頁映射、斷字合併、標點摘要、損壞／無文字 PDF、逐筆 callback、設定保存、主題切換、封裝 SVG 讀取與非同步預覽。

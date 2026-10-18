@@ -4,6 +4,10 @@
 
 All notable changes are documented here. Immutable releases use `vX.Y.Z`; the moving `latest` tag points to the newest published release.
 
+## Unreleased
+
+- Added light/dark README icon images with automatic color-scheme selection and opaque fallback tiles for Markdown viewers without picture support.
+
 ## 0.0.11 — 2026-10-16
 
 - Reshaped the application icon into an equal-width/height silhouette with balanced margins, preserving the blue folded-document and `.*` mark.

@@ -29,33 +29,35 @@ Choose a folder with **Browse**, enter text or a regular expression, and click
 The toolbar controls below are listed in their on-screen order. Hover over a
 button to see its current setting; clicking a three-state button cycles modes.
 
+Icons include light and dark variants. Markdown viewers supporting `<picture>` and `prefers-color-scheme` select the matching version automatically; other viewers show a light fallback tile that remains legible on dark backgrounds.
+
 | Toolbar icon | Control | Usage |
 | --- | --- | --- |
-| <img src="docs/toolbar/recursive.png" width="34" alt="Nested folders"> | Include subfolders | Toggle recursive folder search. |
-| <img src="docs/toolbar/scope_pdf.png" width="34" alt="PDF"> <img src="docs/toolbar/scope_word.png" width="34" alt="Word"> <img src="docs/toolbar/scope_all.png" width="34" alt="PDF and Word"> | File types | Cycle PDF → Word (DOC/DOCX) → both. Word requires Microsoft Word on Windows or LibreOffice. |
-| <img src="docs/toolbar/case.png" width="34" alt="Aa"> | Case sensitive | Toggle case-sensitive matching. |
-| <img src="docs/toolbar/regex.png" width="34" alt="Regular expression"> | Regular expression | Toggle regex; use the help icon beside the search field for examples. |
-| <img src="docs/toolbar/highlighter.png" width="34" alt="Highlighter"> | Highlight color | Choose a preset or custom color. |
-| <img src="docs/toolbar/cache.png" width="34" alt="Trash can"> | Clear Word cache | Confirm deletion of conversion PDFs; original Word files are preserved. Disabled during search. |
-| <img src="docs/toolbar/language_system.png" width="34" alt="System language"> <img src="docs/toolbar/language_zh.png" width="34" alt="Chinese"> <img src="docs/toolbar/language_en.png" width="34" alt="English"> | Language | Cycle system → Traditional Chinese → English. |
-| <img src="docs/toolbar/theme_system.png" width="34" alt="System theme"> <img src="docs/toolbar/sun.png" width="34" alt="Light theme"> <img src="docs/toolbar/moon.png" width="34" alt="Dark theme"> | Color theme | Cycle system → light → dark. |
-| <img src="docs/toolbar/about.png" width="34" alt="Information"> | About | View version, license, and source links. |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/recursive.png"><img src="docs/toolbar/recursive.png" width="34" height="34" alt="Nested folders"></picture> | Include subfolders | Toggle recursive folder search. |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/scope_pdf.png"><img src="docs/toolbar/scope_pdf.png" width="34" height="34" alt="PDF"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/scope_word.png"><img src="docs/toolbar/scope_word.png" width="34" height="34" alt="Word"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/scope_all.png"><img src="docs/toolbar/scope_all.png" width="34" height="34" alt="PDF and Word"></picture> | File types | Cycle PDF → Word (DOC/DOCX) → both. Word requires Microsoft Word on Windows or LibreOffice. |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/case.png"><img src="docs/toolbar/case.png" width="34" height="34" alt="Aa"></picture> | Case sensitive | Toggle case-sensitive matching. |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/regex.png"><img src="docs/toolbar/regex.png" width="34" height="34" alt="Regular expression"></picture> | Regular expression | Toggle regex; use the help icon beside the search field for examples. |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/highlighter.png"><img src="docs/toolbar/highlighter.png" width="34" height="34" alt="Highlighter"></picture> | Highlight color | Choose a preset or custom color. |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/cache.png"><img src="docs/toolbar/cache.png" width="34" height="34" alt="Trash can"></picture> | Clear Word cache | Confirm deletion of conversion PDFs; original Word files are preserved. Disabled during search. |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/language_system.png"><img src="docs/toolbar/language_system.png" width="34" height="34" alt="System language"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/language_zh.png"><img src="docs/toolbar/language_zh.png" width="34" height="34" alt="Chinese"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/language_en.png"><img src="docs/toolbar/language_en.png" width="34" height="34" alt="English"></picture> | Language | Cycle system → Traditional Chinese → English. |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/theme_system.png"><img src="docs/toolbar/theme_system.png" width="34" height="34" alt="System theme"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/sun.png"><img src="docs/toolbar/sun.png" width="34" height="34" alt="Light theme"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/moon.png"><img src="docs/toolbar/moon.png" width="34" height="34" alt="Dark theme"></picture> | Color theme | Cycle system → light → dark. |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/about.png"><img src="docs/toolbar/about.png" width="34" height="34" alt="Information"></picture> | About | View version, license, and source links. |
 
 All action buttons use icons with 1 px outlines; hover to see their original labels in the selected language. Search, color, and preview controls:
 
 | Icon | Tooltip / action |
 | --- | --- |
-| <img src="docs/toolbar/browse.png" width="34" alt="Browse…"> | Browse… |
-| <img src="docs/toolbar/search.png" width="34" alt="Search"> | Search |
-| <img src="docs/toolbar/cancel.png" width="34" alt="Cancel"> | Cancel |
-| <img src="docs/toolbar/help.png" width="34" alt="Search pattern help"> | Search pattern help |
-| <img src="docs/toolbar/custom_color.png" width="34" alt="Custom color…"> | Custom color… |
-| <img src="docs/toolbar/previous_page.png" width="34" alt="Previous page"> | Previous page |
-| <img src="docs/toolbar/next_page.png" width="34" alt="Next page"> | Next page |
-| <img src="docs/toolbar/zoom_out.png" width="34" alt="Zoom out"> | Zoom out |
-| <img src="docs/toolbar/zoom_in.png" width="34" alt="Zoom in"> | Zoom in |
-| <img src="docs/toolbar/fit_width.png" width="34" alt="Fit width"> | Fit width |
-| <img src="docs/toolbar/fit_page.png" width="34" alt="Fit page"> | Fit page |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/browse.png"><img src="docs/toolbar/browse.png" width="34" height="34" alt="Browse…"></picture> | Browse… |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/search.png"><img src="docs/toolbar/search.png" width="34" height="34" alt="Search"></picture> | Search |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/cancel.png"><img src="docs/toolbar/cancel.png" width="34" height="34" alt="Cancel"></picture> | Cancel |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/help.png"><img src="docs/toolbar/help.png" width="34" height="34" alt="Search pattern help"></picture> | Search pattern help |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/custom_color.png"><img src="docs/toolbar/custom_color.png" width="34" height="34" alt="Custom color…"></picture> | Custom color… |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/previous_page.png"><img src="docs/toolbar/previous_page.png" width="34" height="34" alt="Previous page"></picture> | Previous page |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/next_page.png"><img src="docs/toolbar/next_page.png" width="34" height="34" alt="Next page"></picture> | Next page |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/zoom_out.png"><img src="docs/toolbar/zoom_out.png" width="34" height="34" alt="Zoom out"></picture> | Zoom out |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/zoom_in.png"><img src="docs/toolbar/zoom_in.png" width="34" height="34" alt="Zoom in"></picture> | Zoom in |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/fit_width.png"><img src="docs/toolbar/fit_width.png" width="34" height="34" alt="Fit width"></picture> | Fit width |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/fit_page.png"><img src="docs/toolbar/fit_page.png" width="34" height="34" alt="Fit page"></picture> | Fit page |
 
 Search settings are saved between sessions. Conversion cache is cleaned at
 startup: entries unused for 30 days expire, then the oldest entries are removed

@@ -28,33 +28,35 @@ rgPDF 只搜尋 PDF 已有的文字層。Word 文件會先轉成快取 PDF，再
 
 按「瀏覽」選取資料夾，輸入文字或規則表達式後按「搜尋」。選取檔案及命中段落即可查看頁面與螢光標示。下表依工具列由左至右排列；滑鼠停留可查看目前設定，三態按鈕每按一次切換一個狀態。
 
+圖示提供淺色與深色兩套圖片，支援 `<picture>` 與 `prefers-color-scheme` 的 Markdown viewer 會依配色自動切換；其他 viewer 會顯示附淺色底板的備用圖示，深色背景下也能辨識。
+
 | 工具列圖示 | 功能 | 操作說明 |
 | --- | --- | --- |
-| <img src="docs/toolbar/recursive.png" width="34" alt="父子資料夾"> | 包含子資料夾 | 切換是否遞迴搜尋子資料夾。 |
-| <img src="docs/toolbar/scope_pdf.png" width="34" alt="PDF"> <img src="docs/toolbar/scope_word.png" width="34" alt="Word"> <img src="docs/toolbar/scope_all.png" width="34" alt="PDF 與 Word"> | 搜尋檔案類型 | 循環切換 PDF → Word（DOC／DOCX）→ 兩者。搜尋 Word 需已有 Windows Microsoft Word 或 LibreOffice。 |
-| <img src="docs/toolbar/case.png" width="34" alt="Aa"> | 區分大小寫 | 切換搜尋時是否區分大小寫。 |
-| <img src="docs/toolbar/regex.png" width="34" alt="規則表達式"> | 規則表達式 | 切換 Regex；搜尋欄旁的說明圖示提供語法範例。 |
-| <img src="docs/toolbar/highlighter.png" width="34" alt="螢光筆"> | 螢光筆顏色 | 選取預設色或自訂顏色。 |
-| <img src="docs/toolbar/cache.png" width="34" alt="垃圾桶"> | 清除 Word 快取 | 確認後刪除轉換產生的 PDF，保留原始 Word 文件；搜尋期間停用。 |
-| <img src="docs/toolbar/language_system.png" width="34" alt="系統語言"> <img src="docs/toolbar/language_zh.png" width="34" alt="中文"> <img src="docs/toolbar/language_en.png" width="34" alt="英文"> | 語言 | 循環切換跟隨系統 → 繁體中文 → English。 |
-| <img src="docs/toolbar/theme_system.png" width="34" alt="系統配色"> <img src="docs/toolbar/sun.png" width="34" alt="淺色"> <img src="docs/toolbar/moon.png" width="34" alt="深色"> | 配色 | 循環切換跟隨系統 → 淺色 → 深色。 |
-| <img src="docs/toolbar/about.png" width="34" alt="資訊"> | 關於 | 查看版本、授權與原始碼連結。 |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/recursive.png"><img src="docs/toolbar/recursive.png" width="34" height="34" alt="父子資料夾"></picture> | 包含子資料夾 | 切換是否遞迴搜尋子資料夾。 |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/scope_pdf.png"><img src="docs/toolbar/scope_pdf.png" width="34" height="34" alt="PDF"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/scope_word.png"><img src="docs/toolbar/scope_word.png" width="34" height="34" alt="Word"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/scope_all.png"><img src="docs/toolbar/scope_all.png" width="34" height="34" alt="PDF 與 Word"></picture> | 搜尋檔案類型 | 循環切換 PDF → Word（DOC／DOCX）→ 兩者。搜尋 Word 需已有 Windows Microsoft Word 或 LibreOffice。 |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/case.png"><img src="docs/toolbar/case.png" width="34" height="34" alt="Aa"></picture> | 區分大小寫 | 切換搜尋時是否區分大小寫。 |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/regex.png"><img src="docs/toolbar/regex.png" width="34" height="34" alt="規則表達式"></picture> | 規則表達式 | 切換 Regex；搜尋欄旁的說明圖示提供語法範例。 |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/highlighter.png"><img src="docs/toolbar/highlighter.png" width="34" height="34" alt="螢光筆"></picture> | 螢光筆顏色 | 選取預設色或自訂顏色。 |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/cache.png"><img src="docs/toolbar/cache.png" width="34" height="34" alt="垃圾桶"></picture> | 清除 Word 快取 | 確認後刪除轉換產生的 PDF，保留原始 Word 文件；搜尋期間停用。 |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/language_system.png"><img src="docs/toolbar/language_system.png" width="34" height="34" alt="系統語言"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/language_zh.png"><img src="docs/toolbar/language_zh.png" width="34" height="34" alt="中文"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/language_en.png"><img src="docs/toolbar/language_en.png" width="34" height="34" alt="英文"></picture> | 語言 | 循環切換跟隨系統 → 繁體中文 → English。 |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/theme_system.png"><img src="docs/toolbar/theme_system.png" width="34" height="34" alt="系統配色"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/sun.png"><img src="docs/toolbar/sun.png" width="34" height="34" alt="淺色"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/moon.png"><img src="docs/toolbar/moon.png" width="34" height="34" alt="深色"></picture> | 配色 | 循環切換跟隨系統 → 淺色 → 深色。 |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/about.png"><img src="docs/toolbar/about.png" width="34" height="34" alt="資訊"></picture> | 關於 | 查看版本、授權與原始碼連結。 |
 
 所有操作按鈕皆以 1 px 細線描邊圖示顯示；滑鼠停留時會顯示原本的中英文文字。搜尋、顏色設定與預覽按鈕如下：
 
 | 圖示 | Tooltip／功能 |
 | --- | --- |
-| <img src="docs/toolbar/browse.png" width="34" alt="瀏覽…"> | 瀏覽… |
-| <img src="docs/toolbar/search.png" width="34" alt="搜尋"> | 搜尋 |
-| <img src="docs/toolbar/cancel.png" width="34" alt="取消"> | 取消 |
-| <img src="docs/toolbar/help.png" width="34" alt="搜尋樣式說明"> | 搜尋樣式說明 |
-| <img src="docs/toolbar/custom_color.png" width="34" alt="自訂顏色…"> | 自訂顏色… |
-| <img src="docs/toolbar/previous_page.png" width="34" alt="上一頁"> | 上一頁 |
-| <img src="docs/toolbar/next_page.png" width="34" alt="下一頁"> | 下一頁 |
-| <img src="docs/toolbar/zoom_out.png" width="34" alt="縮小"> | 縮小 |
-| <img src="docs/toolbar/zoom_in.png" width="34" alt="放大"> | 放大 |
-| <img src="docs/toolbar/fit_width.png" width="34" alt="符合寬度"> | 符合寬度 |
-| <img src="docs/toolbar/fit_page.png" width="34" alt="符合頁面"> | 符合頁面 |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/browse.png"><img src="docs/toolbar/browse.png" width="34" height="34" alt="瀏覽…"></picture> | 瀏覽… |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/search.png"><img src="docs/toolbar/search.png" width="34" height="34" alt="搜尋"></picture> | 搜尋 |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/cancel.png"><img src="docs/toolbar/cancel.png" width="34" height="34" alt="取消"></picture> | 取消 |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/help.png"><img src="docs/toolbar/help.png" width="34" height="34" alt="搜尋樣式說明"></picture> | 搜尋樣式說明 |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/custom_color.png"><img src="docs/toolbar/custom_color.png" width="34" height="34" alt="自訂顏色…"></picture> | 自訂顏色… |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/previous_page.png"><img src="docs/toolbar/previous_page.png" width="34" height="34" alt="上一頁"></picture> | 上一頁 |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/next_page.png"><img src="docs/toolbar/next_page.png" width="34" height="34" alt="下一頁"></picture> | 下一頁 |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/zoom_out.png"><img src="docs/toolbar/zoom_out.png" width="34" height="34" alt="縮小"></picture> | 縮小 |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/zoom_in.png"><img src="docs/toolbar/zoom_in.png" width="34" height="34" alt="放大"></picture> | 放大 |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/fit_width.png"><img src="docs/toolbar/fit_width.png" width="34" height="34" alt="符合寬度"></picture> | 符合寬度 |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/fit_page.png"><img src="docs/toolbar/fit_page.png" width="34" height="34" alt="符合頁面"></picture> | 符合頁面 |
 
 搜尋設定會保存至下次啟動。啟動時會刪除 30 天未使用的轉換快取，若總量仍超過 500 MB，優先刪除最久未使用的項目。搜尋期間可按「取消」停止。
 
