@@ -43,6 +43,8 @@ Preview rendering is separate from search work. Each selection creates a `Previe
 
 Cancellation uses a thread-safe event checked between documents. Regex execution has its own timeout to contain catastrophic backtracking. Closing the window invalidates pending preview requests and requests search cancellation.
 
+The default `README.md` is Traditional Chinese, so GitHub and the package readme open in Traditional Chinese. English is maintained in `README.en.md`; `README.zh-TW.md` stays identical to the default README for existing links. All three README files are included in source distributions.
+
 ## UI and persisted settings
 
 The main window uses a top settings toolbar and a horizontal splitter:

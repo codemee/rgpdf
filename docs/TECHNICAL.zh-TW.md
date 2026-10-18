@@ -43,6 +43,8 @@ rgPDF 支援 Python 3.12–3.13，並由 uv 管理。PySide6 提供桌面介面�
 
 取消搜尋使用 thread-safe event，並在文件之間檢查。Regex 另有逾時限制，防止災難性回溯。關閉視窗時會讓待處理預覽失效，並要求取消搜尋。
 
+預設 `README.md` 使用繁體中文，因此 GitHub 與套件說明預設顯示繁體中文；英文維護於 `README.en.md`。`README.zh-TW.md` 與預設 README 保持相同內容，以相容既有連結。三份 README 都會納入原始碼套件。
+
 ## 介面與保存設定
 
 主畫面使用頂端設定工具列與水平 splitter：

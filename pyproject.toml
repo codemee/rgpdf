@@ -42,6 +42,7 @@ source-include = [
     "CHANGELOG.md",
     "CHANGELOG.zh-TW.md",
     "README.zh-TW.md",
+    "README.en.md",
     "rgpdf-macos.spec",
     "rgpdf.spec",
     "scripts/**",

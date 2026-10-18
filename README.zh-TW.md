@@ -1,6 +1,6 @@
 # rgPDF
 
-繁體中文 · [English](README.md)
+繁體中文 · [English](README.en.md)
 
 正式應用程式名稱為 **rgPDF**，命令與 Python 套件名稱仍為 `rgpdf`。
 

@@ -6,6 +6,8 @@
 
 ## 尚未發布
 
+- GitHub 與套件說明的預設 README 改為繁體中文；英文移至 README.en.md，並保留內容同步的 README.zh-TW.md 相容入口。
+
 - README 圖示新增淺色／深色兩套圖片，依配色自動選用；不支援 picture 的 Markdown viewer 也可透過不透明底板辨識備用圖示。
 
 ## 0.0.11 — 2026-10-16

@@ -6,6 +6,8 @@ All notable changes are documented here. Immutable releases use `vX.Y.Z`; the mo
 
 ## Unreleased
 
+- Made Traditional Chinese the default README for GitHub and package metadata; moved English documentation to README.en.md and retained README.zh-TW.md as a matching compatibility copy.
+
 - Added light/dark README icon images with automatic color-scheme selection and opaque fallback tiles for Markdown viewers without picture support.
 
 ## 0.0.11 — 2026-10-16
