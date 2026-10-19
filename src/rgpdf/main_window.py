@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import QEvent, QLocale, QSettings, Qt, QThreadPool
+from PySide6.QtCore import QEvent, QLocale, QSettings, Qt, QThreadPool, QTimer
 from PySide6.QtGui import QCloseEvent, QColor
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -36,9 +36,10 @@ from rgpdf.buttons import SettingsButton
 from rgpdf.i18n import translate
 from rgpdf.models import DocumentMatch, SearchOptions, SearchReport
 from rgpdf.preview import PdfPreview
+from rgpdf.preparation import BackgroundWordPreparation
 from rgpdf.resources import application_icon
 from rgpdf.search import SearchInputError, compile_pattern
-from rgpdf.worker import SearchWorker
+from rgpdf.worker import PreparationSignals, SearchWorker
 from rgpdf.word_conversion import clear_word_cache
 
 
@@ -70,6 +71,17 @@ class MainWindow(QMainWindow):
         self.apply_theme_callback = apply_theme_callback
         self.thread_pool = QThreadPool.globalInstance()
         self.worker: SearchWorker | None = None
+        self._search_progress_state: tuple[int, int, str] | None = None
+        self._converting_word_name = ""
+        self._background_busy = False
+        self._background_preparer: BackgroundWordPreparation | None = None
+        self._preparation_signals = PreparationSignals(self)
+        self._preparation_signals.converting.connect(self._word_converting)
+        self._preparation_signals.busy.connect(self._background_busy_changed)
+        self._preparation_timer = QTimer(self)
+        self._preparation_timer.setSingleShot(True)
+        self._preparation_timer.setInterval(250)
+        self._preparation_timer.timeout.connect(self._update_preparation)
         self.documents: list[DocumentMatch] = []
         self._document_indexes: dict[Path, int] = {}
         self.language_preference = self._initial_language_preference()
@@ -276,6 +288,7 @@ class MainWindow(QMainWindow):
         self._connect_signals()
         self._restore_window_state()
         self.retranslate_ui()
+        self._schedule_preparation()
 
     @staticmethod
     def _single_widget_layout(widget: QWidget) -> QVBoxLayout:
@@ -350,6 +363,8 @@ class MainWindow(QMainWindow):
         return "zh_TW" if QLocale.system().name().lower().startswith("zh") else "en"
 
     def _connect_signals(self) -> None:
+        self.folder_edit.textChanged.connect(self._schedule_preparation)
+        self.stem_filter_edit.textChanged.connect(self._schedule_preparation)
         self.browse_button.clicked.connect(self._choose_folder)
         self.search_button.clicked.connect(self._start_search)
         self.cancel_button.clicked.connect(self._cancel_search)
@@ -421,7 +436,9 @@ class MainWindow(QMainWindow):
         self.preview_group.setTitle(self.t("preview"))
         self.preview.set_language(self.language)
         self._refresh_highlight_swatches()
-        if self.worker is None and not self.documents:
+        if self._background_busy:
+            self._refresh_search_status()
+        elif self.worker is None and not self.documents:
             self.status_label.setText(self.t("ready"))
         self._refresh_result_labels()
 
@@ -431,6 +448,26 @@ class MainWindow(QMainWindow):
         if folder:
             self.folder_edit.setText(folder)
             self.settings.setValue("search/folder", folder)
+
+    def _schedule_preparation(self) -> None:
+        self._preparation_timer.start()
+
+    def _update_preparation(self) -> None:
+        self._preparation_timer.stop()
+        options = self._options()
+        eligible = bool(self.folder_edit.text()) and options.root.is_dir() and options.search_scope != "pdf"
+        if eligible and self._background_preparer is None:
+            self._background_preparer = BackgroundWordPreparation(
+                converting=self._preparation_signals.converting.emit,
+                busy_changed=self._preparation_signals.busy.emit,
+            )
+        if self._background_preparer is not None:
+            self._background_preparer.update(options if eligible else None)
+
+    def _background_busy_changed(self, busy: bool) -> None:
+        self._background_busy = busy
+        self.cache_button.setEnabled(self.worker is None and not busy)
+        self._refresh_search_status()
 
     def _show_about(self) -> None:
         QMessageBox.about(
@@ -474,10 +511,18 @@ class MainWindow(QMainWindow):
         self.preview.clear()
         self.progress_bar.setRange(0, 0)
         self.progress_bar.setVisible(True)
+        self._search_progress_state = None
+        self.status_label.setText(self.t("preparing_search"))
         self._set_searching(True)
 
-        worker = SearchWorker(options)
+        self._update_preparation()
+        worker = SearchWorker(
+            options,
+            prepare_word=self._background_preparer.get_pdf
+            if options.search_scope != "pdf" and self._background_preparer is not None else None,
+        )
         worker.signals.progress.connect(self._search_progress)
+        worker.signals.converting.connect(self._word_converting)
         worker.signals.match_found.connect(self._match_found)
         worker.signals.finished.connect(self._search_finished)
         worker.signals.failed.connect(self._search_failed)
@@ -503,11 +548,34 @@ class MainWindow(QMainWindow):
         ):
             widget.setEnabled(not active)
         self.cancel_button.setEnabled(active)
+        self.cache_button.setEnabled(not active and not self._background_busy)
 
     def _search_progress(self, current: int, total: int, name: str) -> None:
         self.progress_bar.setRange(0, max(1, total))
         self.progress_bar.setValue(current - 1)
-        self.status_label.setText(self.t("searching", current=current, total=total, name=name))
+        self._search_progress_state = (current, total, name)
+        self._refresh_search_status()
+
+    def _word_converting(self, name: str) -> None:
+        self._converting_word_name = name
+        self._refresh_search_status()
+
+    def _refresh_search_status(self) -> None:
+        if self.worker is not None and self._search_progress_state is not None:
+            current, total, name = self._search_progress_state
+            key = "searching_and_converting" if self._converting_word_name else "searching"
+            self.status_label.setText(self.t(
+                key, current=current, total=total, name=name,
+                converting=self._converting_word_name,
+            ))
+        elif self._converting_word_name:
+            self.status_label.setText(self.t("converting_word", name=self._converting_word_name))
+        elif self._background_busy and self.worker is None:
+            self.status_label.setText(self.t("preparing_word"))
+        elif self.worker is None:
+            self.status_label.setText(self.t("ready"))
+        else:
+            self.status_label.setText(self.t("preparing_search"))
 
     def _match_found(
         self, path: Path, relative_path: Path, preview_path: Path, match
@@ -671,6 +739,7 @@ class MainWindow(QMainWindow):
     def _recursive_changed(self, checked: bool) -> None:
         self.settings.setValue("search/recursive", checked)
         self._refresh_settings_buttons()
+        self._schedule_preparation()
 
     def _case_changed(self, checked: bool) -> None:
         self.settings.setValue("search/case_sensitive", checked)
@@ -685,6 +754,7 @@ class MainWindow(QMainWindow):
         self.search_scope = scopes[(scopes.index(self.search_scope) + 1) % len(scopes)]
         self.settings.setValue("search/scope", self.search_scope)
         self._refresh_settings_buttons()
+        self._schedule_preparation()
 
     def _save_stem_filter(self) -> None:
         self.settings.setValue("search/stem_glob", self.stem_filter_edit.text())
@@ -703,7 +773,9 @@ class MainWindow(QMainWindow):
         if answer != QMessageBox.StandardButton.Yes:
             return
         self.preview.clear()
-        result = clear_word_cache()
+        result = self._background_preparer.clear_cache() if self._background_preparer else clear_word_cache()
+        if result is None:
+            return
         QMessageBox.information(
             self,
             self.t("clear_word_cache"),
@@ -817,6 +889,9 @@ class MainWindow(QMainWindow):
             )
 
     def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802 - Qt API
+        self._preparation_timer.stop()
+        if self._background_preparer is not None:
+            self._background_preparer.close()
         if self.worker is not None:
             self.worker.cancel()
         self.settings.setValue("window/geometry", self.saveGeometry())

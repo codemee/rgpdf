@@ -10,7 +10,8 @@ import subprocess
 import sys
 import tempfile
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from threading import Event
@@ -62,46 +63,83 @@ def _libreoffice_executable() -> Path | None:
     return next((path for path in candidates if path.is_file()), None)
 
 
-def _word_to_pdf(source: Path, destination: Path, cancel_event: Event | None) -> None:
-    if cancel_event and cancel_event.is_set():
-        raise ConversionCancelled("Word conversion was cancelled.")
+class _WordConverter:
+    """Own a lazy Word application on the calling search thread."""
 
-    import pythoncom
-    import win32com.client
+    def __init__(self) -> None:
+        self.application = None
+        self.pythoncom = None
 
-    pythoncom.CoInitialize()
-    application = None
-    document = None
-    try:
-        application = win32com.client.DispatchEx("Word.Application")
-        application.Visible = False
-        application.DisplayAlerts = 0
-        # msoAutomationSecurityForceDisable: never run macros in documents being searched.
-        application.AutomationSecurity = 3
-        application.Options.UpdateLinksAtOpen = False
-        document = application.Documents.Open(
-            FileName=str(source.resolve()),
-            ConfirmConversions=False,
-            ReadOnly=True,
-            AddToRecentFiles=False,
-            Revert=False,
-            NoEncodingDialog=True,
-        )
-        document.ExportAsFixedFormat(
-            OutputFileName=str(destination.resolve()),
-            ExportFormat=17,  # wdExportFormatPDF
-            OpenAfterExport=False,
-        )
-    finally:
+    def __call__(self, source: Path, destination: Path, cancel_event: Event | None) -> None:
+        if cancel_event and cancel_event.is_set():
+            raise ConversionCancelled("Word conversion was cancelled.")
+        if self.application is None:
+            import pythoncom
+            import win32com.client
+
+            pythoncom.CoInitialize()
+            self.pythoncom = pythoncom
+            try:
+                self.application = win32com.client.DispatchEx("Word.Application")
+                self.application.Visible = False
+                self.application.DisplayAlerts = 0
+                # Never run macros or update external links in searched documents.
+                self.application.AutomationSecurity = 3
+                self.application.Options.UpdateLinksAtOpen = False
+            except Exception:
+                self.close()
+                raise
+        document = None
         try:
+            document = self.application.Documents.Open(
+                FileName=str(source.resolve()),
+                ConfirmConversions=False,
+                ReadOnly=True,
+                AddToRecentFiles=False,
+                Revert=False,
+                NoEncodingDialog=True,
+            )
+            if cancel_event and cancel_event.is_set():
+                raise ConversionCancelled("Word conversion was cancelled.")
+            document.ExportAsFixedFormat(
+                OutputFileName=str(destination.resolve()),
+                ExportFormat=17,  # wdExportFormatPDF
+                OpenAfterExport=False,
+            )
+        finally:
             if document is not None:
                 document.Close(SaveChanges=0)
+
+    def close(self) -> None:
+        application, self.application = self.application, None
+        pythoncom, self.pythoncom = self.pythoncom, None
+        try:
+            if application is not None:
+                application.Quit(SaveChanges=0)
         finally:
-            try:
-                if application is not None:
-                    application.Quit(SaveChanges=0)
-            finally:
+            if pythoncom is not None:
                 pythoncom.CoUninitialize()
+
+
+def _word_to_pdf(source: Path, destination: Path, cancel_event: Event | None) -> None:
+    converter = _WordConverter()
+    try:
+        converter(source, destination, cancel_event)
+    finally:
+        converter.close()
+
+
+@contextmanager
+def word_conversion_session() -> Iterator[list[Converter]]:
+    """Reuse one Word application per search, without starting it on cache hits."""
+    word = _WordConverter()
+    try:
+        yield [
+            (name, word if convert is _word_to_pdf else convert)
+            for name, convert in available_converters()
+        ]
+    finally:
+        word.close()
 
 
 def _libreoffice_to_pdf(source: Path, destination: Path, cancel_event: Event | None) -> None:
@@ -270,6 +308,7 @@ def convert_word_to_pdf(
     cancel_event: Event | None = None,
     cache_root: Path | None = None,
     converters: list[Converter] | None = None,
+    conversion_started: Callable[[], None] | None = None,
 ) -> Path:
     """Convert *source* to a cached PDF using Word first, then LibreOffice."""
     candidates = available_converters() if converters is None else converters
@@ -295,6 +334,8 @@ def convert_word_to_pdf(
         temporary = destination.with_suffix(".tmp.pdf")
         temporary.unlink(missing_ok=True)
         try:
+            if conversion_started:
+                conversion_started()
             convert(source, temporary, cancel_event)
             if not temporary.is_file() or not temporary.stat().st_size:
                 raise WordConversionError(f"{name} produced an empty PDF file.")

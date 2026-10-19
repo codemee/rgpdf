@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 from pathlib import Path
+from contextlib import contextmanager
+from threading import Event, get_ident
 
 import pymupdf as fitz
 import pytest
+from rgpdf.word_conversion import ConversionCancelled, WordConversionError
 
 from rgpdf.models import CharacterRef, ExtractedDocument, SearchOptions
 from rgpdf.search import (
@@ -267,3 +270,169 @@ def test_search_word_uses_converted_pdf_for_matching_and_preview(
     assert report.documents[0].relative_path == Path("sample.docx")
     assert report.documents[0].preview_path == converted
     assert report.documents[0].matches[0].matched_text == "find"
+
+
+def test_next_word_conversion_overlaps_current_search(tmp_path, monkeypatch):
+    sources = [tmp_path / "first.docx", tmp_path / "second.docx"]
+    for source in sources:
+        source.touch()
+    converted = []
+    for index in range(2):
+        path = tmp_path / f"rendered-{index}.pdf"
+        _write_pdf(path, [[((72, 72), "needle")]])
+        converted.append(path)
+    searching_first, converting_second, release_second = Event(), Event(), Event()
+    session_threads = []
+
+    @contextmanager
+    def session():
+        session_threads.append(get_ident())
+        try:
+            yield []
+        finally:
+            session_threads.append(get_ident())
+
+    def convert(path, **kwargs):
+        assert get_ident() == session_threads[0]
+        if path == sources[1]:
+            assert searching_first.wait(3)
+            converting_second.set()
+            assert release_second.wait(3)
+        return converted[sources.index(path)]
+
+    import rgpdf.search as search
+    original = search.search_pdf
+
+    def search_pdf(path, *args, **kwargs):
+        if path == converted[0]:
+            searching_first.set()
+            try:
+                assert converting_second.wait(3), "conversion must start before search finishes"
+                return original(path, *args, **kwargs)
+            finally:
+                release_second.set()
+        return original(path, *args, **kwargs)
+
+    monkeypatch.setattr(search, "word_conversion_session", session)
+    monkeypatch.setattr(search, "convert_word_to_pdf", convert)
+    monkeypatch.setattr(search, "search_pdf", search_pdf)
+    found = []
+    report = search_folder(
+        SearchOptions(tmp_path, "needle"), paths=sources,
+        match_found=lambda source, relative, preview, match: found.append((source, preview)),
+    )
+    assert not report.warnings
+    assert report.scanned_files == 2
+    assert [doc.path for doc in report.documents] == sources
+    assert found == list(zip(sources, converted))
+    assert len(session_threads) == 2 and session_threads[0] == session_threads[1]
+    assert session_threads[0] != get_ident()
+
+
+def test_pipeline_cancel_stops_conversion_and_closes_its_session(tmp_path, monkeypatch):
+    sources = [tmp_path / f"file-{i}.docx" for i in range(3)]
+    for source in sources:
+        source.touch()
+    pdf = tmp_path / "preview.pdf"
+    _write_pdf(pdf, [[((72, 72), "needle")]])
+    cancelled, second_started, closed = Event(), Event(), Event()
+    converted = []
+
+    @contextmanager
+    def session():
+        try:
+            yield []
+        finally:
+            closed.set()
+
+    def convert(path, **kwargs):
+        converted.append(path)
+        if path == sources[1]:
+            second_started.set()
+            assert cancelled.wait(3)
+            assert kwargs["cancel_event"].is_set()
+            raise ConversionCancelled()
+        return pdf
+
+    import rgpdf.search as search
+    original = search.search_pdf
+
+    def search_pdf(*args, **kwargs):
+        assert second_started.wait(3)
+        cancelled.set()
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(search, "word_conversion_session", session)
+    monkeypatch.setattr(search, "convert_word_to_pdf", convert)
+    monkeypatch.setattr(search, "search_pdf", search_pdf)
+    report = search_folder(SearchOptions(tmp_path, "needle"), paths=sources, cancel_event=cancelled)
+    assert report.cancelled and not report.warnings
+    assert report.scanned_files == 1
+    assert converted == sources[:2]
+    assert closed.is_set()
+
+
+def test_pipeline_conversion_failure_does_not_block_following_pdf(tmp_path, monkeypatch):
+    source = tmp_path / "broken.docx"
+    source.touch()
+    pdf = tmp_path / "good.pdf"
+    _write_pdf(pdf, [[((72, 72), "needle")]])
+
+    def fail(*args, **kwargs):
+        raise WordConversionError("conversion failed")
+
+    monkeypatch.setattr("rgpdf.search.convert_word_to_pdf", fail)
+    report = search_folder(SearchOptions(tmp_path, "needle"), paths=[source, pdf])
+    assert report.scanned_files == 2
+    assert [doc.path for doc in report.documents] == [pdf]
+    assert len(report.warnings) == 1 and report.warnings[0].path == source
+
+
+@pytest.mark.parametrize("fail_first_search", [False, True])
+def test_conversion_finishes_independently_while_first_search_waits(
+    tmp_path, monkeypatch, fail_first_search
+):
+    sources = [tmp_path / f"file-{i}.docx" for i in range(8)]
+    first_search_started, all_converted, closed = Event(), Event(), Event()
+    converted = []
+    pdf = tmp_path / "preview.pdf"
+    _write_pdf(pdf, [[((72, 72), "needle")]])
+
+    @contextmanager
+    def session():
+        try:
+            yield []
+        finally:
+            closed.set()
+
+    def convert(path, **kwargs):
+        if path == sources[1]:
+            assert first_search_started.wait(3)
+        converted.append(path)
+        if len(converted) == len(sources):
+            all_converted.set()
+        return pdf
+
+    import rgpdf.search as search
+    original = search.search_pdf
+
+    def search_pdf(*args, **kwargs):
+        first_search_started.set()
+        assert all_converted.wait(3), "conversion must finish without waiting for the first search"
+        if fail_first_search:
+            raise RuntimeError("unexpected search failure")
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr("rgpdf.search.word_conversion_session", session)
+    monkeypatch.setattr("rgpdf.search.convert_word_to_pdf", convert)
+    monkeypatch.setattr("rgpdf.search.search_pdf", search_pdf)
+    if fail_first_search:
+        with pytest.raises(RuntimeError, match="unexpected search failure"):
+            search_folder(SearchOptions(tmp_path, "needle"), paths=sources)
+    else:
+        report = search_folder(SearchOptions(tmp_path, "needle"), paths=sources)
+        assert not report.warnings
+        assert report.scanned_files == len(sources)
+        assert [doc.path for doc in report.documents] == sources
+    assert closed.is_set()
+    assert converted == sources

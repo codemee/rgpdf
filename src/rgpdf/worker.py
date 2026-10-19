@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 from threading import Event
+from collections.abc import Callable
+from pathlib import Path
 
 from PySide6.QtCore import QObject, QRunnable, Signal, Slot
 
@@ -13,18 +15,28 @@ from rgpdf.search import search_folder
 
 class WorkerSignals(QObject):
     progress = Signal(int, int, str)
+    converting = Signal(str)
     document_found = Signal(object)
     match_found = Signal(object, object, object, object)
     finished = Signal(object)
     failed = Signal(str)
 
 
+class PreparationSignals(QObject):
+    converting = Signal(str)
+    busy = Signal(bool)
+
+
 class SearchWorker(QRunnable):
-    def __init__(self, options: SearchOptions) -> None:
+    def __init__(
+        self, options: SearchOptions,
+        prepare_word: Callable[[Path, Event | None], Path] | None = None,
+    ) -> None:
         super().__init__()
         self.options = options
         self.signals = WorkerSignals()
         self.cancel_event = Event()
+        self.prepare_word = prepare_word
 
     def cancel(self) -> None:
         self.cancel_event.set()
@@ -35,6 +47,10 @@ class SearchWorker(QRunnable):
             report = search_folder(
                 self.options,
                 cancel_event=self.cancel_event,
+                prepare_word=self.prepare_word,
+                isolate_pdf_search=True,
+                conversion_started=lambda path: self.signals.converting.emit(path.name),
+                conversion_finished=lambda: self.signals.converting.emit(""),
                 progress=lambda current, total, path: self.signals.progress.emit(
                     current, total, path.name
                 ),

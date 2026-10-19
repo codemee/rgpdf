@@ -2,9 +2,9 @@
 
 繁體中文 · [English](README.en.md)
 
-正式應用程式名稱為 **rgPDF**，命令與 Python 套件名稱仍為 `rgpdf`。
-
 rgPDF 是一套跨平台桌面工具，可使用純文字或規則表達式搜尋具有文字層的 PDF 與 Word 文件。每筆命中會在找到時立即顯示，並可在非同步頁面預覽中查看精確且可自訂顏色的螢光筆標示。
+
+名稱中的 **rg** 是向文字搜尋工具 **ripgrep** 致敬。
 
 ## 功能
 
@@ -16,19 +16,20 @@ rgPDF 是一套跨平台桌面工具，可使用純文字或規則表達式搜�
 - 逐字元反白座標與可自訂的螢光筆顏色。
 - 繁體中文／英文介面，以及系統／淺色／深色主題。
 - 保存搜尋與外觀偏好。
-- 方正的應用程式圖示，保留藍色折角文件與 `.*` 搜尋標誌。
 
-rgPDF 只搜尋 PDF 已有的文字層。Word 文件會先轉成快取 PDF，再沿用相同的搜尋與預覽流程；Windows 優先使用 Microsoft Word，其他情況則使用跨平台的 LibreOffice，搜尋 Word 時必須已安裝其中之一。啟動時會刪除 30 天未使用的轉換快取；快取超過 500 MB 時依最久未使用順序縮減，也可從工具列手動清除。rgPDF 不會執行文件巨集、不執行 OCR，也不修改來源檔案。
+rgPDF 只搜尋 PDF 已有的文字層。搜尋 Word 文件需要 Microsoft Word（Windows）或 LibreOffice；文件會先轉成快取 PDF，再搜尋文字並提供頁面預覽。rgPDF 不會執行文件巨集、不執行 OCR，也不修改來源檔案。
+
+搜尋類型包含 Word 時，選定資料夾就會開始背景轉檔。變更主檔名篩選、檔案類型或子資料夾設定，會補入新符合的文件並移除尚未開始的排程；已在轉換的文件可完成並保留快取。搜尋與轉檔獨立進行，只有輪到尚未轉好的檔案時才等待，狀態列會顯示目前處理的檔名。取消搜尋不會中止背景準備；關閉程式才會停止背景工作。
 
 ## 使用方式
 
-「文件資料夾」下方的「主檔名篩選」可限制要搜尋的檔案，留空時不篩選。點擊輸入欄位左側的說明圖示，可像搜尋樣式欄位一樣開啟語法說明與範例。此欄位比對不含最後一個副檔名的完整主檔名，不區分大小寫；支援 `*`（任意字串）、`?`（單一字元）、`[abc]`、`[0-9]` 與 `[!abc]`。例如 `ch0*` 會包含 `ch01.pdf`、`ch02.docx`，排除 `ch1.pdf`、`ch2.docx`；`ch01` 則只比對完全相同的主檔名。篩選會在讀取 PDF 或轉換 Word 前執行，並搭配檔案類型與子資料夾設定；此欄位會保存至下次啟動，不受文字搜尋的 Regex 與區分大小寫設定影響。
+按「瀏覽」選取資料夾，輸入文字或規則表達式後按「搜尋」。選取檔案及命中段落即可查看頁面與螢光標示。
+
+「文件資料夾」下方的「主檔名篩選」可限制要搜尋的檔案，留空時不篩選。點擊輸入欄位左側的說明圖示，可查看語法說明與範例。此欄位比對不含最後一個副檔名的完整主檔名，不區分大小寫；支援 `*`（任意字串）、`?`（單一字元）、`[abc]`、`[0-9]` 與 `[!abc]`。例如 `ch0*` 會包含 `ch01.pdf`、`ch02.docx`，排除 `ch1.pdf`、`ch2.docx`；`ch01` 則只比對完全相同的主檔名。篩選會在讀取 PDF 或轉換 Word 前執行，並搭配檔案類型與子資料夾設定；此欄位會保存至下次啟動，不受文字搜尋的 Regex 與區分大小寫設定影響。
 
 預覽窗格的「上一頁／下一頁」會逐頁瀏覽整份文件，包含未命中頁；選取命中項目窗格中的其他段落即可跳至其命中頁面。「符合頁面」會依預覽區域的寬度與高度完整顯示整頁，並隨窗格大小調整；「符合寬度」則可用較大尺寸閱讀。
 
-按「瀏覽」選取資料夾，輸入文字或規則表達式後按「搜尋」。選取檔案及命中段落即可查看頁面與螢光標示。下表依工具列由左至右排列；滑鼠停留可查看目前設定，三態按鈕每按一次切換一個狀態。
-
-圖示提供淺色與深色兩套圖片，支援 `<picture>` 與 `prefers-color-scheme` 的 Markdown viewer 會依配色自動切換；其他 viewer 會顯示附淺色底板的備用圖示，深色背景下也能辨識。
+下表依工具列由左至右排列；滑鼠停留可查看目前設定，三態按鈕每按一次切換一個狀態。
 
 | 工具列圖示 | 功能 | 操作說明 |
 | --- | --- | --- |
@@ -37,12 +38,12 @@ rgPDF 只搜尋 PDF 已有的文字層。Word 文件會先轉成快取 PDF，再
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/case.png"><img src="docs/toolbar/case.png" width="34" height="34" alt="Aa"></picture> | 區分大小寫 | 切換搜尋時是否區分大小寫。 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/regex.png"><img src="docs/toolbar/regex.png" width="34" height="34" alt="規則表達式"></picture> | 規則表達式 | 切換 Regex；搜尋欄旁的說明圖示提供語法範例。 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/highlighter.png"><img src="docs/toolbar/highlighter.png" width="34" height="34" alt="螢光筆"></picture> | 螢光筆顏色 | 選取預設色或自訂顏色。 |
-| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/cache.png"><img src="docs/toolbar/cache.png" width="34" height="34" alt="垃圾桶"></picture> | 清除 Word 快取 | 確認後刪除轉換產生的 PDF，保留原始 Word 文件；搜尋期間停用。 |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/cache.png"><img src="docs/toolbar/cache.png" width="34" height="34" alt="垃圾桶"></picture> | 清除 Word 快取 | 確認後刪除轉換產生的 PDF，保留原始 Word 文件；搜尋或背景準備期間停用。 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/language_system.png"><img src="docs/toolbar/language_system.png" width="34" height="34" alt="系統語言"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/language_zh.png"><img src="docs/toolbar/language_zh.png" width="34" height="34" alt="中文"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/language_en.png"><img src="docs/toolbar/language_en.png" width="34" height="34" alt="英文"></picture> | 語言 | 循環切換跟隨系統 → 繁體中文 → English。 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/theme_system.png"><img src="docs/toolbar/theme_system.png" width="34" height="34" alt="系統配色"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/sun.png"><img src="docs/toolbar/sun.png" width="34" height="34" alt="淺色"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/moon.png"><img src="docs/toolbar/moon.png" width="34" height="34" alt="深色"></picture> | 配色 | 循環切換跟隨系統 → 淺色 → 深色。 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/about.png"><img src="docs/toolbar/about.png" width="34" height="34" alt="資訊"></picture> | 關於 | 查看版本、授權與原始碼連結。 |
 
-所有操作按鈕皆以 1 px 細線描邊圖示顯示；滑鼠停留時會顯示原本的中英文文字。搜尋、顏色設定與預覽按鈕如下：
+將滑鼠停留在圖示上即可查看功能說明。搜尋、顏色設定與預覽按鈕如下：
 
 | 圖示 | Tooltip／功能 |
 | --- | --- |
@@ -118,24 +119,15 @@ uv run pytest
 uv run rgpdf
 ```
 
-本機開發使用 uv 執行測試與程式。執行檔與 App 統一在推送版本 tag 時由 GitHub Actions 遠端建置，不在本機建置。發布檔包含 Windows 單一執行檔、macOS Apple Silicon DMG、校驗檔及對應原始碼封存。
-
 工具列圖示修改後，使用 `uv run python scripts/generate_toolbar_icons.py` 更新 README 圖片。
 
 架構、匹配語意、並行處理與發布方式請參閱[技術細節](docs/TECHNICAL.zh-TW.md)，版本歷程請參閱[變更紀錄](CHANGELOG.zh-TW.md)。
 
 ## 發布版本
 
-不可變的發布版本使用 `v0.0.3` 之類的版本標籤；可移動的 `latest` Git 標籤永遠指向最新的原始碼發布版本。PyPI 則提供標準的套件發布版本。
+[GitHub Releases](https://github.com/codemee/rgpdf/releases/latest) 提供 Windows 執行檔、macOS App、SHA-256 檢查碼與對應原始碼；Python 套件可從 PyPI 安裝。`latest` Git 標籤指向最新發布版本的原始碼。
 
-發布流程由 GitHub Actions 自動執行。確認 `pyproject.toml` 與 `src/rgpdf/__init__.py` 的版本一致並推送對應 tag：
-
-```shell
-git tag v0.0.8
-git push origin v0.0.8
-```
-
-workflow 會平行測試並建置 Windows x86_64 與 macOS arm64，下載並驗證鎖定版本的第三方對應原始碼，建立同一個 GitHub Release、附加 SHA-256 校驗檔，最後透過 Trusted Publishing 發布至 PyPI。若任一測試、建置或來源驗證失敗，就不會建立 Release 或發布 PyPI。
+發布流程與維護說明請參閱[技術細節](docs/TECHNICAL.zh-TW.md#發布流程)。
 
 ## 授權
 

@@ -4,13 +4,112 @@ import sys
 import os
 from types import ModuleType, SimpleNamespace
 from pathlib import Path
+from threading import Event
+
+import pytest
 
 from rgpdf.word_conversion import (
     _word_to_pdf,
+    ConversionCancelled,
     cleanup_word_cache,
     clear_word_cache,
     convert_word_to_pdf,
+    word_conversion_session,
 )
+
+
+@pytest.fixture
+def fake_word_session(monkeypatch):
+    calls = []
+
+    class Document:
+        def ExportAsFixedFormat(self, **arguments):
+            calls.append("export")
+            Path(arguments["OutputFileName"]).write_bytes(b"%PDF-test")
+
+        def Close(self, **arguments):
+            assert arguments["SaveChanges"] == 0
+            calls.append("close document")
+
+    class Documents:
+        def Open(self, **arguments):
+            assert arguments["ReadOnly"] is True
+            calls.append("open document")
+            return Document()
+
+    application = SimpleNamespace(
+        Options=SimpleNamespace(UpdateLinksAtOpen=True), Documents=Documents(),
+        Quit=lambda **kwargs: calls.append("quit Word"),
+    )
+    pythoncom = ModuleType("pythoncom")
+    pythoncom.CoInitialize = lambda: calls.append("initialize COM")
+    pythoncom.CoUninitialize = lambda: calls.append("uninitialize COM")
+    client = ModuleType("win32com.client")
+
+    def dispatch(name):
+        assert name == "Word.Application"
+        calls.append("start Word")
+        return application
+
+    client.DispatchEx = dispatch
+    win32com = ModuleType("win32com")
+    win32com.client = client
+    monkeypatch.setitem(sys.modules, "pythoncom", pythoncom)
+    monkeypatch.setitem(sys.modules, "win32com", win32com)
+    monkeypatch.setitem(sys.modules, "win32com.client", client)
+    monkeypatch.setattr(
+        "rgpdf.word_conversion.available_converters",
+        lambda: [("microsoft-word", _word_to_pdf)],
+    )
+    return calls
+
+
+def test_session_starts_word_once_and_cache_hits_do_not_start_it(tmp_path, fake_word_session):
+    sources = [tmp_path / "first.docx", tmp_path / "second.docx"]
+    for source in sources:
+        source.write_bytes(b"document")
+    cache = tmp_path / "cache"
+    stages = []
+    with word_conversion_session() as converters:
+        assert not fake_word_session
+        for source in sources:
+            convert_word_to_pdf(
+                source, cache_root=cache, converters=converters,
+                conversion_started=lambda: stages.append("converting"),
+            )
+        assert fake_word_session.count("start Word") == 1
+        assert fake_word_session.count("close document") == 2
+        assert "quit Word" not in fake_word_session
+    assert fake_word_session.count("quit Word") == 1
+    assert fake_word_session[-1] == "uninitialize COM"
+    assert stages == ["converting", "converting"]
+    before = fake_word_session.copy()
+    with word_conversion_session() as converters:
+        for source in sources:
+            convert_word_to_pdf(
+                source, cache_root=cache, converters=converters,
+                conversion_started=lambda: stages.append("unexpected conversion"),
+            )
+    assert fake_word_session == before
+    assert stages == ["converting", "converting"]
+
+
+def test_cancelled_session_releases_word(tmp_path, fake_word_session):
+    first, second = tmp_path / "first.docx", tmp_path / "second.docx"
+    first.touch()
+    second.touch()
+    cancelled = Event()
+    with pytest.raises(ConversionCancelled):
+        with word_conversion_session() as converters:
+            convert_word_to_pdf(first, cache_root=tmp_path / "cache", converters=converters)
+            cancelled.set()
+            convert_word_to_pdf(
+                second, cache_root=tmp_path / "cache", converters=converters,
+                cancel_event=cancelled,
+            )
+    assert fake_word_session.count("start Word") == 1
+    assert fake_word_session.count("close document") == 1
+    assert fake_word_session[-2:] == ["quit Word", "uninitialize COM"]
 
 
 def test_conversion_falls_back_and_reuses_cache(tmp_path: Path) -> None:

@@ -12,8 +12,10 @@ rgPDF targets Python 3.12–3.13 and is managed by uv. PySide6 provides the desk
 | `buttons.py` | Shared palette-aware vector action buttons, localized tooltips, and accessible names |
 | `main_window.py` | Search controls, settings toolbar, incremental result models, and view coordination |
 | `search.py` | File discovery, conversion routing, PDF extraction, normalization, matching, and coordinate mapping |
+| `preparation.py` | Folder-scoped background conversion, dynamic pending selection, and shared search results |
 | `word_conversion.py` | Word/LibreOffice conversion selection and local PDF cache |
 | `worker.py` | Background search runnable and cross-thread Qt signals |
+| `pdf_search_process.py` | Reusable PDF search subprocess, incremental-match IPC, and cancellation cleanup |
 | `preview.py` | Asynchronous page rendering, stale-request rejection, zoom, and highlighting |
 | `models.py` | Immutable search options, results, page highlights, and extraction mappings |
 | `i18n.py` | English and Traditional Chinese string catalogs |
@@ -24,7 +26,7 @@ The search core has no dependency on UI widgets. It can be exercised directly by
 ## Search pipeline
 
 1. `discover_documents` enumerates the file types selected by `SearchOptions.search_scope` in stable relative-path order. Recursion is controlled by `SearchOptions.recursive`. `SearchOptions.stem_glob` optionally filters the complete `Path.stem` (only the final extension is removed) with case-folded `fnmatchcase` glob matching. Empty means no filter. This filter also applies to explicitly supplied `paths` before reading or conversion, so progress and scanned counts include only eligible files. It is independent of content regex/case settings and never matches parent directories.
-2. Word documents are converted to a cache under the user's local cache directory. Microsoft Word is preferred on Windows; LibreOffice is the fallback. Cache identity includes the source path, size, modification time, and converter. Macros and automatic external-link updates are disabled, and sources are opened read-only. At startup, entries unused for 30 days are removed and least-recently-used entries are evicted until the cache is no larger than 500 MB. A toolbar action can clear all Word conversion cache while no search is active.
+2. Word documents are converted to PDFs in the user's local cache. Microsoft Word is preferred on Windows; LibreOffice is the fallback. `BackgroundWordPreparation` starts when a folder is selected and the scope includes Word. Stem, scope, and recursion changes replace the pending selection after a 250 ms debounce; an active conversion may finish and remain cached. Shared futures are keyed by source path, size, and modification time, so searches reuse completed or in-flight work and can prioritize a needed file. Each batch lazily starts one dedicated Word instance and closes it when idle; all COM initialization, conversion, and cleanup occur on the same thread. Cache-only batches do not start Word. LibreOffice retains per-file subprocess conversion. Cache identity also includes the converter. Macros and external-link updates are disabled and sources are read-only. Startup removes entries unused for 30 days and evicts least-recently-used entries down to 500 MB. Cache clearing is disabled during search or preparation and invalidates in-memory completed results when performed.
 3. Each resulting PDF is opened independently. Password-protected, corrupt, empty, textless, and unconvertible files become non-fatal warnings.
 4. Each page is extracted with PyMuPDF `rawdict`. `TEXT_PRESERVE_IMAGES` is explicitly disabled so image payloads are never decoded during text search.
 5. Text blocks, lines, spans, and characters are traversed in reading order. Every visible character retains its page index and exact bounding box.
@@ -37,13 +39,17 @@ The normalized text string and `CharacterRef` tuple always have identical length
 
 ## Incremental results and concurrency
 
-`SearchWorker` runs `search_folder` in Qt's global thread pool. The core calls a match callback immediately after constructing each `TextMatch`; the worker forwards it through `match_found`. The main thread appends the row, updates the containing file's count, and leaves existing selection intact.
+`SearchWorker` coordinates `search_folder` in Qt's global thread pool. Desktop PDF extraction and matching run in one reusable spawn subprocess, preventing PyMuPDF's GIL usage from blocking background Word automation. A Pipe streams individual matches, complete results, or per-file errors back to the parent. The subprocess is reused across files in a search, terminated and reaped on cancellation, and supported in frozen applications by `multiprocessing.freeze_support()` at the desktop entry point. The desktop UI supplies the folder preparation service's `get_pdf` method. Search processes files in order and waits only when the needed PDF is not ready, without duplicate conversion. Background conversion continues independently of search speed; cancelling search cancels its wait but leaves folder preparation running. Folder or filter changes replace queued work, while window closure stops and cleans up the background worker. Conversion errors become warnings when the affected file is searched. Independent search and conversion status updates let the UI show both active filenames.
+
+Word conversion remains sequential within its dedicated worker, while PDF search runs independently. If search is faster than conversion, it finishes one document and waits for the next PDF; this can look like alternating conversion and search even though conversion never waits for search completion. Repeated searches reuse valid cached PDFs.
+
+Calling `search_folder` without a preparation service retains a search-scoped producer thread and unbounded path queue, with cleanup on completion or cancellation. Only paths and errors are queued, never PDF contents. The core reports each `TextMatch` immediately; the worker forwards it through `match_found`, allowing the main thread to append results while preserving selection.
 
 Preview rendering is separate from search work. Each selection creates a `PreviewRenderWorker` that opens its own document handle, renders one page to a `QImage`, and paints translucent highlight rectangles off the UI thread. A monotonically increasing request ID ensures results from older selections or resize requests are discarded. Only conversion to `QPixmap` and widget updates occur on the UI thread.
 
-Cancellation uses a thread-safe event checked between documents. Regex execution has its own timeout to contain catastrophic backtracking. Closing the window invalidates pending preview requests and requests search cancellation.
+Cancellation uses a thread-safe event checked while waiting for IPC or document preparation, terminating the PDF search subprocess when necessary. Regex execution has its own timeout to contain catastrophic backtracking. Closing the window invalidates pending preview requests and requests search cancellation.
 
-The default `README.md` is Traditional Chinese, so GitHub and the package readme open in Traditional Chinese. English is maintained in `README.en.md`; `README.zh-TW.md` stays identical to the default README for existing links. All three README files are included in source distributions.
+The default `README.md` is Traditional Chinese, so GitHub and the package readme open in Traditional Chinese. English is maintained in `README.en.md`. Both README files are included in source distributions.
 
 ## UI and persisted settings
 
@@ -80,7 +86,7 @@ README icons are exported by `uv run python scripts/generate_toolbar_icons.py`: 
 
 ## Testing and packaging
 
-The test suite covers literal and regex matching, case behavior, cross-page mapping, dehyphenation, punctuation context, corrupt/textless PDFs, per-match callbacks, settings persistence, theme switching, packaged SVG loading, and asynchronous preview rendering.
+The test suite covers literal and regex matching, case behavior, cross-page mapping, dehyphenation, punctuation context, corrupt/textless PDFs, per-match callbacks, settings persistence, theme switching, packaged SVG loading, and asynchronous preview rendering. Tests also cover Word-instance reuse, background prewarming, pending-selection reconciliation, shared in-flight conversions, cache invalidation, process reuse, streamed IPC, concurrent conversion during a busy search, and cancellation cleanup.
 
 ```shell
 uv sync

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import sys
+import multiprocessing
 
 from PySide6.QtCore import QSettings, Qt
 from PySide6.QtGui import QColor, QPalette
@@ -142,6 +143,7 @@ def apply_application_theme(app: QApplication, theme: str) -> None:
 
 
 def main() -> int:
+    multiprocessing.freeze_support()
     cleanup_word_cache()
     QApplication.setHighDpiScaleFactorRoundingPolicy(
         Qt.HighDpiScaleFactorRoundingPolicy.PassThrough

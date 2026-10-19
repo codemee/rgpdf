@@ -4,9 +4,17 @@
 
 All notable changes are documented here. Immutable releases use `vX.Y.Z`; the moving `latest` tag points to the newest published release.
 
-## Unreleased
+## 0.0.12 — 2026-10-19
 
-- Made Traditional Chinese the default README for GitHub and package metadata; moved English documentation to README.en.md and retained README.zh-TW.md as a matching compatibility copy.
+- Moved desktop PDF extraction and matching into a reusable subprocess so CPU-heavy search cannot hold the background Word automation interpreter; retained streamed matches and cancellation cleanup.
+
+- Began Word preparation when a folder is selected, reconciled pending work on stem/scope/recursion changes, and shared completed or in-flight conversions with search; cancelling search leaves background preparation running.
+
+- Made Word conversion and PDF search independent: conversion continuously prepares all eligible documents, while search waits only for files not yet ready. Result order, cancellation cleanup, and concurrent stage status are preserved.
+
+- Reused one lazily started Microsoft Word instance per conversion batch to avoid restarting Word for every uncached file; added conversion status with the current filename.
+
+- Made Traditional Chinese the default README for GitHub and package metadata; English documentation is in README.en.md, and the duplicate Traditional Chinese README has been removed.
 
 - Added light/dark README icon images with automatic color-scheme selection and opaque fallback tiles for Markdown viewers without picture support.
 

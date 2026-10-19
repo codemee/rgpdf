@@ -3,10 +3,13 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Iterable, Iterator, Sequence
+from contextlib import contextmanager, nullcontext
+from dataclasses import dataclass
 from fnmatch import fnmatchcase
 from pathlib import Path
-from threading import Event
+from queue import Empty, Queue
+from threading import Event, Thread
 
 import pymupdf as fitz
 import regex
@@ -21,7 +24,13 @@ from rgpdf.models import (
     SearchWarning,
     TextMatch,
 )
-from rgpdf.word_conversion import ConversionCancelled, WordConversionError, convert_word_to_pdf
+from rgpdf.word_conversion import (
+    ConversionCancelled,
+    Converter,
+    WordConversionError,
+    convert_word_to_pdf,
+    word_conversion_session,
+)
 
 
 class SearchInputError(ValueError):
@@ -271,6 +280,8 @@ def search_document(
     compiled: regex.Pattern[str],
     *,
     cancel_event: Event | None = None,
+    converters: list[Converter] | None = None,
+    conversion_started: Callable[[Path], None] | None = None,
     match_found: Callable[[Path, TextMatch], None] | None = None,
 ) -> DocumentMatch:
     if path.suffix.casefold() == ".pdf":
@@ -281,7 +292,12 @@ def search_document(
             compiled,
             (lambda match: match_found(path, match)) if match_found else None,
         )
-    preview_path = convert_word_to_pdf(path, cancel_event=cancel_event)
+    preview_path = convert_word_to_pdf(
+        path,
+        cancel_event=cancel_event,
+        converters=converters,
+        conversion_started=(lambda: conversion_started(path)) if conversion_started else None,
+    )
     return search_pdf(
         preview_path,
         root,
@@ -292,6 +308,100 @@ def search_document(
     )
 
 
+@dataclass(frozen=True)
+class _PreparedDocument:
+    path: Path
+    preview_path: Path | None = None
+    error: Exception | None = None
+
+
+class _PipelineCancellation:
+    """Combine user cancellation with pipeline shutdown without changing user state."""
+
+    def __init__(self, external: Event | None) -> None:
+        self.external = external
+        self.stopped = Event()
+
+    def is_set(self) -> bool:
+        return self.stopped.is_set() or bool(self.external and self.external.is_set())
+
+
+@contextmanager
+def _prepared_documents(
+    paths: list[Path],
+    cancel_event: Event | None,
+    conversion_started: Callable[[Path], None] | None,
+    conversion_finished: Callable[[], None] | None,
+) -> Iterator[Iterator[_PreparedDocument]]:
+    # Only paths and errors are queued, never PDF contents. Conversion must not
+    # wait for the search consumer, even when many files have already converted.
+    ready: Queue[_PreparedDocument | Exception | None] = Queue()
+    cancellation = _PipelineCancellation(cancel_event)
+
+    def send(item: _PreparedDocument | Exception | None) -> bool:
+        if cancellation.is_set():
+            return False
+        ready.put_nowait(item)
+        return True
+
+    def prepare() -> None:
+        try:
+            # COM initialization, all Word calls, and cleanup stay on this thread.
+            with word_conversion_session() as converters:
+                for path in paths:
+                    if cancellation.is_set():
+                        break
+                    started = False
+
+                    def notify_conversion() -> None:
+                        nonlocal started
+                        started = True
+                        if conversion_started:
+                            conversion_started(path)
+
+                    try:
+                        preview_path = path
+                        if path.suffix.casefold() != ".pdf":
+                            preview_path = convert_word_to_pdf(
+                                path, cancel_event=cancellation, converters=converters,
+                                conversion_started=notify_conversion,
+                            )
+                        item = _PreparedDocument(path, preview_path)
+                    except ConversionCancelled:
+                        break
+                    except Exception as exc:
+                        item = _PreparedDocument(path, error=exc)
+                    finally:
+                        if started and conversion_finished:
+                            conversion_finished()
+                    if not send(item):
+                        break
+        except Exception as exc:
+            send(exc)
+        finally:
+            send(None)
+
+    def receive() -> Iterator[_PreparedDocument]:
+        while not cancellation.is_set():
+            try:
+                item = ready.get(timeout=0.05)
+            except Empty:
+                continue
+            if item is None:
+                return
+            if isinstance(item, Exception):
+                raise item
+            yield item
+
+    thread = Thread(target=prepare, name="rgpdf-conversion")
+    thread.start()
+    try:
+        yield receive()
+    finally:
+        cancellation.stopped.set()
+        thread.join()
+
+
 def search_folder(
     options: SearchOptions,
     *,
@@ -300,6 +410,10 @@ def search_folder(
     document_found: Callable[[DocumentMatch], None] | None = None,
     match_found: Callable[[Path, Path, Path, TextMatch], None] | None = None,
     paths: Iterable[Path] | None = None,
+    conversion_started: Callable[[Path], None] | None = None,
+    conversion_finished: Callable[[], None] | None = None,
+    prepare_word: Callable[[Path, Event | None], Path] | None = None,
+    isolate_pdf_search: bool = False,
 ) -> SearchReport:
     if not options.root.is_dir():
         raise SearchInputError("The selected folder does not exist.")
@@ -312,47 +426,74 @@ def search_folder(
         )
     )
     report = SearchReport()
-    for index, path in enumerate(documents, start=1):
-        if cancel_event and cancel_event.is_set():
-            report.cancelled = True
-            break
-        if progress:
-            progress(index, len(documents), path)
-        try:
-            relative_path = path.relative_to(options.root)
-            result = search_document(
-                path,
-                options.root,
-                options,
-                compiled,
-                cancel_event=cancel_event,
-                match_found=(
-                    (
-                        lambda preview_path, match, current=path, relative=relative_path: match_found(
-                            current, relative, preview_path, match
-                        )
+    @contextmanager
+    def preparation():
+        if prepare_word is None:
+            with _prepared_documents(
+                documents, cancel_event, conversion_started, conversion_finished
+            ) as prepared:
+                yield prepared
+        else:
+            def ready_documents():
+                for path in documents:
+                    if cancel_event and cancel_event.is_set():
+                        return
+                    try:
+                        pdf = path if path.suffix.casefold() == ".pdf" else prepare_word(path, cancel_event)
+                        yield _PreparedDocument(path, pdf)
+                    except ConversionCancelled:
+                        return
+                    except Exception as exc:
+                        yield _PreparedDocument(path, error=exc)
+            yield ready_documents()
+
+    from rgpdf.pdf_search_process import PdfSearchProcess
+
+    process_context = PdfSearchProcess(options, cancel_event) if isolate_pdf_search else nullcontext()
+    with process_context as pdf_process, preparation() as prepared:
+        for index, item in enumerate(prepared, start=1):
+            path = item.path
+            if cancel_event and cancel_event.is_set():
+                report.cancelled = True
+                break
+            if progress:
+                progress(index, len(documents), path)
+            try:
+                if item.error is not None:
+                    raise item.error
+                relative_path = path.relative_to(options.root)
+                preview_path = item.preview_path
+                callback = (
+                    lambda match, current=path, relative=relative_path, preview=preview_path: match_found(
+                        current, relative, preview, match
                     )
-                    if match_found
-                    else None
-                ),
-            )
-            if result.matches:
-                report.documents.append(result)
-                if document_found:
-                    document_found(result)
-        except (
-            fitz.FileDataError,
-            fitz.EmptyFileError,
-            PermissionError,
-            SearchTimedOut,
-            NoSearchableText,
-            WordConversionError,
-            OSError,
-            ValueError,
-        ) as exc:
-            report.warnings.append(SearchWarning(path, str(exc) or type(exc).__name__))
-        except ConversionCancelled:
-            report.cancelled = True
-            break
-        report.scanned_files += 1
+                ) if match_found else None
+                if pdf_process is not None:
+                    result = pdf_process.search(preview_path, path, callback)
+                else:
+                    result = search_pdf(
+                        preview_path, options.root, options, compiled,
+                        match_found=callback, source_path=path,
+                    )
+                if result.matches:
+                    report.documents.append(result)
+                    if document_found:
+                        document_found(result)
+            except (
+                fitz.FileDataError,
+                fitz.EmptyFileError,
+                PermissionError,
+                SearchTimedOut,
+                NoSearchableText,
+                WordConversionError,
+                OSError,
+                ValueError,
+            ) as exc:
+                report.warnings.append(SearchWarning(path, str(exc) or type(exc).__name__))
+            except ConversionCancelled:
+                report.cancelled = True
+                break
+            report.scanned_files += 1
+    if cancel_event and cancel_event.is_set():
+        report.cancelled = True
     return report
