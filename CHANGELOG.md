@@ -4,13 +4,16 @@
 
 All notable changes are documented here. Immutable releases use `vX.Y.Z`; the moving `latest` tag points to the newest published release.
 
-## Unreleased
+## 0.0.13 — 2026-10-20
 
+- Draw checked-state green outlines as one antialiased closed rounded path with a 0.5 px inset, 1 px stroke, and 3.5 px centerline / 4 px outer radius, avoiding visible border seams.
+- Improved dark-mode PDF badge contrast, enlarged its lettering, and prevented the Word badge from covering text in the combined file-type icon.
+- Restyled the dark theme with a Unit-01-inspired deep-purple palette, neon-green selections and checked controls, and orange focus/link accents; regenerated dark documentation icons.
 - Fixed multiline-mode summaries swallowing whole tables and neighboring paragraphs: honor layout separators, always bound context, and show a single-line summary of at most 160 characters while retaining complete matches and highlights.
 - Added a persisted, opt-in Ignore layout line wraps icon button: join adjacent CJK wraps, preserve Latin word spaces and actual whitespace, and retain original highlight coordinates; tested paragraph, column, and cell boundaries.
 - Fixed literal patterns in regex mode bypassing Word screening, ordinary images/styles forcing conversion, and scattered query characters being treated as phrase hits.
 - Screen DOCX text before conversion; candidates convert independently while screening continues, and only PDF search produces official matches and page highlights.
-- Reuse valid PDFs immediately; conservatively fall back for regex, legacy DOC, generated content, and extraction failures.
+- Reuse valid PDFs immediately; fall back for patterns with regex operators, legacy DOC, dynamic fields or unsupported content, and extraction failures.
 - Remove folder-wide PDF preconversion; add screening/candidate status and stop queued work on search cancellation.
 
 ## 0.0.12 — 2026-10-19

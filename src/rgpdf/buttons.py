@@ -16,6 +16,7 @@ class SettingsButton(QToolButton):
     PADDING = 4
     SPACING = 4
     STROKE_WIDTH = 1.0
+    CHECKED_CORNER_RADIUS = 4.0
 
     def __init__(self, kind: str = "", *, checkable: bool = False) -> None:
         super().__init__()
@@ -39,18 +40,38 @@ class SettingsButton(QToolButton):
         super().paintEvent(event)
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        dark = self.palette().color(QPalette.ColorRole.Window).lightness() < 128
+        if self.isChecked() and dark and not self.property("highlight_swatch"):
+            # A single closed path avoids seams between QSS border edges and
+            # corners. Half-pixel inset keeps the entire 1 px stroke in bounds.
+            outline = self.palette().color(QPalette.ColorRole.Highlight)
+            if not self.isEnabled():
+                outline = self.palette().color(QPalette.ColorGroup.Disabled, QPalette.ColorRole.PlaceholderText)
+            painter.setPen(QPen(outline, self.STROKE_WIDTH))
+            painter.setBrush(Qt.BrushStyle.NoBrush)
+            inset = self.STROKE_WIDTH / 2
+            path = QPainterPath()
+            radius = self.CHECKED_CORNER_RADIUS - inset
+            path.addRoundedRect(QRectF(self.rect()).adjusted(inset, inset, -inset, -inset), radius, radius)
+            painter.drawPath(path)
         color = self.icon_foreground or self.palette().color(
             QPalette.ColorRole.PlaceholderText
         )
+        if (self.icon_foreground is None and self.isChecked()
+                and dark):
+            color = self.palette().color(QPalette.ColorRole.Highlight)
         if not self.isEnabled():
-            color = self.palette().color(QPalette.ColorRole.PlaceholderText)
+            color = self.palette().color(QPalette.ColorGroup.Disabled, QPalette.ColorRole.PlaceholderText)
         painter.setPen(QPen(color, self.STROKE_WIDTH, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
         painter.setBrush(Qt.BrushStyle.NoBrush)
         center = QPointF(self.width() / 2, self.height() / 2)
+        pdf_color = QColor("#ff9185" if dark else "#d93025")
+        if not self.isEnabled():
+            pdf_color = color
         # Center asymmetric glyphs by their visible bounds, not their path origin.
         vertical_offset = {
             "recursive": -1.0,
-            "scope_all": -0.75,
+            "scope_all": -1.5,
             "highlighter": 0.75,
             "cache": 1.5,
             "moon": 1.0,
@@ -217,11 +238,11 @@ class SettingsButton(QToolButton):
             painter.drawLine(QLineF(center.x() - 2, center.y() - 2, center.x() - 2, center.y() + 3))
             painter.drawLine(QLineF(center.x() + 2, center.y() - 2, center.x() + 2, center.y() + 3))
         elif self.icon_kind == "scope_pdf":
-            painter.setPen(QPen(QColor("#d93025"), self.STROKE_WIDTH))
+            painter.setPen(QPen(pdf_color, self.STROKE_WIDTH))
             painter.drawRoundedRect(QRectF(center.x() - 9, center.y() - 7, 18, 14), 2, 2)
             font = painter.font()
             font.setBold(True)
-            font.setPixelSize(7)
+            font.setPixelSize(8)
             painter.setFont(font)
             painter.drawText(
                 QRectF(center.x() - 9, center.y() - 7, 18, 14),
@@ -241,10 +262,10 @@ class SettingsButton(QToolButton):
         elif self.icon_kind == "scope_all":
             font = painter.font()
             font.setBold(True)
-            font.setPixelSize(6)
+            font.setPixelSize(7)
             painter.setFont(font)
-            painter.setPen(QPen(QColor("#d93025"), self.STROKE_WIDTH))
-            pdf_rect = QRectF(center.x() - 11, center.y() - 9, 14, 11)
+            painter.setPen(QPen(pdf_color, self.STROKE_WIDTH))
+            pdf_rect = QRectF(center.x() - 11, center.y() - 10, 16, 12)
             painter.drawRoundedRect(pdf_rect, 1.5, 1.5)
             painter.drawText(
                 pdf_rect,
@@ -253,7 +274,7 @@ class SettingsButton(QToolButton):
             )
             painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(QColor("#2b579a"))
-            word_rect = QRectF(center.x() + 1, center.y() - 1, 11, 12)
+            word_rect = QRectF(center.x() + 2, center.y() + 1, 11, 12)
             painter.drawRoundedRect(word_rect, 1.5, 1.5)
             painter.setPen(QColor("white"))
             font.setPixelSize(8)

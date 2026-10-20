@@ -34,6 +34,8 @@ Use the preview’s Previous page / Next page buttons to browse all document pag
 The toolbar controls below are listed in their on-screen order. Hover over a
 button to see its current setting; clicking a three-state button cycles modes.
 
+The dark theme uses an EVA Unit-01-inspired palette: deep purple surfaces, neon-green selections and enabled controls, with restrained orange focus and link accents. Document previews retain their original page colors.
+
 | Toolbar icon | Control | Usage |
 | --- | --- | --- |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/recursive.png"><img src="docs/toolbar/recursive.png" width="34" height="34" alt="Nested folders"></picture> | Include subfolders | Toggle recursive folder search. |

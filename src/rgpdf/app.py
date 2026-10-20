@@ -88,6 +88,26 @@ QSplitter::handle { background: transparent; }
 """
 
 
+DARK_STYLE = """
+QGroupBox::title { color: #b6f53c; }
+QLineEdit:focus { border: 1px solid #ffad66; }
+QToolButton:hover { background: #483263; }
+QToolButton:checked {
+    background: #39274e;
+    border: 0;
+    border-radius: 4px;
+}
+QToolButton:checked:hover { background: #483263; }
+QToolButton:pressed { background: #594078; }
+QToolTip {
+    background: #30223f;
+    color: #eee8f7;
+    border: 1px solid #755694;
+    padding: 5px;
+}
+"""
+
+
 def _light_palette(app: QApplication) -> QPalette:
     palette = app.style().standardPalette()
     palette.setColor(QPalette.ColorRole.Window, QColor("#f5f6f8"))
@@ -105,25 +125,29 @@ def _light_palette(app: QApplication) -> QPalette:
 
 def _dark_palette() -> QPalette:
     palette = QPalette()
-    palette.setColor(QPalette.ColorRole.Window, QColor("#202124"))
-    palette.setColor(QPalette.ColorRole.WindowText, QColor("#eceff4"))
-    palette.setColor(QPalette.ColorRole.Base, QColor("#292b2f"))
-    palette.setColor(QPalette.ColorRole.AlternateBase, QColor("#32353a"))
-    palette.setColor(QPalette.ColorRole.ToolTipBase, QColor("#292b2f"))
-    palette.setColor(QPalette.ColorRole.ToolTipText, QColor("#eceff4"))
-    palette.setColor(QPalette.ColorRole.Text, QColor("#eceff4"))
-    palette.setColor(QPalette.ColorRole.Button, QColor("#303236"))
-    palette.setColor(QPalette.ColorRole.ButtonText, QColor("#eceff4"))
+    palette.setColor(QPalette.ColorRole.Window, QColor("#191320"))
+    palette.setColor(QPalette.ColorRole.WindowText, QColor("#eee8f7"))
+    palette.setColor(QPalette.ColorRole.Base, QColor("#21192d"))
+    palette.setColor(QPalette.ColorRole.AlternateBase, QColor("#2d203d"))
+    palette.setColor(QPalette.ColorRole.ToolTipBase, QColor("#30223f"))
+    palette.setColor(QPalette.ColorRole.ToolTipText, QColor("#eee8f7"))
+    palette.setColor(QPalette.ColorRole.Text, QColor("#eee8f7"))
+    palette.setColor(QPalette.ColorRole.Button, QColor("#39274e"))
+    palette.setColor(QPalette.ColorRole.ButtonText, QColor("#eee8f7"))
     palette.setColor(QPalette.ColorRole.BrightText, QColor("#ffffff"))
-    palette.setColor(QPalette.ColorRole.Link, QColor("#78a9ff"))
-    palette.setColor(QPalette.ColorRole.Highlight, QColor("#4f8ef7"))
-    palette.setColor(QPalette.ColorRole.HighlightedText, QColor("#ffffff"))
-    palette.setColor(QPalette.ColorRole.Mid, QColor("#55585e"))
-    palette.setColor(QPalette.ColorRole.Midlight, QColor("#45484d"))
-    palette.setColor(QPalette.ColorRole.PlaceholderText, QColor("#aeb6c4"))
-    palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.WindowText, QColor("#777b82"))
-    palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Text, QColor("#777b82"))
-    palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.ButtonText, QColor("#777b82"))
+    palette.setColor(QPalette.ColorRole.Link, QColor("#ffad66"))
+    palette.setColor(QPalette.ColorRole.Highlight, QColor("#b6f53c"))
+    palette.setColor(QPalette.ColorRole.HighlightedText, QColor("#191320"))
+    palette.setColor(QPalette.ColorRole.Accent, QColor("#b6f53c"))
+    palette.setColor(QPalette.ColorRole.Mid, QColor("#67517d"))
+    palette.setColor(QPalette.ColorRole.Midlight, QColor("#483263"))
+    palette.setColor(QPalette.ColorRole.Dark, QColor("#120e19"))
+    palette.setColor(QPalette.ColorRole.Shadow, QColor("#0d0911"))
+    palette.setColor(QPalette.ColorRole.Light, QColor("#8264a5"))
+    palette.setColor(QPalette.ColorRole.PlaceholderText, QColor("#b4a1d2"))
+    for role in (QPalette.ColorRole.WindowText, QPalette.ColorRole.Text,
+                 QPalette.ColorRole.ButtonText, QPalette.ColorRole.PlaceholderText):
+        palette.setColor(QPalette.ColorGroup.Disabled, role, QColor("#776888"))
     return palette
 
 
@@ -135,7 +159,7 @@ def apply_application_theme(app: QApplication, theme: str) -> None:
     app.setPalette(_dark_palette() if selected == "dark" else _light_palette(app))
     # Qt caches palette() values referenced by stylesheets, so force a full repolish.
     app.setStyleSheet("")
-    app.setStyleSheet(BASE_STYLE)
+    app.setStyleSheet(BASE_STYLE + (DARK_STYLE if selected == "dark" else ""))
     for widget in app.topLevelWidgets():
         widget.style().unpolish(widget)
         widget.style().polish(widget)

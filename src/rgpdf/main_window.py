@@ -871,7 +871,7 @@ class MainWindow(QMainWindow):
             button.setStyleSheet(
                 "QToolButton {"
                 f"background-color: {color}; color: #202124;"
-                f"border: {'2px solid #3578e5' if is_selected else '1px solid #777'};"
+                f"border: {'2px solid palette(highlight)' if is_selected else '1px solid palette(mid)'};"
                 "border-radius: 14px; padding: 0; font-weight: 700;"
                 "}"
             )

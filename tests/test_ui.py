@@ -167,7 +167,7 @@ def test_theme_switch_recolors_entire_application(qapp) -> None:
     dark = qapp.palette().color(QPalette.ColorRole.Window)
     apply_application_theme(qapp, "light")
     light = qapp.palette().color(QPalette.ColorRole.Window)
-    assert dark.name() == "#202124"
+    assert dark.name() == "#191320"
     assert light.name() == "#f5f6f8"
 
 
