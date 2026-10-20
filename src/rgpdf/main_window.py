@@ -107,6 +107,11 @@ class MainWindow(QMainWindow):
         self.theme_button = self._settings_button()
         self.regex_button = self._settings_button(checkable=True)
         self.regex_button.setChecked(use_regex)
+        self.line_wrap_button = self._settings_button(checkable=True)
+        self.line_wrap_button.set_icon_kind("line_wrap")
+        self.line_wrap_button.setChecked(
+            self.settings.value("search/ignore_line_wraps", False, type=bool)
+        )
         self.case_button = self._settings_button(checkable=True)
         self.case_button.setChecked(
             self.settings.value("search/case_sensitive", False, type=bool)
@@ -186,6 +191,7 @@ class MainWindow(QMainWindow):
             self.scope_button,
             self.case_button,
             self.regex_button,
+            self.line_wrap_button,
         ):
             self.settings_toolbar.addWidget(button)
         self.settings_toolbar.addSeparator()
@@ -369,6 +375,7 @@ class MainWindow(QMainWindow):
         self.recursive_button.toggled.connect(self._recursive_changed)
         self.case_button.toggled.connect(self._case_changed)
         self.regex_button.toggled.connect(self._regex_changed)
+        self.line_wrap_button.toggled.connect(self._line_wrap_changed)
         self.scope_button.clicked.connect(self._cycle_search_scope)
         self.highlight_button.toggled.connect(self._toggle_highlight_panel)
         self.cache_button.clicked.connect(self._clear_word_cache)
@@ -455,6 +462,7 @@ class MainWindow(QMainWindow):
             recursive=self.recursive_button.isChecked(),
             search_scope=self.search_scope,
             stem_glob=self.stem_filter_edit.text(),
+            ignore_line_wraps=self.line_wrap_button.isChecked(),
         )
 
     def _start_search(self) -> None:
@@ -510,6 +518,7 @@ class MainWindow(QMainWindow):
             self.stem_filter_edit,
             self.pattern_edit,
             self.regex_button,
+            self.line_wrap_button,
             self.case_button,
             self.recursive_button,
             self.scope_button,
@@ -720,6 +729,10 @@ class MainWindow(QMainWindow):
         self.settings.setValue("search/case_sensitive", checked)
         self._refresh_settings_buttons()
 
+    def _line_wrap_changed(self, checked: bool) -> None:
+        self.settings.setValue("search/ignore_line_wraps", checked)
+        self._refresh_settings_buttons()
+
     def _regex_changed(self, checked: bool) -> None:
         self.settings.setValue("search/use_regex", checked)
         self._refresh_settings_buttons()
@@ -807,6 +820,9 @@ class MainWindow(QMainWindow):
             f"{self.t('case')}：{self.t('enabled' if self.case_button.isChecked() else 'disabled')}"
         )
         self.case_button.setAccessibleName(self.case_button.toolTip())
+        self.line_wrap_button.setToolTip(
+            f"{self.t('ignore_line_wraps')}：{self.t('enabled' if self.line_wrap_button.isChecked() else 'disabled')}"
+        )
         self.regex_button.set_icon_kind("regex")
         self.regex_button.setToolTip(
             f"{self.t('regex')}：{self.t('enabled' if self.regex_button.isChecked() else 'disabled')}"

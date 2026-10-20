@@ -15,7 +15,7 @@ def main() -> None:
     app = QApplication([])
     root = Path(__file__).resolve().parents[1] / "docs" / "toolbar"
     kinds = (
-        "recursive", "scope_pdf", "scope_word", "scope_all", "case", "regex",
+        "recursive", "scope_pdf", "scope_word", "scope_all", "case", "regex", "line_wrap",
         "highlighter", "cache", "language_system", "language_zh", "language_en",
         "theme_system", "sun", "moon", "about",
         "browse", "search", "cancel", "help", "custom_color",

@@ -142,7 +142,10 @@ def _page_lines(
     return lines
 
 
-def extract_document(document: fitz.Document) -> ExtractedDocument:
+def extract_document(document: fitz.Document, *, ignore_line_wraps: bool = False) -> ExtractedDocument:
+    if ignore_line_wraps:
+        from rgpdf.layout_text import extract_layout_document
+        return extract_layout_document(document)
     text_parts: list[str] = []
     refs: list[CharacterRef] = []
 
@@ -176,29 +179,28 @@ CONTEXT_PUNCTUATION = "，。！？；：、,.!?;:"
 
 
 def _context(text: str, start: int, end: int, radius: int = 55) -> str:
-    """Build a compact clause around a match, bounded by CJK or ASCII punctuation."""
-    previous_marks = [text.rfind(mark, 0, start) for mark in CONTEXT_PUNCTUATION]
-    previous = max(previous_marks, default=-1)
-    if previous >= 0:
-        left = previous + 1
-        prefix = ""
-    else:
-        left = max(0, start - radius)
-        prefix = "…" if left else ""
-
-    following_marks = [
-        position
-        for mark in CONTEXT_PUNCTUATION
-        if (position := text.find(mark, end)) >= 0
-    ]
-    if following_marks:
-        right = min(following_marks) + 1
-        suffix = ""
-    else:
-        right = min(len(text), end + radius)
-        suffix = "…" if right < len(text) else ""
-
-    return f"{prefix}{text[left:right].strip()}{suffix}"
+    """Build a single-line, bounded summary within punctuation/layout boundaries."""
+    max_chars = 160
+    radius = min(max(0, radius), (max_chars - 5) // 2)
+    previous = max((text.rfind(mark, 0, start) for mark in CONTEXT_PUNCTUATION), default=-1)
+    left_boundary = max(previous + 1, text.rfind("\n", 0, start) + 1)
+    following = [position + 1 for mark in CONTEXT_PUNCTUATION
+                 if (position := text.find(mark, end)) >= 0]
+    newline = text.find("\n", end)
+    right_boundary = min(following + ([newline] if newline >= 0 else []) + [len(text)])
+    # Radius limits apply even when punctuation exists far away.
+    left = max(left_boundary, start - radius)
+    right = min(right_boundary, end + radius)
+    prefix = "…" if left > left_boundary else ""
+    suffix = "…" if right < right_boundary else ""
+    before = regex.sub(r"\s+", " ", text[left:start])
+    selected = regex.sub(r"\s+", " ", text[start:end])
+    after = regex.sub(r"\s+", " ", text[end:right])
+    budget = max_chars - len(prefix + before + after + suffix)
+    if len(selected) > budget:
+        half = (budget - 1) // 2
+        selected = selected[:half] + "…" + selected[-(budget - half - 1):]
+    return regex.sub(r"\s+", " ", prefix + before + selected + after + suffix).strip()
 
 
 def _highlights(refs: Sequence[CharacterRef]) -> tuple[PageHighlight, ...]:
@@ -261,7 +263,7 @@ def search_pdf(
     with fitz.open(path) as document:
         if document.needs_pass:
             raise PermissionError("The PDF is password protected.")
-        extracted = extract_document(document)
+        extracted = extract_document(document, ignore_line_wraps=options.ignore_line_wraps)
     if not extracted.text.strip():
         raise NoSearchableText("The PDF has no searchable text layer.")
     matches = find_matches(

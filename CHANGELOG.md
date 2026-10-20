@@ -6,6 +6,8 @@ All notable changes are documented here. Immutable releases use `vX.Y.Z`; the mo
 
 ## Unreleased
 
+- Fixed multiline-mode summaries swallowing whole tables and neighboring paragraphs: honor layout separators, always bound context, and show a single-line summary of at most 160 characters while retaining complete matches and highlights.
+- Added a persisted, opt-in Ignore layout line wraps icon button: join adjacent CJK wraps, preserve Latin word spaces and actual whitespace, and retain original highlight coordinates; tested paragraph, column, and cell boundaries.
 - Fixed literal patterns in regex mode bypassing Word screening, ordinary images/styles forcing conversion, and scattered query characters being treated as phrase hits.
 - Screen DOCX text before conversion; candidates convert independently while screening continues, and only PDF search produces official matches and page highlights.
 - Reuse valid PDFs immediately; conservatively fall back for regex, legacy DOC, generated content, and extraction failures.

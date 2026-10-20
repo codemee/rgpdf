@@ -34,6 +34,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "browse": "瀏覽…",
         "pattern": "搜尋樣式",
         "pattern_hint": "輸入文字或正規表示式",
+        "ignore_line_wraps": "忽略排版換行",
         "pattern_help": "搜尋樣式說明",
         "pattern_help_content": (
             "<b>搜尋樣式</b><br>"
@@ -141,6 +142,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "browse": "Browse…",
         "pattern": "Search pattern",
         "pattern_hint": "Enter text or a regular expression",
+        "ignore_line_wraps": "Ignore layout line wraps",
         "pattern_help": "Search pattern help",
         "pattern_help_content": (
             "<b>Search pattern</b><br>"

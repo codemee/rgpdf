@@ -21,6 +21,8 @@ rgPDF 只搜尋 PDF 已有的文字層。搜尋 Word 文件需要 Microsoft Word
 
 Word 搜尋採三階段管線：先直接讀取 DOCX 文字初篩，找到第一個可能命中就排入 PDF 轉檔，並繼續檢查其他文件；PDF 準備完成後再搜尋全部正式命中。頁碼、筆數、摘要與螢光標示均以 PDF 為準。已有有效 PDF 快取時直接搜尋快取，不再初篩。為降低排版差異造成漏搜的風險，初篩採保守判定；包含運算子的 Regex、舊式 `.doc`、欄位／特殊內容或擷取失敗的文件直接走 PDF 流程。開啟資料夾不會自動轉檔；取消搜尋會停止初篩與尚待轉檔的排程，正在執行的轉換完成或返回後清理。
 
+工具列 Regex 按鈕旁的「忽略排版換行」預設關閉。啟用後，會依文字區塊、相鄰行位置及偵測到的表格儲存格接合排版換行：例如 `循環` 換行 `緩衝區` 可搜尋 `循環緩衝區`，英文 `buffer` 換行 `size` 保留詞間空格，`inter-` 換行 `national` 合併斷字。行內實際空格保留，段落／欄位／不同儲存格不主動接合，跨頁維持空格。Regex 套用在此正規化後的文字上；預覽仍標示原本每行的字元位置。此設定會保存。
+
 ## 使用方式
 
 按「瀏覽」選取資料夾，輸入文字或規則表達式後按「搜尋」。選取檔案及命中段落即可查看頁面與螢光標示。
@@ -37,6 +39,7 @@ Word 搜尋採三階段管線：先直接讀取 DOCX 文字初篩，找到第一
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/scope_pdf.png"><img src="docs/toolbar/scope_pdf.png" width="34" height="34" alt="PDF"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/scope_word.png"><img src="docs/toolbar/scope_word.png" width="34" height="34" alt="Word"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/scope_all.png"><img src="docs/toolbar/scope_all.png" width="34" height="34" alt="PDF 與 Word"></picture> | 搜尋檔案類型 | 循環切換 PDF → Word（DOC／DOCX）→ 兩者。搜尋 Word 需已有 Windows Microsoft Word 或 LibreOffice。 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/case.png"><img src="docs/toolbar/case.png" width="34" height="34" alt="Aa"></picture> | 區分大小寫 | 切換搜尋時是否區分大小寫。 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/regex.png"><img src="docs/toolbar/regex.png" width="34" height="34" alt="規則表達式"></picture> | 規則表達式 | 切換 Regex；搜尋欄旁的說明圖示提供語法範例。 |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/line_wrap.png"><img src="docs/toolbar/line_wrap.png" width="34" height="34" alt="Line wrap"></picture> | 忽略排版換行 | 接合相鄰行的中文文字、保留英文詞間空格與原座標標示；預設關閉。 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/highlighter.png"><img src="docs/toolbar/highlighter.png" width="34" height="34" alt="螢光筆"></picture> | 螢光筆顏色 | 選取預設色或自訂顏色。 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/cache.png"><img src="docs/toolbar/cache.png" width="34" height="34" alt="垃圾桶"></picture> | 清除 Word 快取 | 確認後刪除轉換產生的 PDF，保留原始 Word 文件；搜尋期間停用。 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/language_system.png"><img src="docs/toolbar/language_system.png" width="34" height="34" alt="系統語言"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/language_zh.png"><img src="docs/toolbar/language_zh.png" width="34" height="34" alt="中文"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/language_en.png"><img src="docs/toolbar/language_en.png" width="34" height="34" alt="英文"></picture> | 語言 | 循環切換跟隨系統 → 繁體中文 → English。 |

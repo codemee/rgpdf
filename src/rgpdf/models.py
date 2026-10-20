@@ -20,6 +20,7 @@ class SearchOptions:
     regex_timeout_seconds: float = 1.0
     search_scope: str = "pdf"
     stem_glob: str = ""
+    ignore_line_wraps: bool = False
 
 
 @dataclass(frozen=True, slots=True)

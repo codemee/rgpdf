@@ -69,6 +69,18 @@ class SettingsButton(QToolButton):
                 painter.drawLine(QLineF(-5, -2, 1, -2))
                 if self.icon_kind == "zoom_in":
                     painter.drawLine(QLineF(-2, -5, -2, 1))
+        elif self.icon_kind == "line_wrap":
+            painter.translate(center)
+            painter.drawLine(-8, -6, 8, -6)
+            painter.drawLine(-8, -1, 3, -1)
+            wrap = QPainterPath()
+            wrap.moveTo(5, -1)
+            wrap.lineTo(6, -1)
+            wrap.cubicTo(10, -1, 10, 6, 6, 6)
+            wrap.lineTo(-2, 6)
+            painter.drawPath(wrap)
+            painter.drawPolyline([QPointF(1, 3), QPointF(-2, 6), QPointF(1, 9)])
+            painter.drawLine(-8, 6, -5, 6)
         elif self.icon_kind == "cancel":
             painter.translate(center)
             painter.drawLine(-6, -6, 6, 6)

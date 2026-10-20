@@ -12,6 +12,7 @@ rgPDF targets Python 3.12–3.13 and is managed by uv. PySide6 provides the desk
 | `buttons.py` | Shared palette-aware vector action buttons, localized tooltips, and accessible names |
 | `main_window.py` | Search controls, settings toolbar, incremental result models, and view coordination |
 | `search.py` | File discovery, conversion routing, PDF extraction, normalization, matching, and coordinate mapping |
+| `layout_text.py` | Layout-aware line joining with original character coordinates and cell boundaries |
 | `word_screening.py` | Conservative DOCX text screening with PDF fallback for uncertainty |
 | `word_conversion.py` | Word/LibreOffice conversion selection and local PDF cache |
 | `worker.py` | Background search runnable and cross-thread Qt signals |
@@ -30,10 +31,10 @@ The search core has no dependency on UI widgets. It can be exercised directly by
 3. Each resulting PDF is opened independently. Password-protected, corrupt, empty, textless, and unconvertible files become non-fatal warnings.
 4. Each page is extracted with PyMuPDF `rawdict`. `TEXT_PRESERVE_IMAGES` is explicitly disabled so image payloads are never decoded during text search.
 5. Text blocks, lines, spans, and characters are traversed in reading order. Every visible character retains its page index and exact bounding box.
-6. Whitespace within a line is collapsed, ordinary line and page boundaries become spaces, and a line-ending hyphen is removed before joining the next line.
+6. Whitespace within a line is collapsed, ordinary line and page boundaries become spaces, and a line-ending hyphen is removed before joining the next line. Optional `SearchOptions.ignore_line_wraps` is off by default. When enabled, `layout_text.py` uses RAWDICT block IDs and direction, vertical spacing, horizontal overlap, and detected cells to identify adjacent wraps on the same page. CJK boundaries omit synthetic spaces; Latin words retain one space and ASCII letter-to-letter wrap hyphens are removed. Real within-line and edge spaces remain. Separate blocks, columns, and cells use hard separators; page boundaries retain a space. Table analysis runs only on pages with vector paths; failed detection disables joining on that page. This conservative heuristic cannot reliably identify every borderless table or merged paragraph.
 7. The complete normalized document is searched. Plain text is escaped before compilation; regular expressions use Unicode `VERSION1`, optional full case folding, and a per-document timeout.
 8. Zero-width matches are ignored. Each non-empty match is mapped back to the bounding boxes of only the characters it covers.
-9. Match context is bounded by the nearest CJK or ASCII punctuation (`，。！？；：、,.!?;:`), with a limited-radius fallback when punctuation is absent.
+9. Match summaries stop at the nearest CJK/ASCII punctuation (`，。！？；：、,.!?;:`) or paragraph/cell newline boundary. Context radius limits always apply, even when distant punctuation exists. Whitespace is collapsed to one line and summaries are capped at 160 characters, abbreviating long matched spans when necessary. Full `matched_text`, match coordinates, and PDF highlights remain intact.
 
 The normalized text string and `CharacterRef` tuple always have identical lengths. Synthetic separators have a page reference but no rectangle, so expressions can cross pages without producing artificial highlights.
 
@@ -73,6 +74,7 @@ Settings use `QSettings("rgpdf", "rgpdf")`:
 | `search/stem_glob` | Filename-stem glob filter; empty means no filter |
 | `search/pattern` | Last search pattern |
 | `search/use_regex` | Regular-expression mode |
+| `search/ignore_line_wraps` | Layout-aware joining of physical line wraps; off by default |
 | `search/case_sensitive` | Case-sensitive matching |
 | `search/recursive` | Include subfolders |
 | `search/scope` | `pdf`, `word`, or `all` |

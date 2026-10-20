@@ -59,6 +59,27 @@ def test_context_uses_limited_fallback_without_chinese_punctuation() -> None:
     assert result == "…aaaaaaaaaamatchbbbbbbbbbb…"
 
 
+def test_context_stops_at_layout_and_table_cell_boundaries():
+    text = '等級\n\n常數名稱\n\nESP_LOG_ERROR\n\n這是開放的設定。\n\n下一個儲存格'
+    start = text.index('開放')
+    assert _context(text, start, start + 2) == '這是開放的設定。'
+
+
+def test_distant_punctuation_does_not_disable_context_radius():
+    text = '。' + '甲' * 200 + '開放' + '乙' * 200 + '。'
+    start = text.index('開放')
+    context = _context(text, start, start + 2, radius=10)
+    assert context == '…' + '甲' * 10 + '開放' + '乙' * 10 + '…'
+
+
+def test_multiline_or_long_regex_match_has_compact_context():
+    text = '前文\n\n開放\n\n資料\n\n後文'
+    start, end = text.index('開放'), text.index('資料') + 2
+    assert _context(text, start, end) == '開放 資料'
+    context = _context('甲' * 1000, 0, 1000)
+    assert len(context) <= 160 and '…' in context
+
+
 def test_compile_regex_and_case_sensitivity(tmp_path: Path) -> None:
     insensitive = compile_pattern(SearchOptions(tmp_path, r"foo\d+", use_regex=True))
     sensitive = compile_pattern(

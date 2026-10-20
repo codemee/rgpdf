@@ -38,6 +38,7 @@ def test_main_window_has_three_result_columns(qtbot, monkeypatch, tmp_path) -> N
         window.case_button,
         window.scope_button,
         window.regex_button,
+        window.line_wrap_button,
         window.highlight_button,
         window.cache_button,
         window.about_button,
@@ -48,7 +49,7 @@ def test_main_window_has_three_result_columns(qtbot, monkeypatch, tmp_path) -> N
     assert all(button.contentsMargins() == QMargins(4, 4, 4, 4) for button in settings_buttons)
     assert isinstance(window.settings_toolbar, QToolBar)
     assert window.settings_toolbar.layout().spacing() == 4
-    assert len(window.settings_toolbar.findChildren(SettingsButton)) == 9
+    assert len(window.settings_toolbar.findChildren(SettingsButton)) == 10
     toolbar_buttons = [
         widget
         for action in window.settings_toolbar.actions()
@@ -61,6 +62,7 @@ def test_main_window_has_three_result_columns(qtbot, monkeypatch, tmp_path) -> N
         window.scope_button,
         window.case_button,
         window.regex_button,
+        window.line_wrap_button,
         window.highlight_button,
         window.cache_button,
         window.language_button,
@@ -167,6 +169,29 @@ def test_theme_switch_recolors_entire_application(qapp) -> None:
     light = qapp.palette().color(QPalette.ColorRole.Window)
     assert dark.name() == "#202124"
     assert light.name() == "#f5f6f8"
+
+
+def test_line_wrap_option_persists_and_is_disabled_during_search(qtbot, tmp_path):
+    settings = QSettings(str(tmp_path / "wrap.ini"), QSettings.Format.IniFormat)
+    settings.setValue("appearance/language", "en")
+    window = MainWindow(lambda theme: None, settings=settings)
+    qtbot.addWidget(window)
+    assert not window.line_wrap_button.isChecked()
+    assert window.line_wrap_button.toolTip().startswith("Ignore layout line wraps")
+    assert window.line_wrap_button.icon_kind == "line_wrap"
+    window.line_wrap_button.click()
+    assert window._options().ignore_line_wraps
+    window._set_searching(True)
+    assert not window.line_wrap_button.isEnabled()
+    window._set_searching(False)
+    window.close()
+    reopened = MainWindow(lambda theme: None, settings=settings)
+    qtbot.addWidget(reopened)
+    assert reopened.line_wrap_button.isChecked()
+    reopened.language = "zh_TW"
+    reopened.retranslate_ui()
+    assert reopened.line_wrap_button.toolTip().startswith("忽略排版換行")
+    reopened.close()
 
 
 def test_folder_and_filter_changes_do_not_convert_word(qtbot, monkeypatch, tmp_path):
