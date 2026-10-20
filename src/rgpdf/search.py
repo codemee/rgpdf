@@ -24,11 +24,13 @@ from rgpdf.models import (
     SearchWarning,
     TextMatch,
 )
+from rgpdf.word_screening import word_may_match
 from rgpdf.word_conversion import (
     ConversionCancelled,
     Converter,
     WordConversionError,
     convert_word_to_pdf,
+    cached_word_pdf,
     word_conversion_session,
 )
 
@@ -292,7 +294,10 @@ def search_document(
             compiled,
             (lambda match: match_found(path, match)) if match_found else None,
         )
-    preview_path = convert_word_to_pdf(
+    cached = cached_word_pdf(path)
+    if cached is None and not word_may_match(path, options, cancel_event):
+        return DocumentMatch(path, path.relative_to(root), ())
+    preview_path = cached or convert_word_to_pdf(
         path,
         cancel_event=cancel_event,
         converters=converters,
@@ -313,6 +318,7 @@ class _PreparedDocument:
     path: Path
     preview_path: Path | None = None
     error: Exception | None = None
+    skipped: bool = False
 
 
 class _PipelineCancellation:
@@ -332,24 +338,61 @@ def _prepared_documents(
     cancel_event: Event | None,
     conversion_started: Callable[[Path], None] | None,
     conversion_finished: Callable[[], None] | None,
+    options: SearchOptions,
+    prepare_word: Callable[[Path, Event | None], Path] | None = None,
+    screening: Callable[[int, int, Path], None] | None = None,
+    candidate_found: Callable[[Path, int], None] | None = None,
 ) -> Iterator[Iterator[_PreparedDocument]]:
-    # Only paths and errors are queued, never PDF contents. Conversion must not
-    # wait for the search consumer, even when many files have already converted.
+    # Separate screening, conversion, and PDF consumption. Neither producer waits
+    # for PDF search, and ready PDFs bypass queued Word conversions.
     ready: Queue[_PreparedDocument | Exception | None] = Queue()
+    candidates: Queue[Path | None] = Queue()
     cancellation = _PipelineCancellation(cancel_event)
 
-    def send(item: _PreparedDocument | Exception | None) -> bool:
-        if cancellation.is_set():
-            return False
-        ready.put_nowait(item)
-        return True
+    def screen() -> None:
+        count = 0
+        try:
+            for index, path in enumerate(paths, start=1):
+                if cancellation.is_set():
+                    break
+                if screening:
+                    screening(index, len(paths), path)
+                try:
+                    if path.suffix.casefold() == ".pdf":
+                        ready.put(_PreparedDocument(path, path))
+                        continue
+                    try:
+                        cached = cached_word_pdf(path)
+                    except OSError:
+                        cached = None
+                    if cached is not None:
+                        ready.put(_PreparedDocument(path, cached))
+                    elif word_may_match(path, options, cancellation):
+                        count += 1
+                        if candidate_found:
+                            candidate_found(path, count)
+                        candidates.put(path)
+                    else:
+                        ready.put(_PreparedDocument(path, skipped=True))
+                except ConversionCancelled:
+                    break
+                except Exception as exc:
+                    ready.put(_PreparedDocument(path, error=exc))
+        except Exception as exc:
+            ready.put(exc)
+        finally:
+            candidates.put(None)
 
     def prepare() -> None:
         try:
-            # COM initialization, all Word calls, and cleanup stay on this thread.
+            # All COM initialization, exports, and cleanup stay on this thread.
             with word_conversion_session() as converters:
-                for path in paths:
-                    if cancellation.is_set():
+                while not cancellation.is_set():
+                    try:
+                        path = candidates.get(timeout=0.05)
+                    except Empty:
+                        continue
+                    if path is None or cancellation.is_set():
                         break
                     started = False
 
@@ -360,26 +403,28 @@ def _prepared_documents(
                             conversion_started(path)
 
                     try:
-                        preview_path = path
-                        if path.suffix.casefold() != ".pdf":
+                        if prepare_word is not None:
+                            preview_path = prepare_word(path, cancellation)
+                        else:
                             preview_path = convert_word_to_pdf(
                                 path, cancel_event=cancellation, converters=converters,
                                 conversion_started=notify_conversion,
                             )
-                        item = _PreparedDocument(path, preview_path)
+                        ready.put(_PreparedDocument(path, preview_path))
                     except ConversionCancelled:
                         break
                     except Exception as exc:
-                        item = _PreparedDocument(path, error=exc)
+                        ready.put(_PreparedDocument(path, error=exc))
                     finally:
                         if started and conversion_finished:
                             conversion_finished()
-                    if not send(item):
-                        break
         except Exception as exc:
-            send(exc)
+            ready.put(exc)
         finally:
-            send(None)
+            # Screening can still be yielding ready PDF or skipped entries if
+            # initialization failed; the consumer must wait for both producers.
+            screening_thread.join()
+            ready.put(None)
 
     def receive() -> Iterator[_PreparedDocument]:
         while not cancellation.is_set():
@@ -393,12 +438,15 @@ def _prepared_documents(
                 raise item
             yield item
 
+    screening_thread = Thread(target=screen, name="rgpdf-word-screening")
     thread = Thread(target=prepare, name="rgpdf-conversion")
+    screening_thread.start()
     thread.start()
     try:
         yield receive()
     finally:
         cancellation.stopped.set()
+        screening_thread.join()
         thread.join()
 
 
@@ -414,6 +462,8 @@ def search_folder(
     conversion_finished: Callable[[], None] | None = None,
     prepare_word: Callable[[Path, Event | None], Path] | None = None,
     isolate_pdf_search: bool = False,
+    screening: Callable[[int, int, Path], None] | None = None,
+    candidate_found: Callable[[Path, int], None] | None = None,
 ) -> SearchReport:
     if not options.root.is_dir():
         raise SearchInputError("The selected folder does not exist.")
@@ -426,31 +476,14 @@ def search_folder(
         )
     )
     report = SearchReport()
-    @contextmanager
-    def preparation():
-        if prepare_word is None:
-            with _prepared_documents(
-                documents, cancel_event, conversion_started, conversion_finished
-            ) as prepared:
-                yield prepared
-        else:
-            def ready_documents():
-                for path in documents:
-                    if cancel_event and cancel_event.is_set():
-                        return
-                    try:
-                        pdf = path if path.suffix.casefold() == ".pdf" else prepare_word(path, cancel_event)
-                        yield _PreparedDocument(path, pdf)
-                    except ConversionCancelled:
-                        return
-                    except Exception as exc:
-                        yield _PreparedDocument(path, error=exc)
-            yield ready_documents()
 
     from rgpdf.pdf_search_process import PdfSearchProcess
 
     process_context = PdfSearchProcess(options, cancel_event) if isolate_pdf_search else nullcontext()
-    with process_context as pdf_process, preparation() as prepared:
+    with process_context as pdf_process, _prepared_documents(
+        documents, cancel_event, conversion_started, conversion_finished,
+        options, prepare_word, screening, candidate_found,
+    ) as prepared:
         for index, item in enumerate(prepared, start=1):
             path = item.path
             if cancel_event and cancel_event.is_set():
@@ -458,6 +491,9 @@ def search_folder(
                 break
             if progress:
                 progress(index, len(documents), path)
+            if item.skipped:
+                report.scanned_files += 1
+                continue
             try:
                 if item.error is not None:
                     raise item.error

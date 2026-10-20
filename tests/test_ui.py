@@ -169,40 +169,22 @@ def test_theme_switch_recolors_entire_application(qapp) -> None:
     assert light.name() == "#f5f6f8"
 
 
-def test_folder_and_filter_changes_schedule_background_preparation(qtbot, monkeypatch, tmp_path):
-    updates = []
-    closed = []
-
-    class Preparation:
-        def __init__(self, **callbacks):
-            pass
-
-        def update(self, options):
-            updates.append(options)
-
-        def close(self):
-            closed.append(True)
-
-    monkeypatch.setattr("rgpdf.main_window.BackgroundWordPreparation", Preparation)
-    monkeypatch.setattr("rgpdf.main_window.QFileDialog.getExistingDirectory", lambda *args: str(tmp_path))
+def test_folder_and_filter_changes_do_not_convert_word(qtbot, monkeypatch, tmp_path):
+    conversions = []
+    monkeypatch.setattr("rgpdf.search.convert_word_to_pdf", lambda *args, **kwargs: conversions.append(args))
     settings = QSettings(str(tmp_path / "settings.ini"), QSettings.Format.IniFormat)
     window = MainWindow(lambda theme: None, settings=settings)
     qtbot.addWidget(window)
-    window._cycle_search_scope()  # PDF -> Word
-    window.browse_button.click()
-    qtbot.waitUntil(lambda: bool(updates))
-    assert updates[-1].root == tmp_path
-    assert updates[-1].search_scope == "word"
-    window.stem_filter_edit.setText("ch0*")
-    qtbot.waitUntil(lambda: updates[-1].stem_glob == "ch0*")
+    (tmp_path / "sample.docx").touch()
+    window.folder_edit.setText(str(tmp_path))
+    window._cycle_search_scope()
+    window.stem_filter_edit.setText("sample*")
     window.recursive_button.setChecked(False)
-    qtbot.waitUntil(lambda: updates[-1].recursive is False)
-    window._cycle_search_scope()  # Word -> all
-    qtbot.waitUntil(lambda: updates[-1].search_scope == "all")
-    window._cycle_search_scope()  # all -> PDF
-    qtbot.waitUntil(lambda: updates[-1] is None)
+    qtbot.wait(350)
+    assert conversions == []
+    assert window.worker is None
+    assert window.cache_button.isEnabled()
     window.close()
-    assert closed == [True]
 
 
 def test_stem_filter_searches_matching_files_and_persists(qtbot, tmp_path):

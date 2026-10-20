@@ -10,12 +10,29 @@ import pytest
 
 from rgpdf.word_conversion import (
     _word_to_pdf,
+    _cache_path,
+    cached_word_pdf,
     ConversionCancelled,
     cleanup_word_cache,
     clear_word_cache,
     convert_word_to_pdf,
     word_conversion_session,
 )
+
+
+def test_cached_pdf_lookup_needs_no_converter_and_invalidates_source_changes(tmp_path, monkeypatch):
+    source = tmp_path / "source.docx"
+    source.write_bytes(b"original")
+    root = tmp_path / "cache"
+    root.mkdir()
+    monkeypatch.setattr("rgpdf.word_conversion._cache_root", lambda: root)
+    cached = _cache_path(source, "microsoft-word", root)
+    cached.write_bytes(b"pdf")
+    os.utime(cached, (1, 1))
+    assert cached_word_pdf(source) == cached
+    assert cached.stat().st_atime > 1
+    source.write_bytes(b"changed source")
+    assert cached_word_pdf(source) is None
 
 
 @pytest.fixture

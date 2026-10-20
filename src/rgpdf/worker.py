@@ -15,16 +15,13 @@ from rgpdf.search import search_folder
 
 class WorkerSignals(QObject):
     progress = Signal(int, int, str)
+    screening = Signal(int, int, str)
+    candidate_found = Signal(str, int)
     converting = Signal(str)
     document_found = Signal(object)
     match_found = Signal(object, object, object, object)
     finished = Signal(object)
     failed = Signal(str)
-
-
-class PreparationSignals(QObject):
-    converting = Signal(str)
-    busy = Signal(bool)
 
 
 class SearchWorker(QRunnable):
@@ -51,6 +48,10 @@ class SearchWorker(QRunnable):
                 isolate_pdf_search=True,
                 conversion_started=lambda path: self.signals.converting.emit(path.name),
                 conversion_finished=lambda: self.signals.converting.emit(""),
+                screening=lambda current, total, path: self.signals.screening.emit(
+                    current, total, path.name
+                ),
+                candidate_found=lambda path, count: self.signals.candidate_found.emit(path.name, count),
                 progress=lambda current, total, path: self.signals.progress.emit(
                     current, total, path.name
                 ),

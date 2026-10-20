@@ -224,6 +224,17 @@ def _cache_path(source: Path, converter_name: str, cache_root: Path) -> Path:
     return cache_root / f"{digest}.pdf"
 
 
+def cached_word_pdf(source: Path) -> Path | None:
+    """Return a valid rendering without starting a converter or requiring one installed."""
+    for name in ("microsoft-word", "libreoffice"):
+        destination = _cache_path(source, name, _cache_root())
+        if destination.is_file() and destination.stat().st_size:
+            stat = destination.stat()
+            os.utime(destination, (time.time(), stat.st_mtime))
+            return destination
+    return None
+
+
 def _cache_files(root: Path) -> list[tuple[Path, os.stat_result]]:
     if not root.is_dir():
         return []

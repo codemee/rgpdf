@@ -4,6 +4,13 @@
 
 All notable changes are documented here. Immutable releases use `vX.Y.Z`; the moving `latest` tag points to the newest published release.
 
+## Unreleased
+
+- Fixed literal patterns in regex mode bypassing Word screening, ordinary images/styles forcing conversion, and scattered query characters being treated as phrase hits.
+- Screen DOCX text before conversion; candidates convert independently while screening continues, and only PDF search produces official matches and page highlights.
+- Reuse valid PDFs immediately; conservatively fall back for regex, legacy DOC, generated content, and extraction failures.
+- Remove folder-wide PDF preconversion; add screening/candidate status and stop queued work on search cancellation.
+
 ## 0.0.12 — 2026-10-19
 
 - Moved desktop PDF extraction and matching into a reusable subprocess so CPU-heavy search cannot hold the background Word automation interpreter; retained streamed matches and cancellation cleanup.

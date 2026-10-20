@@ -9,7 +9,6 @@ import pytest
 
 from rgpdf.models import DocumentMatch, SearchOptions, TextMatch
 from rgpdf.pdf_search_process import PdfSearchProcess, PdfSearchProcessError
-from rgpdf.preparation import BackgroundWordPreparation
 from rgpdf.search import search_folder
 from rgpdf.word_conversion import ConversionCancelled
 
@@ -110,26 +109,22 @@ def test_background_conversion_finishes_while_search_child_holds_gil(tmp_path, m
             all_converted.set()
         return preview
 
-    monkeypatch.setattr("rgpdf.preparation.word_conversion_session", session)
-    monkeypatch.setattr("rgpdf.preparation.convert_word_to_pdf", convert)
+    monkeypatch.setattr("rgpdf.search.word_conversion_session", session)
+    monkeypatch.setattr("rgpdf.search.convert_word_to_pdf", convert)
     monkeypatch.setattr("rgpdf.pdf_search_process._serve", _busy_server)
-    preparation = BackgroundWordPreparation()
     options = SearchOptions(tmp_path, "needle", search_scope="word")
-    try:
-        preparation.update(options)
-        assert first_conversion.wait(3)
-        with PdfSearchProcess(options) as process:
-            def searching(match):
-                start_search.set()
-                assert all_converted.wait(3)
-                assert process._process.is_alive()
 
-            result = process.search(preparation.get_pdf(sources[0]), sources[0], searching)
-        assert result.matches
+    def searching(*args):
+        start_search.set()
+        assert all_converted.wait(3)
+
+    try:
+        report = search_folder(options, isolate_pdf_search=True, match_found=searching)
+        assert not report.warnings
+        assert len(report.documents) == len(sources)
         assert converted == sources
     finally:
         start_search.set()
-        preparation.close(wait=True)
 
 
 def test_process_cancellation_stops_busy_child(tmp_path, monkeypatch):

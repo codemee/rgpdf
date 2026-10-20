@@ -19,7 +19,7 @@ rgPDF 是一套跨平台桌面工具，可使用純文字或規則表達式搜�
 
 rgPDF 只搜尋 PDF 已有的文字層。搜尋 Word 文件需要 Microsoft Word（Windows）或 LibreOffice；文件會先轉成快取 PDF，再搜尋文字並提供頁面預覽。rgPDF 不會執行文件巨集、不執行 OCR，也不修改來源檔案。
 
-搜尋類型包含 Word 時，選定資料夾就會開始背景轉檔。變更主檔名篩選、檔案類型或子資料夾設定，會補入新符合的文件並移除尚未開始的排程；已在轉換的文件可完成並保留快取。搜尋與轉檔獨立進行，只有輪到尚未轉好的檔案時才等待，狀態列會顯示目前處理的檔名。取消搜尋不會中止背景準備；關閉程式才會停止背景工作。
+Word 搜尋採三階段管線：先直接讀取 DOCX 文字初篩，找到第一個可能命中就排入 PDF 轉檔，並繼續檢查其他文件；PDF 準備完成後再搜尋全部正式命中。頁碼、筆數、摘要與螢光標示均以 PDF 為準。已有有效 PDF 快取時直接搜尋快取，不再初篩。為降低排版差異造成漏搜的風險，初篩採保守判定；包含運算子的 Regex、舊式 `.doc`、欄位／特殊內容或擷取失敗的文件直接走 PDF 流程。開啟資料夾不會自動轉檔；取消搜尋會停止初篩與尚待轉檔的排程，正在執行的轉換完成或返回後清理。
 
 ## 使用方式
 
@@ -38,7 +38,7 @@ rgPDF 只搜尋 PDF 已有的文字層。搜尋 Word 文件需要 Microsoft Word
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/case.png"><img src="docs/toolbar/case.png" width="34" height="34" alt="Aa"></picture> | 區分大小寫 | 切換搜尋時是否區分大小寫。 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/regex.png"><img src="docs/toolbar/regex.png" width="34" height="34" alt="規則表達式"></picture> | 規則表達式 | 切換 Regex；搜尋欄旁的說明圖示提供語法範例。 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/highlighter.png"><img src="docs/toolbar/highlighter.png" width="34" height="34" alt="螢光筆"></picture> | 螢光筆顏色 | 選取預設色或自訂顏色。 |
-| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/cache.png"><img src="docs/toolbar/cache.png" width="34" height="34" alt="垃圾桶"></picture> | 清除 Word 快取 | 確認後刪除轉換產生的 PDF，保留原始 Word 文件；搜尋或背景準備期間停用。 |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/cache.png"><img src="docs/toolbar/cache.png" width="34" height="34" alt="垃圾桶"></picture> | 清除 Word 快取 | 確認後刪除轉換產生的 PDF，保留原始 Word 文件；搜尋期間停用。 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/language_system.png"><img src="docs/toolbar/language_system.png" width="34" height="34" alt="系統語言"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/language_zh.png"><img src="docs/toolbar/language_zh.png" width="34" height="34" alt="中文"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/language_en.png"><img src="docs/toolbar/language_en.png" width="34" height="34" alt="英文"></picture> | 語言 | 循環切換跟隨系統 → 繁體中文 → English。 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/theme_system.png"><img src="docs/toolbar/theme_system.png" width="34" height="34" alt="系統配色"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/sun.png"><img src="docs/toolbar/sun.png" width="34" height="34" alt="淺色"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/moon.png"><img src="docs/toolbar/moon.png" width="34" height="34" alt="深色"></picture> | 配色 | 循環切換跟隨系統 → 淺色 → 深色。 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/about.png"><img src="docs/toolbar/about.png" width="34" height="34" alt="資訊"></picture> | 關於 | 查看版本、授權與原始碼連結。 |
