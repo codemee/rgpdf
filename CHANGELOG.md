@@ -4,6 +4,10 @@
 
 All notable changes are documented here. Immutable releases use `vX.Y.Z`; the moving `latest` tag points to the newest published release.
 
+## 0.1.1 — 2026-10-21
+
+- Changed checked toggle buttons to retain the hover background and removed their checked outlines.
+
 ## 0.1.0 — 2026-10-21
 
 - Unified checked outlines and hover/pressed backgrounds at an 8 px outer corner radius from one shared constant, using a continuous 1.5 px checked outline (0.75 px inset, 7.25 px centerline radius) while retaining 1 px icon strokes.

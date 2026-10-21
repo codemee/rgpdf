@@ -92,12 +92,6 @@ QSplitter::handle { background: transparent; }
 DARK_STYLE = """
 QGroupBox::title { color: #b6f53c; }
 QLineEdit:focus { border: 1px solid #ffad66; }
-QToolButton:hover { background: #483263; }
-QToolButton:checked {
-    background: #39274e;
-    border: 0;
-}
-QToolButton:checked:hover { background: #483263; }
 QToolButton:pressed { background: #594078; }
 QToolTip {
     background: #30223f;

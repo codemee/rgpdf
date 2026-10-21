@@ -16,7 +16,6 @@ class SettingsButton(QToolButton):
     PADDING = 4
     SPACING = 4
     STROKE_WIDTH = 1.0
-    CHECKED_STROKE_WIDTH = 1.5
     CORNER_RADIUS = 8.0
 
     def __init__(self, kind: str = "", *, checkable: bool = False) -> None:
@@ -42,19 +41,6 @@ class SettingsButton(QToolButton):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         dark = self.palette().color(QPalette.ColorRole.Window).lightness() < 128
-        if self.isChecked() and dark and not self.property("highlight_swatch"):
-            # A single closed path avoids seams between QSS border edges and
-            # corners. Inset by half the stroke to keep its outer edge in bounds.
-            outline = self.palette().color(QPalette.ColorRole.Highlight)
-            if not self.isEnabled():
-                outline = self.palette().color(QPalette.ColorGroup.Disabled, QPalette.ColorRole.PlaceholderText)
-            painter.setPen(QPen(outline, self.CHECKED_STROKE_WIDTH))
-            painter.setBrush(Qt.BrushStyle.NoBrush)
-            inset = self.CHECKED_STROKE_WIDTH / 2
-            path = QPainterPath()
-            radius = self.CORNER_RADIUS - inset
-            path.addRoundedRect(QRectF(self.rect()).adjusted(inset, inset, -inset, -inset), radius, radius)
-            painter.drawPath(path)
         color = self.icon_foreground or self.palette().color(
             QPalette.ColorRole.PlaceholderText
         )
