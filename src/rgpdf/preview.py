@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
 from rgpdf.buttons import SettingsButton
 from rgpdf.i18n import translate
 from rgpdf.models import TextMatch
+from rgpdf.pdf_passwords import PdfPasswords
 
 
 class PreviewRenderSignals(QObject):
@@ -40,6 +41,7 @@ class PreviewRenderWorker(QRunnable):
         available_width: int,
         available_height: int,
         highlight_color: str,
+        password: str | None = None,
     ) -> None:
         super().__init__()
         self.request_id = request_id
@@ -52,12 +54,15 @@ class PreviewRenderWorker(QRunnable):
         self.available_width = available_width
         self.available_height = available_height
         self.highlight_color = highlight_color
+        self.password = password
         self.signals = PreviewRenderSignals()
 
     @Slot()
     def run(self) -> None:
         try:
             with fitz.open(self.path) as document:
+                if document.needs_pass and (self.password is None or not document.authenticate(self.password)):
+                    raise PermissionError("The PDF requires a valid password.")
                 page = document.load_page(self.page_index)
                 zoom = self.zoom
                 if self.fit_page:
@@ -96,12 +101,15 @@ class PreviewRenderWorker(QRunnable):
         except (fitz.FileDataError, fitz.EmptyFileError, OSError, ValueError):
             self.signals.failed.emit(self.request_id)
             return
+        finally:
+            self.password = None
         self.signals.finished.emit(self.request_id, image, page_count, zoom)
 
 
 class PdfPreview(QWidget):
-    def __init__(self, parent: QWidget | None = None) -> None:
+    def __init__(self, parent: QWidget | None = None, *, passwords: PdfPasswords | None = None) -> None:
         super().__init__(parent)
+        self._passwords = passwords
         self._path: Path | None = None
         self._match: TextMatch | None = None
         self._page_index = 0
@@ -243,6 +251,7 @@ class PdfPreview(QWidget):
             available_width,
             available_height,
             self._highlight_color,
+            password=self._passwords.get(self._path) if self._passwords is not None else None,
         )
         worker.signals.finished.connect(self._render_finished)
         worker.signals.failed.connect(self._render_failed)

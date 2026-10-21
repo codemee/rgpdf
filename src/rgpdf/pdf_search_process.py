@@ -12,6 +12,7 @@ from pathlib import Path
 from threading import Event
 
 from rgpdf.models import DocumentMatch, SearchOptions, TextMatch
+from rgpdf.pdf_passwords import PasswordRequested, PasswordAccepted
 from rgpdf.word_conversion import ConversionCancelled
 
 
@@ -29,11 +30,18 @@ def _serve(connection: Connection, options: SearchOptions) -> None:
             if request is None:
                 return
             path, source_path = request
+
+            def request_password(path: Path, incorrect: bool) -> str | None:
+                connection.send(("password_required", incorrect))
+                return connection.recv()
+
             try:
                 result = search_pdf(
                     path, options.root, options, compiled,
                     match_found=lambda match: connection.send(("match", match)),
                     source_path=source_path,
+                    password_requested=request_password,
+                    password_accepted=lambda path, password: connection.send(("authenticated", None)),
                 )
                 connection.send(("result", result))
             except Exception as exc:
@@ -45,9 +53,13 @@ def _serve(connection: Connection, options: SearchOptions) -> None:
 
 
 class PdfSearchProcess:
-    def __init__(self, options: SearchOptions, cancel_event: Event | None = None) -> None:
+    def __init__(self, options: SearchOptions, cancel_event: Event | None = None, *,
+                 password_requested: PasswordRequested | None = None,
+                 password_accepted: PasswordAccepted | None = None) -> None:
         self.options = options
         self.cancel_event = cancel_event
+        self.password_requested = password_requested
+        self.password_accepted = password_accepted
         self._process = None
         self._connection: Connection | None = None
 
@@ -81,6 +93,7 @@ class PdfSearchProcess:
         if self._process is None:
             self._start()
         try:
+            password = None
             self._connection.send((path, source_path))
             while True:
                 if self.cancel_event and self.cancel_event.is_set():
@@ -98,6 +111,15 @@ class PdfSearchProcess:
                     return payload
                 elif kind == "error":
                     raise PdfSearchProcessError(payload)
+                elif kind == "password_required":
+                    password = self.password_requested(source_path, payload) if self.password_requested else None
+                    if self.cancel_event and self.cancel_event.is_set():
+                        raise ConversionCancelled("Search was cancelled.")
+                    self._connection.send(password)
+                elif kind == "authenticated":
+                    if self.password_accepted is not None and password is not None:
+                        self.password_accepted(source_path, password)
+                    password = None
         except (EOFError, BrokenPipeError, OSError) as exc:
             self.close(terminate=True)
             raise PdfSearchProcessError("The PDF search process disconnected.") from exc

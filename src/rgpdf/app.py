@@ -11,6 +11,7 @@ from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import QApplication
 
 from rgpdf.main_window import MainWindow
+from rgpdf.buttons import SettingsButton
 from rgpdf.resources import application_icon
 from rgpdf.word_conversion import cleanup_word_cache
 
@@ -38,7 +39,7 @@ QLineEdit, QTreeWidget, QScrollArea {
 }
 QToolButton {
     border: 0;
-    border-radius: 8px;
+    border-radius: __TOOL_BUTTON_RADIUS__;
     background: transparent;
 }
 QToolButton:hover { background: palette(midlight); }
@@ -85,7 +86,7 @@ QHeaderView::section {
 QProgressBar { border: 0; border-radius: 3px; text-align: center; min-width: 180px; }
 QProgressBar::chunk { background: palette(highlight); border-radius: 3px; }
 QSplitter::handle { background: transparent; }
-"""
+""".replace("__TOOL_BUTTON_RADIUS__", f"{SettingsButton.CORNER_RADIUS:g}px")
 
 
 DARK_STYLE = """
@@ -95,7 +96,6 @@ QToolButton:hover { background: #483263; }
 QToolButton:checked {
     background: #39274e;
     border: 0;
-    border-radius: 4px;
 }
 QToolButton:checked:hover { background: #483263; }
 QToolButton:pressed { background: #594078; }

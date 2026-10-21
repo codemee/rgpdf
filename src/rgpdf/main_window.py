@@ -15,13 +15,13 @@ from PySide6.QtWidgets import (
     QFrame,
     QGroupBox,
     QHBoxLayout,
+    QInputDialog,
     QLabel,
     QLineEdit,
     QHeaderView,
     QMainWindow,
     QMenu,
     QMessageBox,
-    QProgressBar,
     QSplitter,
     QToolBar,
     QTreeWidget,
@@ -36,9 +36,11 @@ from rgpdf.buttons import SettingsButton
 from rgpdf.i18n import translate
 from rgpdf.models import DocumentMatch, SearchOptions, SearchReport
 from rgpdf.preview import PdfPreview
+from rgpdf.progress import SearchProgressBar
+from rgpdf.pdf_passwords import PdfPasswords
 from rgpdf.resources import application_icon
 from rgpdf.search import SearchInputError, compile_pattern
-from rgpdf.worker import SearchWorker
+from rgpdf.worker import SearchWorker, PdfPasswordRequest
 from rgpdf.word_conversion import clear_word_cache
 
 
@@ -70,6 +72,9 @@ class MainWindow(QMainWindow):
         self.apply_theme_callback = apply_theme_callback
         self.thread_pool = QThreadPool.globalInstance()
         self.worker: SearchWorker | None = None
+        self._pdf_passwords = PdfPasswords()
+        self._password_dialog: QInputDialog | None = None
+        self._closing = False
         self._search_progress_state: tuple[int, int, str] | None = None
         self._converting_word_name = ""
         self._screening_state = None
@@ -128,7 +133,7 @@ class MainWindow(QMainWindow):
         self.search_button = SettingsButton("search")
         self.cancel_button = SettingsButton("cancel")
         self.cancel_button.setEnabled(False)
-        self.progress_bar = QProgressBar()
+        self.progress_bar = SearchProgressBar()
         self.progress_bar.setVisible(False)
         self.status_label = QLabel()
         self.status_label.setWordWrap(True)
@@ -245,7 +250,7 @@ class MainWindow(QMainWindow):
         self.file_list.header().setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
         self.match_list.header().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
         self.match_list.header().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
-        self.preview = PdfPreview()
+        self.preview = PdfPreview(passwords=self._pdf_passwords)
         self.preview.set_highlight_color(self.highlight_color.name())
         self.file_group.setLayout(self._single_widget_layout(self.file_list))
         self.match_group.setLayout(self._single_widget_layout(self.match_list))
@@ -496,7 +501,10 @@ class MainWindow(QMainWindow):
         self.status_label.setText(self.t("preparing_search"))
         self._set_searching(True)
 
-        worker = SearchWorker(options)
+        worker = SearchWorker(options, passwords=self._pdf_passwords)
+        worker.signals.password_required.connect(
+            lambda request, owner=worker: self._request_pdf_password(owner, request)
+        )
         worker.signals.screening.connect(self._screening_progress)
         worker.signals.candidate_found.connect(self._candidate_found)
         worker.signals.progress.connect(self._search_progress)
@@ -510,7 +518,36 @@ class MainWindow(QMainWindow):
     def _cancel_search(self) -> None:
         if self.worker is not None:
             self.worker.cancel()
+            if self._password_dialog is not None:
+                self._password_dialog.reject()
             self.cancel_button.setEnabled(False)
+
+    def _request_pdf_password(self, owner: SearchWorker, request: PdfPasswordRequest) -> None:
+        if self._closing or self.worker is not owner or owner.cancel_event.is_set():
+            request.complete(None)
+            return
+        dialog = QInputDialog(self)
+        dialog.setWindowTitle(self.t("pdf_password_title"))
+        key = "pdf_password_incorrect" if request.incorrect else "pdf_password_prompt"
+        dialog.setLabelText(self.t(key, name=request.path.name))
+        dialog.setToolTip(str(request.path))
+        dialog.setTextEchoMode(QLineEdit.EchoMode.Password)
+        dialog.setOkButtonText(self.t("pdf_unlock"))
+        dialog.setCancelButtonText(self.t("pdf_skip"))
+        dialog.setWindowModality(Qt.WindowModality.WindowModal)
+        self._password_dialog = dialog
+
+        def finished(result: int) -> None:
+            accepted = (result == QInputDialog.DialogCode.Accepted and not self._closing
+                        and self.worker is owner and not owner.cancel_event.is_set())
+            request.complete(dialog.textValue() if accepted else None)
+            dialog.setTextValue("")
+            if self._password_dialog is dialog:
+                self._password_dialog = None
+            dialog.deleteLater()
+
+        dialog.finished.connect(finished)
+        dialog.open()
 
     def _set_searching(self, active: bool) -> None:
         for widget in (
@@ -877,8 +914,12 @@ class MainWindow(QMainWindow):
             )
 
     def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802 - Qt API
+        self._closing = True
         if self.worker is not None:
             self.worker.cancel()
+        if self._password_dialog is not None:
+            self._password_dialog.reject()
+        self._pdf_passwords.close()
         self.settings.setValue("window/geometry", self.saveGeometry())
         self.settings.setValue("window/main_splitter", self.main_splitter.saveState())
         self.settings.setValue("window/result_splitter", self.result_splitter.saveState())

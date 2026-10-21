@@ -6,6 +6,11 @@ from __future__ import annotations
 
 TRANSLATIONS: dict[str, dict[str, str]] = {
     "zh_TW": {
+        'pdf_password_title': 'PDF 密碼',
+        'pdf_password_prompt': '「{name}」需要密碼。\n密碼僅於本次程式工作階段保留，不會寫入檔案或設定。',
+        'pdf_password_incorrect': '「{name}」的密碼不正確，請重新輸入，或略過此檔。',
+        'pdf_unlock': '解鎖',
+        'pdf_skip': '略過此檔',
         "app_title": "rgPDF {version} — 文件搜尋",
         "folder": "文件資料夾",
         "stem_filter": "主檔名篩選",
@@ -114,6 +119,11 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "match_count": "{count} 筆",
     },
     "en": {
+        'pdf_password_title': 'PDF password',
+        'pdf_password_prompt': 'A password is required for "{name}".\nPasswords are kept only in this application session, never in files or settings.',
+        'pdf_password_incorrect': 'The password for "{name}" is incorrect. Try again or skip this file.',
+        'pdf_unlock': 'Unlock',
+        'pdf_skip': 'Skip file',
         "app_title": "rgPDF {version} — Document Search",
         "folder": "Document folder",
         "stem_filter": "Filename stem filter",

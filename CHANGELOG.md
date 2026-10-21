@@ -4,6 +4,12 @@
 
 All notable changes are documented here. Immutable releases use `vX.Y.Z`; the moving `latest` tag points to the newest published release.
 
+## 0.1.0 — 2026-10-21
+
+- Unified checked outlines and hover/pressed backgrounds at an 8 px outer corner radius from one shared constant, using a continuous 1.5 px checked outline (0.75 px inset, 7.25 px centerline radius) while retaining 1 px icon strokes.
+- Fixed progress percentage contrast in dark mode by drawing light text over the track and dark text over the green fill, clipped to the actual progress.
+- Added password-protected PDF search and preview with masked input, retry, per-file skip, and cancellable password waits; successful credentials remain session-only for preview navigation and zoom, without decrypted copies.
+
 ## 0.0.13 — 2026-10-20
 
 - Draw checked-state green outlines as one antialiased closed rounded path with a 0.5 px inset, 1 px stroke, and 3.5 px centerline / 4 px outer radius, avoiding visible border seams.

@@ -25,6 +25,7 @@ from rgpdf.models import (
     TextMatch,
 )
 from rgpdf.word_screening import word_may_match
+from rgpdf.pdf_passwords import PasswordRequested, PasswordAccepted, unlock_pdf
 from rgpdf.word_conversion import (
     ConversionCancelled,
     Converter,
@@ -258,11 +259,12 @@ def search_pdf(
     match_found: Callable[[TextMatch], None] | None = None,
     *,
     source_path: Path | None = None,
+    password_requested: PasswordRequested | None = None,
+    password_accepted: PasswordAccepted | None = None,
 ) -> DocumentMatch:
     original_path = source_path or path
     with fitz.open(path) as document:
-        if document.needs_pass:
-            raise PermissionError("The PDF is password protected.")
+        unlock_pdf(document, original_path, password_requested, password_accepted)
         extracted = extract_document(document, ignore_line_wraps=options.ignore_line_wraps)
     if not extracted.text.strip():
         raise NoSearchableText("The PDF has no searchable text layer.")
@@ -287,6 +289,8 @@ def search_document(
     converters: list[Converter] | None = None,
     conversion_started: Callable[[Path], None] | None = None,
     match_found: Callable[[Path, TextMatch], None] | None = None,
+    password_requested: PasswordRequested | None = None,
+    password_accepted: PasswordAccepted | None = None,
 ) -> DocumentMatch:
     if path.suffix.casefold() == ".pdf":
         return search_pdf(
@@ -295,6 +299,7 @@ def search_document(
             options,
             compiled,
             (lambda match: match_found(path, match)) if match_found else None,
+            password_requested=password_requested, password_accepted=password_accepted,
         )
     cached = cached_word_pdf(path)
     if cached is None and not word_may_match(path, options, cancel_event):
@@ -312,6 +317,7 @@ def search_document(
         compiled,
         (lambda match: match_found(preview_path, match)) if match_found else None,
         source_path=path,
+        password_requested=password_requested, password_accepted=password_accepted,
     )
 
 
@@ -466,6 +472,8 @@ def search_folder(
     isolate_pdf_search: bool = False,
     screening: Callable[[int, int, Path], None] | None = None,
     candidate_found: Callable[[Path, int], None] | None = None,
+    password_requested: PasswordRequested | None = None,
+    password_accepted: PasswordAccepted | None = None,
 ) -> SearchReport:
     if not options.root.is_dir():
         raise SearchInputError("The selected folder does not exist.")
@@ -481,7 +489,9 @@ def search_folder(
 
     from rgpdf.pdf_search_process import PdfSearchProcess
 
-    process_context = PdfSearchProcess(options, cancel_event) if isolate_pdf_search else nullcontext()
+    process_context = PdfSearchProcess(options, cancel_event,
+                                       password_requested=password_requested,
+                                       password_accepted=password_accepted) if isolate_pdf_search else nullcontext()
     with process_context as pdf_process, _prepared_documents(
         documents, cancel_event, conversion_started, conversion_finished,
         options, prepare_word, screening, candidate_found,
@@ -512,6 +522,7 @@ def search_folder(
                     result = search_pdf(
                         preview_path, options.root, options, compiled,
                         match_found=callback, source_path=path,
+                        password_requested=password_requested, password_accepted=password_accepted,
                     )
                 if result.matches:
                     report.documents.append(result)

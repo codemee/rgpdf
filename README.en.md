@@ -10,6 +10,7 @@ The **rg** in its name pays homage to the text-search tool **ripgrep**.
 
 - Search PDFs, Word documents (`.doc` and `.docx`), or both in a folder, optionally including subfolders.
 - Plain-text and regular-expression modes with optional case sensitivity.
+- Password-protected PDFs with retry, per-file skip, and authenticated page preview.
 - Matches across lines and page boundaries, including line-end dehyphenation.
 - Incremental per-match results without blocking the interface.
 - Three coordinated views for files, matching passages, and PDF page preview.
@@ -24,6 +25,8 @@ Word search uses three independent stages: directly screen DOCX text, enqueue a 
 The **Ignore layout line wraps** button beside Regex is off by default. When enabled, text blocks, adjacent-line geometry, and detected table cells guide joining: `循環` followed by `緩衝區` on the next line matches `循環緩衝區`; `buffer` / `size` retains a word space, and `inter-` / `national` removes the wrap hyphen. Actual spaces within lines are preserved. Paragraphs, columns, and different cells are not deliberately joined; page boundaries retain a space. Regex runs on this normalized text, while preview highlights retain each original character location. The setting is saved.
 
 ## Usage
+
+When a PDF requires an opening password, rgPDF prompts with masked input. Incorrect passwords can be retried; **Skip file** continues with other documents and records a warning. Successful credentials are reused for that file during the current application session, including search, preview, navigation, and zoom. They are cleared on exit and invalidated when the source changes. Passwords are never written to settings, search results, or caches, and no decrypted PDF copy is created.
 
 Choose a folder with **Browse**, enter text or a regular expression, and click
 **Search**. Select a file and matching passage to preview its page and highlight.
