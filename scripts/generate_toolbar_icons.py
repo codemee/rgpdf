@@ -29,7 +29,7 @@ def main() -> None:
             button = SettingsButton(kind)
             button.icon_foreground = app.palette().color(QPalette.ColorRole.Text)
             if kind == "highlighter":
-                button.icon_foreground = QColor("#e6a323")
+                button.icon_foreground = QColor("#ffe128")
             button.ensurePolished()
             pixmap = QPixmap(68, 68)
             pixmap.setDevicePixelRatio(2)

@@ -1,6 +1,6 @@
 # Third-party notices
 
-rgPDF incorporates the following third-party software. The exact versions used
+rgPDF incorporates the following third-party software and artwork. The exact versions used
 for a release are recorded in `uv.lock` and in that release's corresponding
 source archive.
 
@@ -54,3 +54,13 @@ existing Microsoft Word installation; Microsoft Word itself is not included.
 Binary distributors must provide the complete corresponding source for the
 exact release, including build scripts and the applicable third-party source
 and license materials. See `docs/RELEASING.zh-TW.md`.
+
+## Adobe Acrobat artwork
+
+The PDF file-type control uses Adobe Inc.'s Acrobat logo from:
+<https://commons.wikimedia.org/wiki/File:Adobe_Acrobat_DC_logo_2020.svg>
+
+The source identifies the artwork as PD-textlogo (simple geometric artwork
+below the copyright threshold). Adobe and Acrobat trademarks belong to Adobe
+Inc. The logo identifies PDF documents; rgPDF is not affiliated with Adobe.
+The SVG is packaged at `src/rgpdf/assets/acrobat.svg`.

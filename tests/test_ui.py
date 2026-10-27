@@ -9,7 +9,7 @@ from rgpdf.app import apply_application_theme
 from rgpdf.main_window import MainWindow, SettingsButton
 from rgpdf.models import PageHighlight, TextMatch
 from rgpdf.preview import PdfPreview
-from rgpdf.resources import application_icon
+from rgpdf.resources import application_icon, pdf_logo
 
 import pymupdf as fitz
 import pytest
@@ -269,6 +269,8 @@ def test_stem_filter_searches_matching_files_and_persists(qtbot, tmp_path):
 
 def test_application_icon_is_available() -> None:
     icon = application_icon()
+    assert pdf_logo().isValid()
+    assert not pdf_logo().defaultSize().isEmpty()
     assert not icon.isNull()
     assert not icon.pixmap(64, 64).isNull()
 

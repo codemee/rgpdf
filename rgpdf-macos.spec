@@ -14,6 +14,7 @@ a = Analysis(
     binaries=[],
     datas=[
         (str(project_root / "src" / "rgpdf" / "assets" / "rgpdf.svg"), "rgpdf/assets"),
+        (str(project_root / "src" / "rgpdf" / "assets" / "acrobat.svg"), "rgpdf/assets"),
         (str(project_root / "LICENSE"), "licenses"),
         (str(project_root / "THIRD-PARTY-NOTICES.md"), "licenses"),
     ],

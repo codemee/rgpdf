@@ -214,6 +214,7 @@ class MainWindow(QMainWindow):
         self.toolbar_spacer = QWidget()
         self.toolbar_spacer.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         self.settings_toolbar.addWidget(self.toolbar_spacer)
+        self.settings_toolbar.addSeparator()
         for button in (
             self.about_button,
             self.language_button,

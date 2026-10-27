@@ -7,6 +7,8 @@ from PySide6.QtCore import QLineF, QPointF, QRectF, QSize, Qt
 from PySide6.QtGui import QColor, QPainter, QPainterPath, QPalette, QPen
 from PySide6.QtWidgets import QToolButton
 
+from rgpdf.resources import pdf_logo
+
 
 class SettingsButton(QToolButton):
     """Shared icon-only button with a palette-aware vector glyph."""
@@ -17,6 +19,8 @@ class SettingsButton(QToolButton):
     SPACING = 4
     STROKE_WIDTH = 1.0
     CORNER_RADIUS = 8.0
+    DOCUMENT_ICON_SIZE = 16
+    COMBINED_DOCUMENT_ICON_SIZE = 14
 
     def __init__(self, kind: str = "", *, checkable: bool = False) -> None:
         super().__init__()
@@ -52,14 +56,8 @@ class SettingsButton(QToolButton):
         painter.setPen(QPen(color, self.STROKE_WIDTH, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
         painter.setBrush(Qt.BrushStyle.NoBrush)
         center = QPointF(self.width() / 2, self.height() / 2)
-        pdf_color = QColor("#ff9185" if dark else "#d93025")
-        if not self.isEnabled():
-            pdf_color = color
         # Center asymmetric glyphs by their visible bounds, not their path origin.
         vertical_offset = {
-            "recursive": -1.0,
-            "scope_all": -1.5,
-            "highlighter": 0.75,
             "cache": 1.5,
             "moon": 1.0,
         }.get(self.icon_kind, 0.0)
@@ -181,43 +179,29 @@ class SettingsButton(QToolButton):
             painter.drawPath(moon)
             painter.restore()
         elif self.icon_kind == "recursive":
-            folder_fill = (
-                QColor("#e8bd62")
-                if self.isEnabled()
-                else self.palette().color(QPalette.ColorRole.Window)
-            )
-            folder_fill.setAlpha(255)
-            painter.setBrush(folder_fill)
             parent = QPainterPath()
-            parent.moveTo(center.x() - 8, center.y() - 6)
+            parent.moveTo(center.x() - 10, center.y() - 8)
+            parent.lineTo(center.x() - 5, center.y() - 8)
             parent.lineTo(center.x() - 3, center.y() - 6)
-            parent.lineTo(center.x() - 1, center.y() - 4)
-            parent.lineTo(center.x() + 7, center.y() - 4)
-            parent.lineTo(center.x() + 7, center.y() + 3)
-            parent.lineTo(center.x() - 8, center.y() + 3)
+            parent.lineTo(center.x() + 4, center.y() - 6)
+            parent.lineTo(center.x() + 4, center.y() + 2)
+            parent.lineTo(center.x() - 10, center.y() + 2)
             parent.closeSubpath()
+            child = parent.translated(6, 6)
+            # Knock out the rear outline beneath the front folder without
+            # adding a fill that would mismatch hover/theme backgrounds.
+            outside = QPainterPath()
+            outside.addRect(QRectF(self.rect()))
+            painter.save()
+            painter.setClipPath(outside.subtracted(child))
             painter.drawPath(parent)
-            child = QPainterPath()
-            child.moveTo(center.x() - 2, center.y())
-            child.lineTo(center.x() + 2, center.y())
-            child.lineTo(center.x() + 4, center.y() + 2)
-            child.lineTo(center.x() + 9, center.y() + 2)
-            child.lineTo(center.x() + 9, center.y() + 8)
-            child.lineTo(center.x() - 2, center.y() + 8)
-            child.closeSubpath()
+            painter.restore()
             painter.drawPath(child)
             painter.setBrush(Qt.BrushStyle.NoBrush)
         elif self.icon_kind == "highlighter":
-            painter.save()
-            painter.translate(center)
-            painter.rotate(-38)
+            painter.setPen(QPen(self.palette().color(QPalette.ColorRole.Mid), self.STROKE_WIDTH))
             painter.setBrush(color)
-            painter.drawRoundedRect(QRectF(-3.5, -9, 7, 13), 1.5, 1.5)
-            painter.drawLine(-3.5, 1, 3.5, 1)
-            painter.drawLine(-3.5, 4, -1.5, 8)
-            painter.drawLine(3.5, 4, 1.5, 8)
-            painter.drawLine(-1.5, 8, 1.5, 8)
-            painter.restore()
+            painter.drawRoundedRect(QRectF(center.x() - 8, center.y() - 8, 16, 16), 2, 2)
         elif self.icon_kind == "cache":
             painter.drawRoundedRect(QRectF(center.x() - 6, center.y() - 5, 12, 11), 1, 1)
             painter.drawLine(QLineF(center.x() - 8, center.y() - 7, center.x() + 8, center.y() - 7))
@@ -225,21 +209,17 @@ class SettingsButton(QToolButton):
             painter.drawLine(QLineF(center.x() - 2, center.y() - 2, center.x() - 2, center.y() + 3))
             painter.drawLine(QLineF(center.x() + 2, center.y() - 2, center.x() + 2, center.y() + 3))
         elif self.icon_kind == "scope_pdf":
-            painter.setPen(QPen(pdf_color, self.STROKE_WIDTH))
-            painter.drawRoundedRect(QRectF(center.x() - 9, center.y() - 7, 18, 14), 2, 2)
-            font = painter.font()
-            font.setBold(True)
-            font.setPixelSize(8)
-            painter.setFont(font)
-            painter.drawText(
-                QRectF(center.x() - 9, center.y() - 7, 18, 14),
-                Qt.AlignmentFlag.AlignCenter,
-                "PDF",
-            )
+            painter.save()
+            if not self.isEnabled():
+                painter.setOpacity(0.45)
+            size = self.DOCUMENT_ICON_SIZE
+            pdf_logo().render(painter, QRectF(center.x() - size / 2, center.y() - size / 2, size, size))
+            painter.restore()
         elif self.icon_kind == "scope_word":
             painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(QColor("#2b579a"))
-            painter.drawRoundedRect(QRectF(center.x() - 8, center.y() - 8, 16, 16), 2, 2)
+            size = self.DOCUMENT_ICON_SIZE
+            painter.drawRoundedRect(QRectF(center.x() - size / 2, center.y() - size / 2, size, size), 2, 2)
             painter.setPen(QColor("white"))
             font = painter.font()
             font.setBold(True)
@@ -247,24 +227,21 @@ class SettingsButton(QToolButton):
             painter.setFont(font)
             painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "W")
         elif self.icon_kind == "scope_all":
+            painter.save()
+            if not self.isEnabled():
+                painter.setOpacity(0.45)
+            size = self.COMBINED_DOCUMENT_ICON_SIZE
+            pdf_logo().render(painter, QRectF(center.x() - 12, center.y() - 12, size, size))
+            painter.restore()
             font = painter.font()
             font.setBold(True)
-            font.setPixelSize(7)
             painter.setFont(font)
-            painter.setPen(QPen(pdf_color, self.STROKE_WIDTH))
-            pdf_rect = QRectF(center.x() - 11, center.y() - 10, 16, 12)
-            painter.drawRoundedRect(pdf_rect, 1.5, 1.5)
-            painter.drawText(
-                pdf_rect,
-                Qt.AlignmentFlag.AlignCenter,
-                "PDF",
-            )
             painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(QColor("#2b579a"))
-            word_rect = QRectF(center.x() + 2, center.y() + 1, 11, 12)
+            word_rect = QRectF(center.x() - 2, center.y() - 2, size, size)
             painter.drawRoundedRect(word_rect, 1.5, 1.5)
             painter.setPen(QColor("white"))
-            font.setPixelSize(8)
+            font.setPixelSize(9)
             painter.setFont(font)
             painter.drawText(
                 word_rect,

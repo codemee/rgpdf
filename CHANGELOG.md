@@ -4,6 +4,12 @@
 
 All notable changes are documented here. Immutable releases use `vX.Y.Z`; the moving `latest` tag points to the newest published release.
 
+## 0.1.3 — 2026-10-27
+
+- Restored the separator before About in the right-aligned toolbar group.
+- Replaced PDF text badges with the Adobe Acrobat SVG mark, sized to match Word (16 px alone, 14 px in combined mode) and partially overlapped upper-left/lower-right, with bundled assets and source attribution.
+- Replaced the highlight marker glyph with a single current-color swatch and changed folder icons to equal-size overlapping monochrome outlines, clipping rear outlines beneath the front folder.
+
 ## 0.1.2 — 2026-10-27
 
 - Added local file/folder drops to select a search folder; files use their containing folder and drops are disabled during search.
