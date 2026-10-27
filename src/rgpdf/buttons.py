@@ -87,6 +87,42 @@ class SettingsButton(QToolButton):
             painter.drawPath(wrap)
             painter.drawPolyline([QPointF(1, 3), QPointF(-2, 6), QPointF(1, 9)])
             painter.drawLine(-8, 6, -5, 6)
+        elif self.icon_kind == "export_pdf":
+            painter.translate(center)
+            painter.save()
+            if not self.isEnabled():
+                painter.setOpacity(0.45)
+            size = self.COMBINED_DOCUMENT_ICON_SIZE
+            word_rect = QRectF(-10, -4, size, size)
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(QColor("#2b579a"))
+            painter.drawRoundedRect(word_rect, 2, 2)
+            painter.setPen(QColor("white"))
+            font = painter.font()
+            font.setBold(True)
+            font.setPixelSize(9)
+            painter.setFont(font)
+            painter.drawText(word_rect, Qt.AlignmentFlag.AlignCenter, "W")
+            painter.restore()
+            # Keep the complete mark, including the 1 px arrow stroke, within
+            # the shared 20×20 px icon footprint without scaling the pen.
+            painter.drawLine(QLineF(4, -4, 9.5, -9.5))
+            painter.drawPolyline([QPointF(4.5, -9.5), QPointF(9.5, -9.5), QPointF(9.5, -4.5)])
+        elif self.icon_kind == "copy_page":
+            painter.translate(center)
+            painter.drawPolyline([QPointF(-7, 4), QPointF(-9, 4), QPointF(-9, -9), QPointF(3, -9), QPointF(3, -7)])
+            painter.drawRect(QRectF(-5, -5, 13, 14))
+            painter.drawEllipse(QPointF(4, -1), 1.5, 1.5)
+            painter.drawPolyline([QPointF(-5, 6), QPointF(-1, 1), QPointF(3, 6), QPointF(5, 4), QPointF(8, 7)])
+        elif self.icon_kind == "select_text":
+            painter.translate(center)
+            painter.drawLine(-8, -7, 6, -7)
+            painter.drawLine(-8, -4, 3, -4)
+            painter.drawLine(-8, -1, -2, -1)
+            painter.drawLine(-8, 2, -2, 2)
+            painter.drawLine(3, -1, 3, 8)
+            painter.drawLine(0, -1, 6, -1)
+            painter.drawLine(0, 8, 6, 8)
         elif self.icon_kind == "cancel":
             painter.translate(center)
             painter.drawLine(-6, -6, 6, 6)

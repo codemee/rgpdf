@@ -4,11 +4,14 @@
 from __future__ import annotations
 
 from pathlib import Path
+import sys
 
 import pymupdf as fitz
-from PySide6.QtCore import QObject, QRunnable, QThreadPool, QTimer, Qt, Signal, Slot
+from PySide6.QtCore import QByteArray, QBuffer, QIODevice, QMimeData, QObject, QRunnable, QThreadPool, QTimer, Qt, Signal, Slot
 from PySide6.QtGui import QColor, QImage, QPainter, QPixmap
 from PySide6.QtWidgets import (
+    QApplication,
+    QFrame,
     QHBoxLayout,
     QLabel,
     QScrollArea,
@@ -21,10 +24,11 @@ from rgpdf.buttons import SettingsButton
 from rgpdf.i18n import translate
 from rgpdf.models import TextMatch
 from rgpdf.pdf_passwords import PdfPasswords
+from rgpdf.preview_text import PageText, SelectablePageLabel, extract_page_text
 
 
 class PreviewRenderSignals(QObject):
-    finished = Signal(int, object, int, float)
+    finished = Signal(int, object, int, float, object)
     failed = Signal(int)
 
 
@@ -75,6 +79,8 @@ class PreviewRenderWorker(QRunnable):
                     zoom = min(3.0, max(0.35, max(200, self.available_width) / page.rect.width))
                 pix = page.get_pixmap(matrix=fitz.Matrix(zoom, zoom), alpha=False)
                 page_count = document.page_count
+                page_text = extract_page_text(page)
+                rotation = page.rotation_matrix
             image = QImage(
                 pix.samples,
                 pix.width,
@@ -91,6 +97,7 @@ class PreviewRenderWorker(QRunnable):
                 if highlight.page_index != self.page_index:
                     continue
                 for x0, y0, x1, y1 in highlight.rectangles:
+                    x0, y0, x1, y1 = fitz.Rect(x0, y0, x1, y1) * rotation
                     painter.drawRect(
                         int(x0 * zoom),
                         int(y0 * zoom),
@@ -103,7 +110,7 @@ class PreviewRenderWorker(QRunnable):
             return
         finally:
             self.password = None
-        self.signals.finished.emit(self.request_id, image, page_count, zoom)
+        self.signals.finished.emit(self.request_id, image, page_count, zoom, page_text)
 
 
 class PdfPreview(QWidget):
@@ -120,6 +127,12 @@ class PdfPreview(QWidget):
         self._language = "en"
         self._highlight_color = "#ffe128"
         self._request_id = 0
+        self._page_ready = False
+        self._pending_png: tuple[QImage, QByteArray] | None = None
+        self._copy_attempts = 0
+        self._copy_timer = QTimer(self)
+        self._copy_timer.setSingleShot(True)
+        self._copy_timer.timeout.connect(self._write_page_clipboard)
         self._workers: dict[int, PreviewRenderWorker] = {}
         self._thread_pool = QThreadPool.globalInstance()
         self._resize_timer = QTimer(self)
@@ -133,6 +146,9 @@ class PdfPreview(QWidget):
         self.zoom_in_button = SettingsButton("zoom_in")
         self.fit_button = SettingsButton("fit_width")
         self.fit_page_button = SettingsButton("fit_page")
+        self.select_text_button = SettingsButton("select_text", checkable=True)
+        self.select_text_button.setChecked(True)
+        self.copy_page_button = SettingsButton("copy_page")
         self.page_label = QLabel()
         toolbar = QHBoxLayout()
         toolbar.setContentsMargins(0, 0, 0, 0)
@@ -140,13 +156,28 @@ class PdfPreview(QWidget):
         toolbar.addWidget(self.previous_button)
         toolbar.addWidget(self.next_button)
         toolbar.addWidget(self.page_label)
+        self.toolbar_separators = []
+
+        def add_separator() -> None:
+            separator = QFrame()
+            separator.setFrameShape(QFrame.Shape.VLine)
+            separator.setFixedWidth(13)
+            separator.setFixedHeight(20)
+            separator.setStyleSheet("border: 0; background: palette(mid); margin: 0 6px;")
+            toolbar.addWidget(separator)
+            self.toolbar_separators.append(separator)
+
+        add_separator()
         toolbar.addStretch()
+        toolbar.addWidget(self.select_text_button)
+        toolbar.addWidget(self.copy_page_button)
+        add_separator()
         toolbar.addWidget(self.zoom_out_button)
         toolbar.addWidget(self.zoom_in_button)
         toolbar.addWidget(self.fit_button)
         toolbar.addWidget(self.fit_page_button)
 
-        self.image_label = QLabel()
+        self.image_label = SelectablePageLabel()
         self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.image_label.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self.scroll_area = QScrollArea()
@@ -165,6 +196,11 @@ class PdfPreview(QWidget):
         self.zoom_in_button.clicked.connect(lambda: self._change_zoom(1.25))
         self.fit_button.clicked.connect(self._fit)
         self.fit_page_button.clicked.connect(self._fit_entire_page)
+        self.select_text_button.toggled.connect(self.image_label.set_selection_mode)
+        self.copy_page_button.clicked.connect(self._copy_page)
+        self.image_label.selection_dragged.connect(
+            lambda x, y: self.scroll_area.ensureVisible(x, y, 16, 16)
+        )
         self.set_language(self._language)
         self.clear()
 
@@ -176,6 +212,9 @@ class PdfPreview(QWidget):
         self.zoom_in_button.setToolTip(translate(language, "zoom_in"))
         self.fit_button.setToolTip(translate(language, "fit"))
         self.fit_page_button.setToolTip(translate(language, "fit_page"))
+        self.copy_page_button.setToolTip(translate(language, "copy_page"))
+        self.image_label.set_language(language)
+        self._update_controls()
         self._update_page_label()
 
     def set_highlight_color(self, color: str) -> None:
@@ -187,6 +226,9 @@ class PdfPreview(QWidget):
             self._render()
 
     def clear(self) -> None:
+        self._page_ready = False
+        self._copy_timer.stop()
+        self._pending_png = None
         self._request_id += 1
         self._resize_timer.stop()
         self._path = None
@@ -235,8 +277,12 @@ class PdfPreview(QWidget):
     def _render(self) -> None:
         if self._path is None or self._match is None:
             return
+        self._resize_timer.stop()
+        self._page_ready = False
         self._request_id += 1
         request_id = self._request_id
+        self.image_label.set_page_text(None)
+        self._update_controls()
         viewport = self.scroll_area.viewport()
         available_width = max(1, viewport.width() - 24)
         available_height = max(1, viewport.height() - 24)
@@ -259,22 +305,56 @@ class PdfPreview(QWidget):
         self._thread_pool.start(worker)
 
     def _render_finished(
-        self, request_id: int, image: QImage, page_count: int, zoom: float
+        self, request_id: int, image: QImage, page_count: int, zoom: float, page_text: PageText
     ) -> None:
         self._workers.pop(request_id, None)
         if request_id != self._request_id:
             return
         self._page_count = page_count
         self._zoom = zoom
+        self._page_ready = True
         self.image_label.setPixmap(QPixmap.fromImage(image))
         self.image_label.adjustSize()
+        self.image_label.set_page_text(page_text, zoom)
         self._update_controls()
         self._update_page_label()
 
     def _render_failed(self, request_id: int) -> None:
         self._workers.pop(request_id, None)
         if request_id == self._request_id:
+            self._page_ready = False
             self.image_label.clear()
+            self._update_controls()
+
+    def _copy_page(self) -> None:
+        if not self._page_ready:
+            return
+        image = self.image_label.pixmap().toImage()
+        png = QByteArray()
+        buffer = QBuffer(png)
+        buffer.open(QIODevice.OpenModeFlag.WriteOnly)
+        if not image.save(buffer, "PNG"):
+            return
+        buffer.close()
+        self._copy_timer.stop()
+        self._pending_png = (image, png)
+        self._copy_attempts = 0
+        self._write_page_clipboard()
+
+    def _write_page_clipboard(self) -> None:
+        if self._pending_png is None:
+            return
+        image, png = self._pending_png
+        mime = QMimeData()
+        mime.setData("image/png", png)
+        mime.setImageData(image)
+        clipboard = QApplication.clipboard()
+        clipboard.setMimeData(mime)
+        self._copy_attempts += 1
+        if sys.platform == "win32" and not clipboard.ownsClipboard() and self._copy_attempts < 10:
+            self._copy_timer.start(100)
+        else:
+            self._pending_png = None
 
     def _update_page_label(self) -> None:
         if self._path is None:
@@ -288,6 +368,10 @@ class PdfPreview(QWidget):
 
     def _update_controls(self) -> None:
         has_page = self._path is not None and self._match is not None
+        self.copy_page_button.setEnabled(has_page and self._page_ready)
+        self.select_text_button.setEnabled(has_page and self.image_label.has_text())
+        key = "select_text" if not has_page or self.image_label.has_text() else "no_selectable_text"
+        self.select_text_button.setToolTip(translate(self._language, key))
         self.previous_button.setEnabled(
             has_page and self._page_count > 0 and self._page_index > 0
         )

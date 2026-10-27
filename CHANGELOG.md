@@ -4,6 +4,14 @@
 
 All notable changes are documented here. Immutable releases use `vX.Y.Z`; the moving `latest` tag points to the newest published release.
 
+## 0.1.4 — 2026-10-27
+
+- Word PDF export pairs the Word logo with a thin outward arrow within the shared 20×20 px icon footprint.
+- Added selectable Word-to-PDF batch export to a chosen folder, reusing valid caches or converting into cache first, with filename collision checks, skip/overwrite handling, status-bar progress and cancellation. Disabled without eligible Word files.
+- Moved About from the toolbar into the Windows title-bar system menu, with localized text; macOS uses the native application menu and other platforms retain a menu action.
+- Added full-page PNG clipboard copying, including search highlights, and separators grouping preview navigation, copying, and zoom tools.
+- Added one Select and copy text tool in preview, copying automatically on mouse release or page select-all, supporting CJK, multiple lines, rotated and encrypted PDFs while retaining search highlights.
+
 ## 0.1.3 — 2026-10-27
 
 - Restored the separator before About in the right-aligned toolbar group.

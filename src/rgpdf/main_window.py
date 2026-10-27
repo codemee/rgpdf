@@ -4,9 +4,10 @@
 from __future__ import annotations
 
 from pathlib import Path
+import sys
 
-from PySide6.QtCore import QEvent, QLocale, QSettings, Qt, QThreadPool
-from PySide6.QtGui import QCloseEvent, QColor
+from PySide6.QtCore import QEvent, QFileSystemWatcher, QLocale, QSettings, Qt, QThreadPool, QTimer
+from PySide6.QtGui import QAction, QCloseEvent, QColor
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QFileDialog,
@@ -34,6 +35,7 @@ from PySide6.QtWidgets import (
 
 from rgpdf import __version__
 from rgpdf.buttons import SettingsButton
+from rgpdf.export_dialog import WordExportDialog
 from rgpdf.i18n import translate
 from rgpdf.models import DocumentMatch, SearchOptions, SearchReport
 from rgpdf.preview import PdfPreview
@@ -43,6 +45,7 @@ from rgpdf.resources import application_icon
 from rgpdf.search import SearchInputError, compile_pattern
 from rgpdf.worker import SearchWorker, PdfPasswordRequest
 from rgpdf.word_conversion import clear_word_cache
+from rgpdf.word_export import ExportReport, WordExportWorker, WordFileScanWorker
 
 
 class SettingsToolBar(QToolBar):
@@ -69,10 +72,24 @@ class MainWindow(QMainWindow):
 
     def __init__(self, apply_theme_callback, settings: QSettings | None = None) -> None:
         super().__init__()
+        self._system_menu = None
+        if sys.platform == "win32":
+            from rgpdf.system_menu import WindowsSystemMenu
+            self._system_menu = WindowsSystemMenu()
         self.settings = settings or QSettings("rgpdf", "rgpdf")
         self.apply_theme_callback = apply_theme_callback
         self.thread_pool = QThreadPool.globalInstance()
         self.worker: SearchWorker | None = None
+        self.export_worker: WordExportWorker | None = None
+        self._export_paths: list[Path] = []
+        self._word_scan_request = 0
+        self._word_scans: dict[int, WordFileScanWorker] = {}
+        self._word_scan_timer = QTimer(self)
+        self._word_scan_timer.setSingleShot(True)
+        self._word_scan_timer.setInterval(150)
+        self._word_scan_timer.timeout.connect(self._scan_export_files)
+        self._export_watcher = QFileSystemWatcher(self)
+        self._export_watcher.directoryChanged.connect(self._queue_word_scan)
         self._pdf_passwords = PdfPasswords()
         self._password_dialog: QInputDialog | None = None
         self._closing = False
@@ -133,8 +150,14 @@ class MainWindow(QMainWindow):
         self.highlight_button = self._settings_button(checkable=True)
         self.cache_button = self._settings_button()
         self.cache_button.set_icon_kind("cache")
-        self.about_button = self._settings_button()
-        self.about_button.set_icon_kind("about")
+        self.export_word_button = SettingsButton("export_pdf")
+        self.export_word_button.setEnabled(False)
+        self.about_action = QAction(self)
+        self.about_action.setMenuRole(QAction.MenuRole.AboutRole)
+        self.about_menu = None
+        if sys.platform != "win32":
+            self.about_menu = self.menuBar().addMenu("rgPDF")
+            self.about_menu.addAction(self.about_action)
         self.search_button = SettingsButton("search")
         self.cancel_button = SettingsButton("cancel")
         self.cancel_button.setEnabled(False)
@@ -209,6 +232,7 @@ class MainWindow(QMainWindow):
         for button in (
             self.highlight_button,
             self.cache_button,
+            self.export_word_button,
         ):
             self.settings_toolbar.addWidget(button)
         self.toolbar_spacer = QWidget()
@@ -216,7 +240,6 @@ class MainWindow(QMainWindow):
         self.settings_toolbar.addWidget(self.toolbar_spacer)
         self.settings_toolbar.addSeparator()
         for button in (
-            self.about_button,
             self.language_button,
             self.theme_button,
         ):
@@ -298,6 +321,7 @@ class MainWindow(QMainWindow):
         self._connect_signals()
         self._restore_window_state()
         self.retranslate_ui()
+        self._queue_word_scan()
 
     @staticmethod
     def _single_widget_layout(widget: QWidget) -> QVBoxLayout:
@@ -390,7 +414,10 @@ class MainWindow(QMainWindow):
         self.scope_button.clicked.connect(self._cycle_search_scope)
         self.highlight_button.toggled.connect(self._toggle_highlight_panel)
         self.cache_button.clicked.connect(self._clear_word_cache)
-        self.about_button.clicked.connect(self._show_about)
+        self.export_word_button.clicked.connect(self._choose_word_export)
+        self.folder_edit.textChanged.connect(self._queue_word_scan)
+        self.stem_filter_edit.textChanged.connect(self._queue_word_scan)
+        self.about_action.triggered.connect(self._show_about)
         self.custom_color_button.clicked.connect(self._choose_highlight_color)
         self.file_list.currentItemChanged.connect(self._file_selected)
         self.match_list.currentItemChanged.connect(self._match_selected)
@@ -430,10 +457,12 @@ class MainWindow(QMainWindow):
         self.pattern_help_button.setAccessibleName(self.t("pattern_help"))
         self.pattern_help_content.setText(self.t("pattern_help_content"))
         self.settings_toolbar.setWindowTitle(self.t("settings"))
-        self.about_button.setToolTip(self.t("about"))
-        self.about_button.setAccessibleName(self.t("about"))
+        self.about_action.setText(self.t("about_title"))
+        if self._system_menu is not None and self.isVisible():
+            self._system_menu.update(int(self.winId()), self.about_action.text())
         self.cache_button.setToolTip(self.t("clear_word_cache"))
         self.cache_button.setAccessibleName(self.t("clear_word_cache"))
+        self.export_word_button.setToolTip(self.t("export_word"))
         self._refresh_settings_buttons()
         self.highlight_panel_label.setText(self.t("common_colors"))
         self.custom_color_button.setToolTip(self.t("custom_color"))
@@ -461,9 +490,83 @@ class MainWindow(QMainWindow):
     def _set_folder(self, folder: Path) -> None:
         self.folder_edit.setText(str(folder))
         self.settings.setValue("search/folder", str(folder))
+        self._queue_word_scan()
+
+    def _queue_word_scan(self) -> None:
+        self._word_scan_request += 1
+        self._export_paths = []
+        self.export_word_button.setEnabled(False)
+        self._word_scan_timer.start()
+
+    def _scan_export_files(self) -> None:
+        if self._closing:
+            return
+        root = Path(self.folder_edit.text()) if self.folder_edit.text() else None
+        worker = WordFileScanWorker(self._word_scan_request, root,
+                                    self.recursive_button.isChecked(), self.stem_filter_edit.text())
+        worker.signals.finished.connect(self._export_files_scanned)
+        self._word_scans[worker.request] = worker
+        self.thread_pool.start(worker)
+
+    def _export_files_scanned(self, request: int, paths: list[Path]) -> None:
+        self._word_scans.pop(request, None)
+        if request != self._word_scan_request or self._closing:
+            return
+        self._export_paths = paths
+        watched = self._export_watcher.directories()
+        if watched:
+            self._export_watcher.removePaths(watched)
+        root = Path(self.folder_edit.text()) if self.folder_edit.text() else None
+        folders = {path.parent for path in paths}
+        if root is not None and root.is_dir():
+            folders.add(root)
+        if folders:
+            self._export_watcher.addPaths([str(folder) for folder in folders if folder.is_dir()])
+        self.export_word_button.setEnabled(bool(paths) and self.worker is None and self.export_worker is None)
+
+    def _choose_word_export(self) -> None:
+        if self.worker is not None or self.export_worker is not None or not self._export_paths:
+            return
+        root = Path(self.folder_edit.text())
+        dialog = WordExportDialog(root, self._export_paths,
+                                  self.settings.value("export/folder", str(root), type=str), self.language, self)
+        if dialog.exec() != dialog.DialogCode.Accepted:
+            return
+        destination = Path(dialog.destination.text())
+        self.settings.setValue("export/folder", str(destination))
+        worker = WordExportWorker(dialog.selected_paths(), destination, dialog.overwrite.isChecked())
+        self.export_worker = worker
+        worker.signals.progress.connect(self._export_progress)
+        worker.signals.finished.connect(self._export_finished)
+        self._set_searching(True)
+        self.progress_bar.setRange(0, len(worker.paths))
+        self.progress_bar.setValue(0)
+        self.progress_bar.show()
+        self._set_status(self.t("export_progress", current=0, total=len(worker.paths), name=""))
+        self.thread_pool.start(worker)
+
+    def _export_progress(self, current: int, total: int, name: str) -> None:
+        if self._closing:
+            return
+        self.progress_bar.setRange(0, total)
+        self.progress_bar.setValue(current)
+        self._set_status(self.t("export_progress", current=current + 1, total=total, name=name))
+
+    def _export_finished(self, report: ExportReport) -> None:
+        self.export_worker = None
+        if self._closing:
+            return
+        self._set_searching(False)
+        self.progress_bar.hide()
+        key = "export_cancelled" if report.cancelled else "export_done"
+        self._set_status(self.t(key, exported=report.exported, skipped=report.skipped, failed=len(report.errors)))
+        if report.errors:
+            QMessageBox.warning(self, self.t("export_word"),
+                                "\n".join(f"{path}: {message}" for path, message in report.errors))
+        self._queue_word_scan()
 
     def _dropped_folder(self, mime) -> Path | None:
-        if self._closing or self.worker is not None or not mime.hasUrls():
+        if self._closing or self.worker is not None or self.export_worker is not None or not mime.hasUrls():
             return None
         for url in mime.urls():
             if not url.isLocalFile():
@@ -501,6 +604,18 @@ class MainWindow(QMainWindow):
         self.status_label.setText(text)
         self.status_label.setToolTip(text)
 
+    def showEvent(self, event) -> None:  # noqa: N802 - Qt API
+        super().showEvent(event)
+        if self._system_menu is not None:
+            self._system_menu.update(int(self.winId()), self.about_action.text())
+
+    def nativeEvent(self, event_type, message):  # noqa: N802 - Qt API
+        menu = getattr(self, "_system_menu", None)
+        if menu is not None and event_type == b"windows_generic_MSG" and menu.is_about_message(message):
+            QTimer.singleShot(0, self.about_action.trigger)
+            return True, 0
+        return super().nativeEvent(event_type, message)
+
     def _show_about(self) -> None:
         QMessageBox.about(
             self,
@@ -521,7 +636,7 @@ class MainWindow(QMainWindow):
         )
 
     def _start_search(self) -> None:
-        if self.worker is not None:
+        if self.worker is not None or self.export_worker is not None:
             return
         options = self._options()
         try:
@@ -566,6 +681,9 @@ class MainWindow(QMainWindow):
         self.thread_pool.start(worker)
 
     def _cancel_search(self) -> None:
+        if self.export_worker is not None:
+            self.export_worker.cancel()
+            self.cancel_button.setEnabled(False)
         if self.worker is not None:
             self.worker.cancel()
             if self._password_dialog is not None:
@@ -614,7 +732,10 @@ class MainWindow(QMainWindow):
         ):
             widget.setEnabled(not active)
         self.cancel_button.setEnabled(active)
+        key = "export_cancel" if self.export_worker is not None else "cancel"
+        self.cancel_button.setToolTip(self.t(key))
         self.cache_button.setEnabled(not active)
+        self.export_word_button.setEnabled(not active and bool(self._export_paths))
 
     def _search_progress(self, current: int, total: int, name: str) -> None:
         self.progress_bar.setRange(0, max(1, total))
@@ -811,6 +932,7 @@ class MainWindow(QMainWindow):
     def _recursive_changed(self, checked: bool) -> None:
         self.settings.setValue("search/recursive", checked)
         self._refresh_settings_buttons()
+        self._queue_word_scan()
 
     def _case_changed(self, checked: bool) -> None:
         self.settings.setValue("search/case_sensitive", checked)
@@ -965,6 +1087,9 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802 - Qt API
         self._closing = True
+        self._word_scan_timer.stop()
+        if self.export_worker is not None:
+            self.export_worker.cancel()
         if self.worker is not None:
             self.worker.cancel()
         if self._password_dialog is not None:

@@ -102,12 +102,13 @@ def test_target_title_statusbar_and_right_toolbar_group(qtbot, tmp_path):
     assert not window.status_label.wordWrap()
     assert window.settings_toolbar.height() == 42
     assert window.toolbar_spacer.width() > 100
-    assert window.cache_button.geometry().right() < window.about_button.x()
-    assert window.about_button.x() < window.language_button.x() < window.theme_button.x()
+    assert window.cache_button.geometry().right() < window.language_button.x()
+    assert window.language_button.x() < window.theme_button.x()
     actions = window.settings_toolbar.actions()
-    about_index = next(i for i, action in enumerate(actions)
-                       if window.settings_toolbar.widgetForAction(action) is window.about_button)
-    assert actions[about_index - 1].isSeparator()
+    language_index = next(i for i, action in enumerate(actions)
+                          if window.settings_toolbar.widgetForAction(action) is window.language_button)
+    assert actions[language_index - 1].isSeparator()
+    assert window.about_action not in actions
     assert window.settings_toolbar.width() - window.theme_button.geometry().right() <= 12
     window.progress_bar.setRange(0, 100)
     window.progress_bar.setValue(75)

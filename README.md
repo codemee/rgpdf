@@ -28,17 +28,23 @@ Word 搜尋採三階段管線：先直接讀取 DOCX 文字初篩，找到第一
 
 搜尋遇到需要密碼的 PDF 時會提示輸入，密碼以遮罩顯示；輸入錯誤可重試，按「略過此檔」則繼續搜尋其他文件，並於完成後列入警告。同一份文件在本次程式工作階段內可沿用已驗證密碼搜尋、預覽、換頁與縮放；關閉程式即清除，來源檔案變更後會重新驗證。密碼不寫入設定、搜尋結果或快取，也不產生解密後的 PDF 副本。
 
-在左上「搜尋標的」窗格按「瀏覽」選取資料夾，或將檔案／資料夾拖放到視窗；若拖放檔案，搜尋標的設為該檔案所在的資料夾。拖放多個項目時使用第一個有效本機項目；搜尋中暫停接受拖放。設定標的不會自動搜尋，輸入文字或規則表達式後按「搜尋」。選取檔案及命中段落即可查看頁面與螢光標示。搜尋進度與完成狀態顯示在整個視窗底部的狀態列，長狀態文字可將滑鼠停留其上查看。
+在左上「搜尋標的」窗格按「瀏覽」選取資料夾，或將檔案／資料夾拖放到視窗；若拖放檔案，搜尋標的設為該檔案所在的資料夾。拖放多個項目時使用第一個有效本機項目；搜尋或批次匯出 PDF 期間暫停接受拖放。設定標的不會自動搜尋，輸入文字或規則表達式後按「搜尋」。選取檔案及命中段落即可查看頁面與螢光標示。搜尋進度與完成狀態顯示在整個視窗底部的狀態列，長狀態文字可將滑鼠停留其上查看。
 
 「文件資料夾」下方的「主檔名篩選」可限制要搜尋的檔案，留空時不篩選。點擊輸入欄位左側的說明圖示，可查看語法說明與範例。此欄位比對不含最後一個副檔名的完整主檔名，不區分大小寫；支援 `*`（任意字串）、`?`（單一字元）、`[abc]`、`[0-9]` 與 `[!abc]`。例如 `ch0*` 會包含 `ch01.pdf`、`ch02.docx`，排除 `ch1.pdf`、`ch2.docx`；`ch01` 則只比對完全相同的主檔名。篩選會在讀取 PDF 或轉換 Word 前執行，並搭配檔案類型與子資料夾設定；此欄位會保存至下次啟動，不受文字搜尋的 Regex 與區分大小寫設定影響。
 
+使用工具列的「將 Word 檔匯出為 PDF」可勾選目前資料夾中的 `.doc`／`.docx`，再指定輸出資料夾。清單沿用主檔名篩選及子資料夾設定，不受搜尋檔案類型或搜尋樣式影響；沒有符合條件的 Word 檔時按鈕停用，Word 暫存鎖定檔不列入。每份檔案以原主檔名加上 `.pdf` 匯出到指定資料夾，不保留子資料夾結構。已有有效 PDF 快取就直接複製，否則先透過 Microsoft Word／LibreOffice 轉檔寫入共用快取，再匯出；不修改來源。預設略過既有同名 PDF，可勾選覆寫；若所選 Word 檔會產生同名 PDF，須先取消重複項目的勾選。狀態列顯示匯出進度，可取消後續作業；已匯出檔案與已完成的快取會保留，個別失敗不會中止其他檔案。
+
 預覽窗格的「上一頁／下一頁」會逐頁瀏覽整份文件，包含未命中頁；選取命中項目窗格中的其他段落即可跳至其命中頁面。「符合頁面」會依預覽區域的寬度與高度完整顯示整頁，並隨窗格大小調整；「符合寬度」則可用較大尺寸閱讀。
+
+預覽工具列提供 <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/select_text.png"><img src="docs/toolbar/select_text.png" width="34" height="34" alt="選取並複製文字"></picture>「選取並複製文字」工具，預設啟用。以滑鼠拖曳選取目前頁面的文字，放開滑鼠後即自動複製到剪貼簿；拖曳期間不會重複寫入。Ctrl+A／⌘A 可選取並複製整頁文字，Esc 清除畫面選取。支援中文、跨行、縮放與旋轉頁面，以及已解鎖的加密 PDF；換頁、換檔或重新縮放會清除選取。沒有文字層的頁面無法選取文字，原命中標示仍保留。
+
+預覽工具列以分隔線區分翻頁、複製及縮放功能。<picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/copy_page.png"><img src="docs/toolbar/copy_page.png" width="34" height="34" alt="複製目前頁面為 PNG"></picture>「複製目前頁面為 PNG」會將完整頁面影像放入剪貼簿，可直接貼入支援圖片的應用程式。影像採目前預覽解析度，包含命中標示與捲動區外的內容，不包含工具列或文字選取底色；不建立磁碟檔案。沒有文字層的頁面亦可複製，載入期間按鈕會停用。
 
 下表依工具列由左至右排列；滑鼠停留可查看目前設定，三態按鈕每按一次切換一個狀態。
 
 狀態按鈕啟用後會持續顯示與滑鼠移入相同的底色。深色配色採初號機風格：深紫底色、螢光綠的選取與啟用狀態，搭配少量橘色焦點與連結；文件預覽保留原始頁面顏色。
 
-工具列右側依序為「關於、語言、配色」，其餘搜尋工具靠左排列。
+工具列右側為「語言、配色」，其餘搜尋工具靠左排列。「關於 rgPDF」位於 Windows 主視窗左上角應用程式圖示的系統功能表（亦可按 Alt+Space 開啟）；macOS 使用原生應用程式功能表，其他平台則位於 rgPDF 功能表，可查看版本、授權與原始碼連結。
 
 | 工具列圖示 | 功能 | 操作說明 |
 | --- | --- | --- |
@@ -48,8 +54,8 @@ Word 搜尋採三階段管線：先直接讀取 DOCX 文字初篩，找到第一
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/regex.png"><img src="docs/toolbar/regex.png" width="34" height="34" alt="規則表達式"></picture> | 規則表達式 | 切換 Regex；搜尋欄旁的說明圖示提供語法範例。 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/line_wrap.png"><img src="docs/toolbar/line_wrap.png" width="34" height="34" alt="Line wrap"></picture> | 忽略排版換行 | 接合相鄰行的中文文字、保留英文詞間空格與原座標標示；預設關閉。 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/highlighter.png"><img src="docs/toolbar/highlighter.png" width="34" height="34" alt="顏色色塊"></picture> | 螢光筆顏色 | 色塊顯示目前顏色；點選後可選預設色或自訂顏色。 |
-| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/cache.png"><img src="docs/toolbar/cache.png" width="34" height="34" alt="垃圾桶"></picture> | 清除 Word 快取 | 確認後刪除轉換產生的 PDF，保留原始 Word 文件；搜尋期間停用。 |
-| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/about.png"><img src="docs/toolbar/about.png" width="34" height="34" alt="資訊"></picture> | 關於 | 查看版本、授權與原始碼連結。 |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/cache.png"><img src="docs/toolbar/cache.png" width="34" height="34" alt="垃圾桶"></picture> | 清除 Word 快取 | 確認後刪除轉換產生的 PDF，保留原始 Word 文件；搜尋或批次匯出 PDF 期間停用。 |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/export_pdf.png"><img src="docs/toolbar/export_pdf.png" width="34" height="34" alt="匯出 Word PDF"></picture> | 將 Word 檔匯出為 PDF | Word logo 搭配向外箭頭；勾選檔案與輸出資料夾，沿用快取或轉檔後匯出。 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/language_system.png"><img src="docs/toolbar/language_system.png" width="34" height="34" alt="系統語言"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/language_zh.png"><img src="docs/toolbar/language_zh.png" width="34" height="34" alt="中文"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/language_en.png"><img src="docs/toolbar/language_en.png" width="34" height="34" alt="英文"></picture> | 語言 | 循環切換跟隨系統 → 繁體中文 → English。 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/theme_system.png"><img src="docs/toolbar/theme_system.png" width="34" height="34" alt="系統配色"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/sun.png"><img src="docs/toolbar/sun.png" width="34" height="34" alt="淺色"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/moon.png"><img src="docs/toolbar/moon.png" width="34" height="34" alt="深色"></picture> | 配色 | 循環切換跟隨系統 → 淺色 → 深色。 |
 

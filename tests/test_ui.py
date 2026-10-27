@@ -41,7 +41,7 @@ def test_main_window_has_three_result_columns(qtbot, monkeypatch, tmp_path) -> N
         window.line_wrap_button,
         window.highlight_button,
         window.cache_button,
-        window.about_button,
+        window.export_word_button,
     )
     assert all(isinstance(button, SettingsButton) for button in settings_buttons)
     assert all(button.size() == QSize(34, 34) for button in settings_buttons)
@@ -65,7 +65,7 @@ def test_main_window_has_three_result_columns(qtbot, monkeypatch, tmp_path) -> N
         window.line_wrap_button,
         window.highlight_button,
         window.cache_button,
-        window.about_button,
+        window.export_word_button,
         window.language_button,
         window.theme_button,
     ]
@@ -87,7 +87,6 @@ def test_main_window_has_three_result_columns(qtbot, monkeypatch, tmp_path) -> N
     settings.sync()
     assert settings.value("search/scope") == "all"
     assert window.pattern_help_button.text() == ""
-    assert window.about_button.icon_kind == "about"
     assert window.cache_button.icon_kind == "cache"
     assert window.cache_button.toolTip() == "Clear Word cache"
     action_labels = (
@@ -102,6 +101,9 @@ def test_main_window_has_three_result_columns(qtbot, monkeypatch, tmp_path) -> N
         (window.preview.zoom_in_button, "Zoom in"),
         (window.preview.fit_button, "Fit width"),
         (window.preview.fit_page_button, "Fit page"),
+        (window.preview.select_text_button, "Select and copy text"),
+        (window.preview.copy_page_button, "Copy current page as PNG"),
+        (window.export_word_button, "Export Word files as PDF"),
     )
     for button, label in action_labels:
         assert button.text() == ""
@@ -113,7 +115,7 @@ def test_main_window_has_three_result_columns(qtbot, monkeypatch, tmp_path) -> N
         "rgpdf.main_window.QMessageBox.about",
         lambda parent, title, content: about_calls.append((parent, title, content)),
     )
-    window.about_button.click()
+    window.about_action.trigger()
     assert about_calls[0][0] is window
     assert about_calls[0][1] == "About rgPDF"
     assert f"tree/v{__version__}" in about_calls[0][2]

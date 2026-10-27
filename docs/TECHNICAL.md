@@ -16,20 +16,30 @@ rgPDF targets Python 3.12–3.13 and is managed by uv. PySide6 provides the desk
 | `layout_text.py` | Layout-aware line joining with original character coordinates and cell boundaries |
 | `word_screening.py` | Conservative DOCX text screening with PDF fallback for uncertainty |
 | `word_conversion.py` | Word/LibreOffice conversion selection and local PDF cache |
+| `word_export.py` | Background Word discovery and cache-backed batch PDF export |
+| `export_dialog.py` | Export selection, destination, and filename collision validation |
+| `system_menu.py` | Windows native system-menu integration |
 | `worker.py` | Background search runnable and cross-thread Qt signals |
 | `pdf_search_process.py` | Reusable PDF search subprocess, incremental-match IPC, and cancellation cleanup |
 | `pdf_passwords.py` | Shared PDF authentication and fingerprint-keyed, session-only credentials |
 | `preview.py` | Asynchronous page rendering, stale-request rejection, zoom, and highlighting |
+| `preview_text.py` | Character geometry, mouse selection, keyboard/menu copy, and selection overlays |
 | `models.py` | Immutable search options, results, page highlights, and extraction mappings |
 | `i18n.py` | English and Traditional Chinese string catalogs |
 | `resources.py` | Packaged application artwork lookup |
 
 The search core has no dependency on UI widgets. It can be exercised directly by tests or another Python caller.
 
+## Word PDF export
+
+The export icon combines a 14×14 px Word mark with a 1 px outward arrow inside the shared 20×20 px footprint, using theme-aware arrow colors and reduced logo opacity when disabled. `word_export.py` provides background discovery and cache-backed export; `export_dialog.py` provides file selection, destination, and collision validation. A debounced scan uses recursion and stem-glob settings independently of content patterns and search scope, excludes `~$` lock files, and rejects stale request IDs. Directory watchers refresh the current root and directories containing listed Word files. The dialog lists relative paths with checkboxes, an output folder, and opt-in overwrite. It rejects empty selection, invalid output folders, and case-insensitive duplicate PDF names. Output is flat, retaining original stems.
+
+`WordExportWorker` excludes concurrent searches and cache clearing. It checks `cached_word_pdf` first, so cached PDFs from either renderer work even without an installed converter. Missing entries use the shared fingerprint-keyed conversion API and one lazy `word_conversion_session`; export does not perform content screening. A complete PDF is staged in the output folder before exclusive target creation, or replacement when overwrite is selected. Exclusive creation protects against targets appearing after the initial check and does not require hard links. Failed incomplete copies are removed. Per-file errors are collected while other files continue. Status-bar progress and cancellation retain completed exports and caches; closing cancels remaining work. The last output folder is saved as `export/folder`.
+
 ## Search pipeline
 
 1. `discover_documents` enumerates the file types selected by `SearchOptions.search_scope` in stable relative-path order. Recursion is controlled by `SearchOptions.recursive`. `SearchOptions.stem_glob` optionally filters the complete `Path.stem` (only the final extension is removed) with case-folded `fnmatchcase` glob matching. Empty means no filter. This filter also applies to explicitly supplied `paths` before reading or conversion, so progress and scanned counts include only eligible files. It is independent of content regex/case settings and never matches parent directories.
-2. Word files are screened before candidates enter a PDF conversion queue. `word_may_match` streams WordprocessingML text from DOCX, checks literal patterns across runs, and returns on the first possible hit without creating page numbers or official matches. Screening ignores case and relaxes whitespace and hyphens. Screening requires a normalized contiguous phrase rather than scattered characters. It reads body, header/footer, note, chart, and diagram content, excluding style definitions. Patterns containing regex operators, legacy `.doc`, dynamic fields, embedded objects, or parse failures bypass screening; enabling regex for a literal phrase does not bypass it. Ordinary images, numbering, and unused styles do not force conversion; drawing text is extracted too. Valid PDF caches take precedence. Conversion prefers Microsoft Word on Windows, with LibreOffice as fallback; a batch reuses a lazily started Word instance, with COM initialization, export, and cleanup on the conversion thread. Macros and link updates are disabled and sources are read-only. Cache keys include converter, source path, size, and modification time. Startup removes entries unused for 30 days and evicts by LRU down to 500 MB; manual clearing is disabled during search.
+2. Word files are screened before candidates enter a PDF conversion queue. `word_may_match` streams WordprocessingML text from DOCX, checks literal patterns across runs, and returns on the first possible hit without creating page numbers or official matches. Screening ignores case and relaxes whitespace and hyphens. Screening requires a normalized contiguous phrase rather than scattered characters. It reads body, header/footer, note, chart, and diagram content, excluding style definitions. Patterns containing regex operators, legacy `.doc`, dynamic fields, embedded objects, or parse failures bypass screening; enabling regex for a literal phrase does not bypass it. Ordinary images, numbering, and unused styles do not force conversion; drawing text is extracted too. Valid PDF caches take precedence. Conversion prefers Microsoft Word on Windows, with LibreOffice as fallback; a batch reuses a lazily started Word instance, with COM initialization, export, and cleanup on the conversion thread. Macros and link updates are disabled and sources are read-only. Cache keys include converter, source path, size, and modification time. Startup removes entries unused for 30 days and evicts by LRU down to 500 MB; manual clearing is disabled during search or batch PDF export.
 3. Each PDF is opened independently. For a protected document, `unlock_pdf` obtains a credential through the optional `password_requested(path, incorrect)` callback and validates it with `Document.authenticate()`. Wrong passwords can be retried; skipping produces a per-file warning. Only successful authentication invokes `password_accepted`, followed by normal extraction and matching. Corrupt, empty, textless, or unconvertible files remain non-fatal warnings.
 4. Each page is extracted with PyMuPDF `rawdict`. `TEXT_PRESERVE_IMAGES` is explicitly disabled so image payloads are never decoded during text search.
 5. Text blocks, lines, spans, and characters are traversed in reading order. Every visible character retains its page index and exact bounding box.
@@ -52,6 +62,10 @@ Encrypted PDF authentication uses a Pipe exchange: the child requests a password
 
 Preview rendering is separate from search work. Each selection creates a `PreviewRenderWorker` that opens its own document handle, renders one page to a `QImage`, and paints translucent highlight rectangles off the UI thread. A monotonically increasing request ID ensures results from older selections or resize requests are discarded. Only conversion to `QPixmap` and widget updates occur on the UI thread.
 
+The render worker extracts current-page `rawdict` text (images disabled) from the same authenticated document handle and builds immutable `PageText`/`PageGlyph`/`PageLine` data. Text preserves line/block breaks; glyph rectangles and search highlights are transformed with `page.rotation_matrix`. `SelectablePageLabel` maps mouse positions through the pixmap origin and zoom, finds the nearest line and glyph, and uses text direction to determine endpoints. One Select and copy text toolbar button uses a text-lines-and-caret glyph. Dragging paints only a translucent overlay; mouse release automatically copies the final selection. Page select-all also copies automatically without modifying the PDF. Reverse selection, Esc, Ctrl+C/⌘C, and context menus are supported. Page/file changes and re-rendering clear selection and invalidate old text layers; stale request IDs cannot restore them. Temporary Windows clipboard contention uses bounded timer retries; closing or clearing the document cancels pending copies.
+
+The preview toolbar separates navigation, copy tools, and zoom controls. Page-image copying encodes the complete rendered pixmap to PNG in memory with `QBuffer`, supplying both `image/png` and native image data through `QMimeData`. It retains search highlights at the current preview resolution but excludes the painted selection overlay. A render-readiness flag prevents stale-page copies during navigation or rendering, independent of text availability. Windows clipboard ownership is checked with bounded timer retries; clearing the document cancels pending image copies.
+
 Cancellation uses a thread-safe event checked while waiting for IPC or document preparation, terminating the PDF search subprocess when necessary. Regex execution has its own timeout to contain catastrophic backtracking. Closing the window invalidates pending preview requests and requests search cancellation.
 
 The default `README.md` is Traditional Chinese, so GitHub and the package readme open in Traditional Chinese. English is maintained in `README.en.md`. Both README files are included in source distributions.
@@ -67,7 +81,7 @@ The official display name is rgPDF. The command, Python package, cache paths, an
 
 Result tables disable the header’s default last-section stretching so per-column resize modes apply: file counts size to contents and filenames use the remaining width.
 
-An expanding toolbar spacer keeps About, Language, and Theme together on the right with a separator before About, while search controls stay left, preserving toolbar height and spacing. The status QLabel and SearchProgressBar live in the QMainWindow QStatusBar across the full window, with a 3:2 text/progress stretch ratio and a 240 px minimum progress width; long text cannot enlarge the window and remains available as a tooltip. MainWindow accepts local-URL CopyAction drops: folders select themselves and files select their containing folder. Multiple URLs use the first valid local item; remote URLs, invalid paths, and move-only events are ignored. Target selection shares Browse persistence without modifying sources or starting a search. Drops are rejected during searches and closure. Native URL dropping is disabled on input fields to avoid inserting paths into search patterns.
+An expanding toolbar spacer keeps Language and Theme on the right after a separator, while search controls stay left, preserving toolbar height and spacing. About uses a shared QAction: Windows inserts its localized title into the native system menu before Close through `system_menu.py` with pointer-sized Win32 declarations. Only its custom WM_SYSCOMMAND ID triggers a queued Qt callback. Repeated display and language changes update the existing item without duplication; standard system commands remain handled by Qt. Other platforms use a menu action with AboutRole, which macOS moves into its application menu. The status QLabel and SearchProgressBar live in the QMainWindow QStatusBar across the full window, with a 3:2 text/progress stretch ratio and a 240 px minimum progress width; long text cannot enlarge the window and remains available as a tooltip. MainWindow accepts local-URL CopyAction drops: folders select themselves and files select their containing folder. Multiple URLs use the first valid local item; remote URLs, invalid paths, and move-only events are ignored. Target selection shares Browse persistence without modifying sources or starting a search. Drops are rejected during searches, batch PDF export, and closure. Native URL dropping is disabled on input fields to avoid inserting paths into search patterns.
 
 Settings use `QSettings("rgpdf", "rgpdf")`:
 
@@ -77,6 +91,7 @@ Settings use `QSettings("rgpdf", "rgpdf")`:
 | `appearance/theme` | `system`, `light`, or `dark` |
 | `appearance/highlight_color` | Highlight color as `#rrggbb` |
 | `search/folder` | Last selected folder |
+| `export/folder` | Last Word PDF export destination |
 | `search/stem_glob` | Filename-stem glob filter; empty means no filter |
 | `search/pattern` | Last search pattern |
 | `search/use_regex` | Regular-expression mode |
@@ -97,6 +112,8 @@ README icons are exported by `uv run python scripts/generate_toolbar_icons.py`: 
 ## Testing and packaging
 
 Tests cover literal and regex matching, case behavior, cross-page mapping, dehyphenation, context, corrupt/textless PDFs, streamed results, settings, themes, and preview rendering. They also verify DOCX screening, unsupported-content fallback, cached-PDF bypass, separation of candidates and official results, screening during conversion, ready-PDF bypass, process reuse, and cancellation cleanup. Password tests also cover AES-encrypted PDFs with user/owner credentials, retry, per-file skip, empty opening passwords, preview navigation, session credential cleanup, and cancellation/closure while awaiting input.
+
+Tests also cover rotated and encrypted page text selection, automatic clipboard copying and retries, full-page PNG MIME data, system-menu dispatch/localization, Word export cache reuse and creation, output collisions, skip/overwrite, cancellation, file filtering, stale scan rejection, and the main-window export flow.
 
 ```shell
 uv sync
