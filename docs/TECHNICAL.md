@@ -60,12 +60,14 @@ The default `README.md` is Traditional Chinese, so GitHub and the package readme
 
 The main window uses a top settings toolbar and a horizontal splitter:
 
-- Left: folder, filename-stem filter, and pattern controls above file and match result tables. A three-state toolbar button selects PDF, Word, or combined discovery.
+- Left: a Search target group containing folder, filename-stem filter, and pattern controls above file and match result tables. A three-state toolbar button selects PDF, Word, or combined discovery.
 - Right: full-height PDF preview with previous/next navigation through every document page, fit-to-width, fit-to-page, and zoom.
 
 The official display name is rgPDF. The command, Python package, cache paths, and settings identifiers remain `rgpdf`. Selecting a match opens its start page; preview arrows browse adjacent pages, including pages without matches, and are disabled at document boundaries. Highlights remain tied to the selected match. Fit-to-page uses the smaller of the available viewport width/page width and height/page height ratios, without the manual zoom minimum, so even large pages fit completely. Both fit modes recompute on pane resize and page navigation; manual zoom exits either fit mode.
 
 Result tables disable the header’s default last-section stretching so per-column resize modes apply: file counts size to contents and filenames use the remaining width.
+
+An expanding toolbar spacer keeps About, Language, and Theme together on the right while search controls stay left, preserving toolbar height and spacing. The status QLabel and SearchProgressBar live in the QMainWindow QStatusBar across the full window, with a 3:2 text/progress stretch ratio and a 240 px minimum progress width; long text cannot enlarge the window and remains available as a tooltip. MainWindow accepts local-URL CopyAction drops: folders select themselves and files select their containing folder. Multiple URLs use the first valid local item; remote URLs, invalid paths, and move-only events are ignored. Target selection shares Browse persistence without modifying sources or starting a search. Drops are rejected during searches and closure. Native URL dropping is disabled on input fields to avoid inserting paths into search patterns.
 
 Settings use `QSettings("rgpdf", "rgpdf")`:
 

@@ -4,6 +4,12 @@
 
 All notable changes are documented here. Immutable releases use `vX.Y.Z`; the moving `latest` tag points to the newest published release.
 
+## 0.1.2 — 2026-10-27
+
+- Added local file/folder drops to select a search folder; files use their containing folder and drops are disabled during search.
+- Titled the upper-left pane Search target and moved progress/status into the full-window bottom status bar, with progress using about 40% of the width and a 240 px minimum.
+- Right-aligned About, Language, and Theme in that order while keeping search tools on the left.
+
 ## 0.1.1 — 2026-10-21
 
 - Changed checked toggle buttons to retain the hover background and removed their checked outlines.

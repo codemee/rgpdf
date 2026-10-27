@@ -70,10 +70,8 @@ QFrame#highlightPanel {
     border: 1px solid palette(mid);
     border-radius: 6px;
 }
-QFrame#searchArea {
+QGroupBox#searchArea {
     background: palette(alternate-base);
-    border: 1px solid palette(mid);
-    border-radius: 9px;
 }
 QHeaderView::section {
     background: palette(alternate-base);
@@ -83,9 +81,15 @@ QHeaderView::section {
     padding: 5px 7px;
     font-weight: 600;
 }
-QProgressBar { border: 0; border-radius: 3px; text-align: center; min-width: 180px; }
+QProgressBar { border: 0; border-radius: 3px; text-align: center; min-width: 240px; }
 QProgressBar::chunk { background: palette(highlight); border-radius: 3px; }
 QSplitter::handle { background: transparent; }
+QStatusBar {
+    background: palette(alternate-base);
+    border-top: 1px solid palette(mid);
+}
+QStatusBar::item { border: 0; }
+QStatusBar QLabel { padding: 2px 4px; }
 """.replace("__TOOL_BUTTON_RADIUS__", f"{SettingsButton.CORNER_RADIUS:g}px")
 
 

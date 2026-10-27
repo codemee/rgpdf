@@ -22,6 +22,7 @@ from PySide6.QtWidgets import (
     QMainWindow,
     QMenu,
     QMessageBox,
+    QSizePolicy,
     QSplitter,
     QToolBar,
     QTreeWidget,
@@ -79,6 +80,7 @@ class MainWindow(QMainWindow):
         self._converting_word_name = ""
         self._screening_state = None
         self._candidate_count = 0
+        self.setAcceptDrops(True)
         self.documents: list[DocumentMatch] = []
         self._document_indexes: dict[Path, int] = {}
         self.language_preference = self._initial_language_preference()
@@ -95,8 +97,10 @@ class MainWindow(QMainWindow):
 
         self.folder_edit = QLineEdit()
         self.folder_edit.setReadOnly(True)
+        self.folder_edit.setAcceptDrops(False)
         self.browse_button = SettingsButton("browse")
         self.stem_filter_edit = QLineEdit()
+        self.stem_filter_edit.setAcceptDrops(False)
         self.stem_filter_edit.setText(
             self.settings.value("search/stem_glob", "", type=str)
         )
@@ -106,6 +110,7 @@ class MainWindow(QMainWindow):
         self.search_scope = stored_scope
         self.scope_button = self._settings_button()
         self.pattern_edit = QLineEdit()
+        self.pattern_edit.setAcceptDrops(False)
         self.pattern_edit.setText(self.settings.value("search/pattern", "", type=str))
         use_regex = self.settings.value("search/use_regex", True, type=bool)
         self.language_button = self._settings_button()
@@ -136,7 +141,8 @@ class MainWindow(QMainWindow):
         self.progress_bar = SearchProgressBar()
         self.progress_bar.setVisible(False)
         self.status_label = QLabel()
-        self.status_label.setWordWrap(True)
+        self.status_label.setWordWrap(False)
+        self.status_label.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
 
         saved_folder = self.settings.value("search/folder", "", type=str)
         self.folder_edit.setText(saved_folder)
@@ -180,7 +186,7 @@ class MainWindow(QMainWindow):
         pattern_row.setSpacing(SettingsButton.SPACING)
         self.search_form.addRow(self.pattern_label, pattern_container)
 
-        self.search_area = QFrame()
+        self.search_area = QGroupBox()
         self.search_area.setObjectName("searchArea")
         search_area_layout = QVBoxLayout(self.search_area)
         search_area_layout.setContentsMargins(10, 8, 10, 8)
@@ -205,14 +211,15 @@ class MainWindow(QMainWindow):
             self.cache_button,
         ):
             self.settings_toolbar.addWidget(button)
-        self.settings_toolbar.addSeparator()
+        self.toolbar_spacer = QWidget()
+        self.toolbar_spacer.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        self.settings_toolbar.addWidget(self.toolbar_spacer)
         for button in (
+            self.about_button,
             self.language_button,
             self.theme_button,
         ):
             self.settings_toolbar.addWidget(button)
-        self.settings_toolbar.addSeparator()
-        self.settings_toolbar.addWidget(self.about_button)
         self.addToolBar(Qt.ToolBarArea.TopToolBarArea, self.settings_toolbar)
 
         self.highlight_panel = QFrame()
@@ -237,9 +244,8 @@ class MainWindow(QMainWindow):
         highlight_layout.addWidget(self.highlight_color_value)
         highlight_layout.addStretch()
 
-        progress_row = QHBoxLayout()
-        progress_row.addWidget(self.status_label, 1)
-        progress_row.addWidget(self.progress_bar)
+        self.statusBar().addWidget(self.status_label, 3)
+        self.statusBar().addPermanentWidget(self.progress_bar, 2)
 
         self.file_group = QGroupBox()
         self.match_group = QGroupBox()
@@ -269,7 +275,6 @@ class MainWindow(QMainWindow):
         left_layout.setContentsMargins(0, 0, 0, 0)
         left_layout.setSpacing(8)
         left_layout.addWidget(self.search_area)
-        left_layout.addLayout(progress_row)
         left_layout.addWidget(self.result_splitter, 1)
 
         self.main_splitter = QSplitter(Qt.Orientation.Horizontal)
@@ -407,6 +412,8 @@ class MainWindow(QMainWindow):
 
     def retranslate_ui(self) -> None:
         self.setWindowTitle(self.t("app_title", version=__version__))
+        self.search_area.setTitle(self.t("search_target"))
+        self.folder_edit.setToolTip(self.t("drop_target_hint"))
         for label in self.findChildren(QLabel):
             key = label.property("translation_key")
             if key:
@@ -441,15 +448,57 @@ class MainWindow(QMainWindow):
         if self.worker is not None:
             self._refresh_search_status()
         elif not self.documents:
-            self.status_label.setText(self.t("ready"))
+            self._set_status(self.t("ready"))
         self._refresh_result_labels()
 
     def _choose_folder(self) -> None:
         starting_path = self.folder_edit.text() or str(Path.home())
         folder = QFileDialog.getExistingDirectory(self, self.t("choose_folder"), starting_path)
         if folder:
-            self.folder_edit.setText(folder)
-            self.settings.setValue("search/folder", folder)
+            self._set_folder(Path(folder))
+
+    def _set_folder(self, folder: Path) -> None:
+        self.folder_edit.setText(str(folder))
+        self.settings.setValue("search/folder", str(folder))
+
+    def _dropped_folder(self, mime) -> Path | None:
+        if self._closing or self.worker is not None or not mime.hasUrls():
+            return None
+        for url in mime.urls():
+            if not url.isLocalFile():
+                continue
+            try:
+                path = Path(url.toLocalFile())
+                if path.is_dir():
+                    return path.resolve()
+                if path.is_file():
+                    return path.parent.resolve()
+            except (OSError, RuntimeError):
+                continue
+        return None
+
+    def dragEnterEvent(self, event) -> None:  # noqa: N802 - Qt API
+        if event.possibleActions() & Qt.DropAction.CopyAction and self._dropped_folder(event.mimeData()) is not None:
+            event.setDropAction(Qt.DropAction.CopyAction)
+            event.accept()
+        else:
+            event.ignore()
+
+    def dragMoveEvent(self, event) -> None:  # noqa: N802 - Qt API
+        self.dragEnterEvent(event)
+
+    def dropEvent(self, event) -> None:  # noqa: N802 - Qt API
+        folder = self._dropped_folder(event.mimeData())
+        if folder is None or not event.possibleActions() & Qt.DropAction.CopyAction:
+            event.ignore()
+            return
+        self._set_folder(folder)
+        event.setDropAction(Qt.DropAction.CopyAction)
+        event.accept()
+
+    def _set_status(self, text: str) -> None:
+        self.status_label.setText(text)
+        self.status_label.setToolTip(text)
 
     def _show_about(self) -> None:
         QMessageBox.about(
@@ -498,7 +547,7 @@ class MainWindow(QMainWindow):
         self._screening_state = None
         self._candidate_count = 0
         self._converting_word_name = ""
-        self.status_label.setText(self.t("preparing_search"))
+        self._set_status(self.t("preparing_search"))
         self._set_searching(True)
 
         worker = SearchWorker(options, passwords=self._pdf_passwords)
@@ -597,7 +646,7 @@ class MainWindow(QMainWindow):
             stages.append(self.t("searching", current=current, total=total, name=name))
         if self._converting_word_name:
             stages.append(self.t("converting_word", name=self._converting_word_name))
-        self.status_label.setText("; ".join(stages) if stages else self.t("preparing_search"))
+        self._set_status("; ".join(stages) if stages else self.t("preparing_search"))
 
     def _match_found(
         self, path: Path, relative_path: Path, preview_path: Path, match
@@ -637,11 +686,11 @@ class MainWindow(QMainWindow):
         }
         total_matches = sum(len(document.matches) for document in report.documents)
         if report.cancelled:
-            self.status_label.setText(self.t("cancelled", scanned=report.scanned_files))
+            self._set_status(self.t("cancelled", scanned=report.scanned_files))
         elif not report.documents:
-            self.status_label.setText(self.t("no_results"))
+            self._set_status(self.t("no_results"))
         else:
-            self.status_label.setText(
+            self._set_status(
                 self.t(
                     "done",
                     scanned=report.scanned_files,
@@ -665,7 +714,7 @@ class MainWindow(QMainWindow):
         self.worker = None
         self._set_searching(False)
         self.progress_bar.setVisible(False)
-        self.status_label.setText(self.t("ready"))
+        self._set_status(self.t("ready"))
         QMessageBox.critical(self, self.t("invalid"), message)
 
     def _populate_files(self) -> None:

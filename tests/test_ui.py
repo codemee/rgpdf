@@ -65,9 +65,9 @@ def test_main_window_has_three_result_columns(qtbot, monkeypatch, tmp_path) -> N
         window.line_wrap_button,
         window.highlight_button,
         window.cache_button,
+        window.about_button,
         window.language_button,
         window.theme_button,
-        window.about_button,
     ]
     assert window.left_panel is window.main_splitter.widget(0)
     expected_alignment = Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter

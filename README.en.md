@@ -26,10 +26,9 @@ The **Ignore layout line wraps** button beside Regex is off by default. When ena
 
 ## Usage
 
-When a PDF requires an opening password, rgPDF prompts with masked input. Incorrect passwords can be retried; **Skip file** continues with other documents and records a warning. Successful credentials are reused for that file during the current application session, including search, preview, navigation, and zoom. They are cleared on exit and invalidated when the source changes. Passwords are never written to settings, search results, or caches, and no decrypted PDF copy is created.
+In the upper-left **Search target** pane, choose a folder with **Browse** or drop a file/folder onto the window. A dropped file selects its containing folder; multiple items use the first valid local item. Drops are disabled during search. Selecting a target does not start a search: enter text or a regular expression and press **Search**. Select a file and matching passage to view the page and highlights. Progress and completion status appear in the full-window status bar at the bottom; hover over long status text to read it in full.
 
-Choose a folder with **Browse**, enter text or a regular expression, and click
-**Search**. Select a file and matching passage to preview its page and highlight.
+When a PDF requires an opening password, rgPDF prompts with masked input. Incorrect passwords can be retried; **Skip file** continues with other documents and records a warning. Successful credentials are reused for that file during the current application session, including search, preview, navigation, and zoom. They are cleared on exit and invalidated when the source changes. Passwords are never written to settings, search results, or caches, and no decrypted PDF copy is created.
 
 The **Filename stem filter** below **Document folder** optionally limits which files are searched. Click the help icon immediately to the left of its input field to view syntax explanations and examples. Leave it empty for no filter. It matches the entire filename without its last extension, ignoring case, and supports `*` (any string), `?` (one character), `[abc]`, `[0-9]`, and `[!abc]`. For example, `ch0*` includes `ch01.pdf` and `ch02.docx` but excludes `ch1.pdf` and `ch2.docx`; `ch01` matches that exact stem. The filter applies before PDF reading or Word conversion and works together with file-type and subfolder settings. It is saved between sessions and is independent of the text search’s regex and case settings.
 
@@ -38,6 +37,8 @@ The toolbar controls below are listed in their on-screen order. Hover over a
 button to see its current setting; clicking a three-state button cycles modes.
 
 Enabled toggle buttons retain the same background as their hover state. The dark theme uses an EVA Unit-01-inspired palette: deep purple surfaces, neon-green selections and enabled controls, with restrained orange focus and link accents. Document previews retain their original page colors.
+
+The toolbar places About, Language, and Theme together on the right; search tools remain on the left.
 
 | Toolbar icon | Control | Usage |
 | --- | --- | --- |
@@ -48,9 +49,9 @@ Enabled toggle buttons retain the same background as their hover state. The dark
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/line_wrap.png"><img src="docs/toolbar/line_wrap.png" width="34" height="34" alt="Line wrap"></picture> | Ignore layout line wraps | Join adjacent CJK lines, preserve English word spaces and original highlights; off by default. |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/highlighter.png"><img src="docs/toolbar/highlighter.png" width="34" height="34" alt="Highlighter"></picture> | Highlight color | Choose a preset or custom color. |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/cache.png"><img src="docs/toolbar/cache.png" width="34" height="34" alt="Trash can"></picture> | Clear Word cache | Confirm deletion of conversion PDFs; original Word files are preserved. Disabled during search. |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/about.png"><img src="docs/toolbar/about.png" width="34" height="34" alt="Information"></picture> | About | View version, license, and source links. |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/language_system.png"><img src="docs/toolbar/language_system.png" width="34" height="34" alt="System language"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/language_zh.png"><img src="docs/toolbar/language_zh.png" width="34" height="34" alt="Chinese"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/language_en.png"><img src="docs/toolbar/language_en.png" width="34" height="34" alt="English"></picture> | Language | Cycle system → Traditional Chinese → English. |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/theme_system.png"><img src="docs/toolbar/theme_system.png" width="34" height="34" alt="System theme"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/sun.png"><img src="docs/toolbar/sun.png" width="34" height="34" alt="Light theme"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/moon.png"><img src="docs/toolbar/moon.png" width="34" height="34" alt="Dark theme"></picture> | Color theme | Cycle system → light → dark. |
-| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/about.png"><img src="docs/toolbar/about.png" width="34" height="34" alt="Information"></picture> | About | View version, license, and source links. |
 
 Hover over an icon to see its action. Search, color, and preview controls:
 

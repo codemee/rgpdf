@@ -28,7 +28,7 @@ Word 搜尋採三階段管線：先直接讀取 DOCX 文字初篩，找到第一
 
 搜尋遇到需要密碼的 PDF 時會提示輸入，密碼以遮罩顯示；輸入錯誤可重試，按「略過此檔」則繼續搜尋其他文件，並於完成後列入警告。同一份文件在本次程式工作階段內可沿用已驗證密碼搜尋、預覽、換頁與縮放；關閉程式即清除，來源檔案變更後會重新驗證。密碼不寫入設定、搜尋結果或快取，也不產生解密後的 PDF 副本。
 
-按「瀏覽」選取資料夾，輸入文字或規則表達式後按「搜尋」。選取檔案及命中段落即可查看頁面與螢光標示。
+在左上「搜尋標的」窗格按「瀏覽」選取資料夾，或將檔案／資料夾拖放到視窗；若拖放檔案，搜尋標的設為該檔案所在的資料夾。拖放多個項目時使用第一個有效本機項目；搜尋中暫停接受拖放。設定標的不會自動搜尋，輸入文字或規則表達式後按「搜尋」。選取檔案及命中段落即可查看頁面與螢光標示。搜尋進度與完成狀態顯示在整個視窗底部的狀態列，長狀態文字可將滑鼠停留其上查看。
 
 「文件資料夾」下方的「主檔名篩選」可限制要搜尋的檔案，留空時不篩選。點擊輸入欄位左側的說明圖示，可查看語法說明與範例。此欄位比對不含最後一個副檔名的完整主檔名，不區分大小寫；支援 `*`（任意字串）、`?`（單一字元）、`[abc]`、`[0-9]` 與 `[!abc]`。例如 `ch0*` 會包含 `ch01.pdf`、`ch02.docx`，排除 `ch1.pdf`、`ch2.docx`；`ch01` 則只比對完全相同的主檔名。篩選會在讀取 PDF 或轉換 Word 前執行，並搭配檔案類型與子資料夾設定；此欄位會保存至下次啟動，不受文字搜尋的 Regex 與區分大小寫設定影響。
 
@@ -37,6 +37,8 @@ Word 搜尋採三階段管線：先直接讀取 DOCX 文字初篩，找到第一
 下表依工具列由左至右排列；滑鼠停留可查看目前設定，三態按鈕每按一次切換一個狀態。
 
 狀態按鈕啟用後會持續顯示與滑鼠移入相同的底色。深色配色採初號機風格：深紫底色、螢光綠的選取與啟用狀態，搭配少量橘色焦點與連結；文件預覽保留原始頁面顏色。
+
+工具列右側依序為「關於、語言、配色」，其餘搜尋工具靠左排列。
 
 | 工具列圖示 | 功能 | 操作說明 |
 | --- | --- | --- |
@@ -47,9 +49,9 @@ Word 搜尋採三階段管線：先直接讀取 DOCX 文字初篩，找到第一
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/line_wrap.png"><img src="docs/toolbar/line_wrap.png" width="34" height="34" alt="Line wrap"></picture> | 忽略排版換行 | 接合相鄰行的中文文字、保留英文詞間空格與原座標標示；預設關閉。 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/highlighter.png"><img src="docs/toolbar/highlighter.png" width="34" height="34" alt="螢光筆"></picture> | 螢光筆顏色 | 選取預設色或自訂顏色。 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/cache.png"><img src="docs/toolbar/cache.png" width="34" height="34" alt="垃圾桶"></picture> | 清除 Word 快取 | 確認後刪除轉換產生的 PDF，保留原始 Word 文件；搜尋期間停用。 |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/about.png"><img src="docs/toolbar/about.png" width="34" height="34" alt="資訊"></picture> | 關於 | 查看版本、授權與原始碼連結。 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/language_system.png"><img src="docs/toolbar/language_system.png" width="34" height="34" alt="系統語言"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/language_zh.png"><img src="docs/toolbar/language_zh.png" width="34" height="34" alt="中文"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/language_en.png"><img src="docs/toolbar/language_en.png" width="34" height="34" alt="英文"></picture> | 語言 | 循環切換跟隨系統 → 繁體中文 → English。 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/theme_system.png"><img src="docs/toolbar/theme_system.png" width="34" height="34" alt="系統配色"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/sun.png"><img src="docs/toolbar/sun.png" width="34" height="34" alt="淺色"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/moon.png"><img src="docs/toolbar/moon.png" width="34" height="34" alt="深色"></picture> | 配色 | 循環切換跟隨系統 → 淺色 → 深色。 |
-| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/about.png"><img src="docs/toolbar/about.png" width="34" height="34" alt="資訊"></picture> | 關於 | 查看版本、授權與原始碼連結。 |
 
 將滑鼠停留在圖示上即可查看功能說明。搜尋、顏色設定與預覽按鈕如下：
 
