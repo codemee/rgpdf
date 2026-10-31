@@ -55,9 +55,10 @@ def test_drop_uses_folder_or_file_parent_and_persists_without_search(qtbot, tmp_
 
 
 @pytest.mark.parametrize('kind', ['remote', 'missing', 'text', 'searching', 'move'])
-def test_invalid_or_inflight_drops_do_not_change_target(qtbot, tmp_path, kind):
+def test_drop_validity_and_background_search_isolation(qtbot, tmp_path, kind):
     window = _window(qtbot, tmp_path)
     window._set_folder(tmp_path)
+    original = window.current_tab
     other = tmp_path / 'other'
     other.mkdir()
     mime = QMimeData()
@@ -73,13 +74,22 @@ def test_invalid_or_inflight_drops_do_not_change_target(qtbot, tmp_path, kind):
         window.worker = SearchWorker(SearchOptions(tmp_path, 'needle'))
     actions = Qt.DropAction.MoveAction if kind == 'move' else Qt.DropAction.CopyAction
     enter, drop = _drop(window, mime, actions)
-    assert not enter.isAccepted() and not drop.isAccepted()
-    assert window.folder_edit.text() == str(tmp_path)
+    if kind == 'searching':
+        assert enter.isAccepted() and drop.isAccepted()
+        assert window.tabs.count() == 2
+        assert window.current_tab is not original
+        assert window.folder_edit.text() == str(other.resolve())
+        assert original.folder_edit.text() == str(tmp_path)
+        assert not original.worker.cancel_event.is_set()
+        original.worker = None  # The test worker was deliberately never started.
+    else:
+        assert not enter.isAccepted() and not drop.isAccepted()
+        assert window.folder_edit.text() == str(tmp_path)
     assert other.is_dir()
     window.close()
 
 
-def test_multi_drop_uses_first_valid_local_item(qtbot, tmp_path):
+def test_multi_drop_opens_all_valid_folders(qtbot, tmp_path):
     window = _window(qtbot, tmp_path)
     first, second = tmp_path / 'first', tmp_path / 'second'
     first.mkdir()
@@ -88,7 +98,8 @@ def test_multi_drop_uses_first_valid_local_item(qtbot, tmp_path):
     mime.setUrls([QUrl('https://example.com/a.pdf'),
                   QUrl.fromLocalFile(str(first)), QUrl.fromLocalFile(str(second))])
     enter, drop = _drop(window, mime)
-    assert drop.isAccepted() and window.folder_edit.text() == str(first.resolve())
+    assert drop.isAccepted() and window.folder_edit.text() == str(second.resolve())
+    assert [window.tabs.widget(i).folder_edit.text() for i in range(window.tabs.count())] == [str(first.resolve()), str(second.resolve())]
     window.close()
 
 

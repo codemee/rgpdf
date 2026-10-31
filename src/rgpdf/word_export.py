@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from contextlib import nullcontext
 from pathlib import Path
 import shutil
 import tempfile
@@ -52,14 +53,14 @@ def duplicate_pdf_names(paths: list[Path]) -> bool:
 
 
 def export_word_files(paths: list[Path], destination: Path, *, overwrite: bool = False,
-                      cancel_event: Event | None = None, progress=None) -> ExportReport:
+                      cancel_event: Event | None = None, progress=None, prepare_word=None) -> ExportReport:
     if duplicate_pdf_names(paths):
         raise ValueError("Selected files have duplicate PDF filenames.")
     if not destination.is_dir():
         raise NotADirectoryError(str(destination))
     cancel = cancel_event if cancel_event is not None else Event()
     report = ExportReport()
-    with word_conversion_session() as converters:
+    with (word_conversion_session() if prepare_word is None else nullcontext([])) as converters:
         for index, source in enumerate(paths):
             if cancel.is_set():
                 report.cancelled = True
@@ -74,7 +75,8 @@ def export_word_files(paths: list[Path], destination: Path, *, overwrite: bool =
                     continue
                 cached = cached_word_pdf(source)
                 if cached is None:
-                    cached = convert_word_to_pdf(source, converters=converters, cancel_event=cancel)
+                    cached = (prepare_word(source, cancel) if prepare_word is not None
+                              else convert_word_to_pdf(source, converters=converters, cancel_event=cancel))
                 if cancel.is_set():
                     raise ConversionCancelled()
                 # Stage a complete copy before publishing. Exclusive creation
@@ -116,10 +118,11 @@ class ExportSignals(QObject):
 
 
 class WordExportWorker(QRunnable):
-    def __init__(self, paths: list[Path], destination: Path, overwrite: bool):
+    def __init__(self, paths: list[Path], destination: Path, overwrite: bool, prepare_word=None):
         super().__init__()
         self.paths, self.destination, self.overwrite = paths, destination, overwrite
         self.cancel_event = Event()
+        self.prepare_word = prepare_word
         self.signals = ExportSignals()
 
     def cancel(self):
@@ -129,7 +132,8 @@ class WordExportWorker(QRunnable):
     def run(self):
         try:
             report = export_word_files(self.paths, self.destination, overwrite=self.overwrite,
-                                       cancel_event=self.cancel_event, progress=self.signals.progress.emit)
+                                       cancel_event=self.cancel_event, progress=self.signals.progress.emit,
+                                       prepare_word=self.prepare_word)
         except Exception as exc:
             report = ExportReport(errors=[(self.destination, str(exc) or type(exc).__name__)])
         self.signals.finished.emit(report)

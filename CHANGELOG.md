@@ -4,6 +4,14 @@
 
 All notable changes are documented here. Immutable releases use `vX.Y.Z`; the moving `latest` tag points to the newest published release.
 
+## 0.1.5 — 2026-10-31
+
+- Added independent, reorderable folder tabs with multi-item drops, duplicate-path activation, per-folder settings and session restoration.
+- Enabled concurrent searches and exports across tabs with one shared FIFO Word renderer, deduplicated requests, cache bypass and isolated cancellation.
+- Added preliminary DOCX matches before conversion, authoritative PDF replacement and animated waiting/converting/verifying previews without blocking other searches.
+- Added safe busy-tab closure, stale-event guards, per-tab progress, background-job counts and application-wide Word cache invalidation.
+- Added flat, theme-aware tabs connected to a thin content frame, with continuous inactive-tab borders, selected underlines and thin close buttons that retain their target after reordering.
+
 ## 0.1.4 — 2026-10-27
 
 - Word PDF export pairs the Word logo with a thin outward arrow within the shared 20×20 px icon footprint.

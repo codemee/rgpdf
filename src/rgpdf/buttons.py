@@ -123,11 +123,15 @@ class SettingsButton(QToolButton):
             painter.drawLine(3, -1, 3, 8)
             painter.drawLine(0, -1, 6, -1)
             painter.drawLine(0, 8, 6, 8)
+        elif self.icon_kind == "close_tab":
+            painter.translate(center)
+            painter.drawLine(-3, -3, 3, 3)
+            painter.drawLine(-3, 3, 3, -3)
         elif self.icon_kind == "cancel":
             painter.translate(center)
             painter.drawLine(-6, -6, 6, 6)
             painter.drawLine(-6, 6, 6, -6)
-        elif self.icon_kind == "browse":
+        elif self.icon_kind in {"browse", "add_folder"}:
             painter.translate(center)
             folder = QPainterPath()
             folder.moveTo(-8, 6)
@@ -139,6 +143,9 @@ class SettingsButton(QToolButton):
             folder.closeSubpath()
             painter.drawPath(folder)
             painter.drawLine(-8, -1, 8, -1)
+            if self.icon_kind == "add_folder":
+                painter.drawLine(0, 0, 0, 5)
+                painter.drawLine(-2, 2, 2, 2)
         elif self.icon_kind in {"fit_width", "fit_page"}:
             painter.translate(center)
             if self.icon_kind == "fit_width":

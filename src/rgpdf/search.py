@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from fnmatch import fnmatchcase
 from pathlib import Path
 from queue import Empty, Queue
-from threading import Event, Thread
+from threading import Event, Lock, Thread
 
 import pymupdf as fitz
 import regex
@@ -341,6 +341,91 @@ class _PipelineCancellation:
 
 
 @contextmanager
+def _service_documents(paths, cancel_event, options, service, screening, candidate_found, preliminary):
+    """Submit all candidates without making discovery or ready PDFs wait."""
+    from rgpdf.word_text import preliminary_document
+
+    ready = Queue()
+    cancellation = _PipelineCancellation(cancel_event)
+    lock = Lock()
+    pending = set()
+    finished_scanning = False
+
+    def complete(ticket, path):
+        try:
+            ready.put(_PreparedDocument(path, ticket.future.result()))
+        except Exception as exc:
+            ready.put(_PreparedDocument(path, error=exc))
+        finally:
+            ticket.release()
+            with lock:
+                pending.discard(ticket)
+                if finished_scanning and not pending:
+                    ready.put(None)
+
+    def screen():
+        nonlocal finished_scanning
+        count = 0
+        try:
+            for index, path in enumerate(paths, 1):
+                if cancellation.is_set():
+                    break
+                if screening:
+                    screening(index, len(paths), path)
+                try:
+                    if path.suffix.casefold() == ".pdf":
+                        ready.put(_PreparedDocument(path, path))
+                        continue
+                    cached = cached_word_pdf(path)
+                    if cached is not None:
+                        ready.put(_PreparedDocument(path, cached))
+                    elif word_may_match(path, options, cancellation):
+                        count += 1
+                        if candidate_found:
+                            candidate_found(path, count)
+                        if preliminary:
+                            preliminary(preliminary_document(path, options, cancellation))
+                        ticket = service.submit(path)
+                        with lock:
+                            pending.add(ticket)
+                        ticket.future.add_done_callback(lambda _, t=ticket, p=path: complete(t, p))
+                    else:
+                        ready.put(_PreparedDocument(path, skipped=True))
+                except ConversionCancelled:
+                    break
+                except Exception as exc:
+                    ready.put(_PreparedDocument(path, error=exc))
+        finally:
+            with lock:
+                finished_scanning = True
+                if not pending:
+                    ready.put(None)
+
+    producer = Thread(target=screen, name="rgpdf-word-screening")
+    producer.start()
+
+    def receive():
+        while not cancellation.is_set():
+            try:
+                item = ready.get(timeout=0.05)
+            except Empty:
+                continue
+            if item is None:
+                break
+            yield item
+
+    try:
+        yield receive()
+    finally:
+        cancellation.stopped.set()
+        producer.join()
+        with lock:
+            remaining = list(pending)
+        for ticket in remaining:
+            ticket.release()
+
+
+@contextmanager
 def _prepared_documents(
     paths: list[Path],
     cancel_event: Event | None,
@@ -350,7 +435,14 @@ def _prepared_documents(
     prepare_word: Callable[[Path, Event | None], Path] | None = None,
     screening: Callable[[int, int, Path], None] | None = None,
     candidate_found: Callable[[Path, int], None] | None = None,
+    conversion_service=None,
+    preliminary=None,
 ) -> Iterator[Iterator[_PreparedDocument]]:
+    if conversion_service is not None:
+        with _service_documents(paths, cancel_event, options, conversion_service,
+                                screening, candidate_found, preliminary) as prepared:
+            yield prepared
+        return
     # Separate screening, conversion, and PDF consumption. Neither producer waits
     # for PDF search, and ready PDFs bypass queued Word conversions.
     ready: Queue[_PreparedDocument | Exception | None] = Queue()
@@ -474,6 +566,9 @@ def search_folder(
     candidate_found: Callable[[Path, int], None] | None = None,
     password_requested: PasswordRequested | None = None,
     password_accepted: PasswordAccepted | None = None,
+    conversion_service=None,
+    preliminary=None,
+    document_resolved=None,
 ) -> SearchReport:
     if not options.root.is_dir():
         raise SearchInputError("The selected folder does not exist.")
@@ -494,7 +589,7 @@ def search_folder(
                                        password_accepted=password_accepted) if isolate_pdf_search else nullcontext()
     with process_context as pdf_process, _prepared_documents(
         documents, cancel_event, conversion_started, conversion_finished,
-        options, prepare_word, screening, candidate_found,
+        options, prepare_word, screening, candidate_found, conversion_service, preliminary,
     ) as prepared:
         for index, item in enumerate(prepared, start=1):
             path = item.path
@@ -528,6 +623,8 @@ def search_folder(
                     report.documents.append(result)
                     if document_found:
                         document_found(result)
+                if document_resolved and path.suffix.casefold() != ".pdf":
+                    document_resolved(path, result, "")
             except (
                 fitz.FileDataError,
                 fitz.EmptyFileError,
@@ -539,6 +636,8 @@ def search_folder(
                 ValueError,
             ) as exc:
                 report.warnings.append(SearchWarning(path, str(exc) or type(exc).__name__))
+                if document_resolved and path.suffix.casefold() != ".pdf":
+                    document_resolved(path, None, str(exc) or type(exc).__name__)
             except ConversionCancelled:
                 report.cancelled = True
                 break

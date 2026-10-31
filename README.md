@@ -8,6 +8,8 @@ rgPDF 是一套跨平台桌面工具，可使用純文字或規則表達式搜�
 
 ## 功能
 
+- 多資料夾標籤，各自保留搜尋條件、結果與預覽；可同時搜尋或匯出 Word PDF。
+
 - 可選擇搜尋 PDF、Word 文件（`.doc`、`.docx`）或兩者，並可選擇是否包含子資料夾。
 - 支援純文字、規則表達式及區分大小寫。
 - 支援需要密碼的 PDF：可重試、略過單一文件，並沿用已驗證密碼預覽。
@@ -18,9 +20,9 @@ rgPDF 是一套跨平台桌面工具，可使用純文字或規則表達式搜�
 - 繁體中文／英文介面，以及系統／淺色／深色主題。
 - 保存搜尋與外觀偏好。
 
-rgPDF 只搜尋 PDF 已有的文字層。搜尋 Word 文件需要 Microsoft Word（Windows）或 LibreOffice；文件會先轉成快取 PDF，再搜尋文字並提供頁面預覽。rgPDF 不會執行文件巨集、不執行 OCR，也不修改來源檔案。
+rgPDF 搜尋 PDF 已有的文字層，也能先顯示 DOCX 的初步文字命中。Word 的正式確認與頁面預覽需要 Microsoft Word（Windows）、LibreOffice 或有效的 PDF 快取。rgPDF 不會執行文件巨集、不執行 OCR，也不修改來源檔案。
 
-Word 搜尋採三階段管線：先直接讀取 DOCX 文字初篩，找到第一個可能命中就排入 PDF 轉檔，並繼續檢查其他文件；PDF 準備完成後再搜尋全部正式命中。頁碼、筆數、摘要與螢光標示均以 PDF 為準。已有有效 PDF 快取時直接搜尋快取，不再初篩。為降低排版差異造成漏搜的風險，初篩採保守判定；包含運算子的 Regex、舊式 `.doc`、欄位／特殊內容或擷取失敗的文件直接走 PDF 流程。開啟資料夾不會自動轉檔；取消搜尋會停止初篩與尚待轉檔的排程，正在執行的轉換完成或返回後清理。
+Word 搜尋會先直接讀取 DOCX 文字，立即顯示標為「待確認」的初步命中，再以 PDF 校正正式段落、筆數、頁碼及螢光標示；初步結果不提供頁碼。所有標籤的 Word 轉 PDF 共用一個依序處理的佇列，相同來源會合併轉檔，已有有效快取則直接使用。等待轉檔不會暫停其他檔案或標籤的搜尋。選到尚未就緒的結果時，預覽顯示等待／轉檔／確認動畫，PDF 完成後自動更新；確認沒有命中就移除初步結果。舊式 `.doc`、特殊內容或無法抽取的文件必要時等 PDF 確認。開啟資料夾不會自動搜尋或轉檔；取消某個標籤只取消該標籤的需求，不影響其他標籤共用的轉檔。
 
 工具列 Regex 按鈕旁的「忽略排版換行」預設關閉。啟用後，會依文字區塊、相鄰行位置及偵測到的表格儲存格接合排版換行：例如 `循環` 換行 `緩衝區` 可搜尋 `循環緩衝區`，英文 `buffer` 換行 `size` 保留詞間空格，`inter-` 換行 `national` 合併斷字。行內實際空格保留，段落／欄位／不同儲存格不主動接合，跨頁維持空格。Regex 套用在此正規化後的文字上；預覽仍標示原本每行的字元位置。此設定會保存。
 
@@ -28,7 +30,13 @@ Word 搜尋採三階段管線：先直接讀取 DOCX 文字初篩，找到第一
 
 搜尋遇到需要密碼的 PDF 時會提示輸入，密碼以遮罩顯示；輸入錯誤可重試，按「略過此檔」則繼續搜尋其他文件，並於完成後列入警告。同一份文件在本次程式工作階段內可沿用已驗證密碼搜尋、預覽、換頁與縮放；關閉程式即清除，來源檔案變更後會重新驗證。密碼不寫入設定、搜尋結果或快取，也不產生解密後的 PDF 副本。
 
-在左上「搜尋標的」窗格按「瀏覽」選取資料夾，或將檔案／資料夾拖放到視窗；若拖放檔案，搜尋標的設為該檔案所在的資料夾。拖放多個項目時使用第一個有效本機項目；搜尋或批次匯出 PDF 期間暫停接受拖放。設定標的不會自動搜尋，輸入文字或規則表達式後按「搜尋」。選取檔案及命中段落即可查看頁面與螢光標示。搜尋進度與完成狀態顯示在整個視窗底部的狀態列，長狀態文字可將滑鼠停留其上查看。
+在左上「搜尋標的」窗格按「瀏覽」、按標籤列的新增資料夾按鈕，或將檔案／資料夾拖放到視窗，即可開啟資料夾標籤。檔案使用所在資料夾，多項拖放逐一處理；已開啟的資料夾直接切換，不重複建立，搜尋或匯出期間也可繼續開啟標籤。輸入文字或規則表達式後按「搜尋」，選取檔案及命中段落即可查看預覽。狀態列顯示目前標籤的進度與其他背景工作數量，取消按鈕只作用於目前標籤。
+
+各標籤獨立保存搜尋樣式、主檔名篩選、檔案類型、搜尋選項、結果、預覽頁面、縮放與捲動位置。新標籤沿用目前搜尋條件，清空結果，匯出目的地預設為新資料夾。標籤可拖曳排序及關閉，同名資料夾會補上上層路徑，滑鼠停留可查看完整路徑；關閉工作中的標籤會詢問是否取消，確認後清理該頁工作。每個標籤一次執行一個搜尋或匯出，不同標籤可同時進行。下次啟動恢復標籤順序、目前標籤、各頁條件與匯出目的地，不恢復結果、不自動搜尋。語言、配色與螢光筆顏色全視窗共用。
+
+標籤採平面樣式，並以細線外框連接下方整個內容區。未選取時與背景融合，選取時顯示淡色底與下緣色線（淺色為藍色、深色沿用螢光綠），底線與內容框上緣貼合，未選取標籤下方也會延續細框線。關閉按鈕使用細線 ×，滑鼠移入才顯示底色。
+
+手動清除 Word 快取會影響所有標籤並移除其 Word 結果，保留原生 PDF 結果；任一標籤工作或共用轉檔尚未完成時不能清除。
 
 「文件資料夾」下方的「主檔名篩選」可限制要搜尋的檔案，留空時不篩選。點擊輸入欄位左側的說明圖示，可查看語法說明與範例。此欄位比對不含最後一個副檔名的完整主檔名，不區分大小寫；支援 `*`（任意字串）、`?`（單一字元）、`[abc]`、`[0-9]` 與 `[!abc]`。例如 `ch0*` 會包含 `ch01.pdf`、`ch02.docx`，排除 `ch1.pdf`、`ch2.docx`；`ch01` 則只比對完全相同的主檔名。篩選會在讀取 PDF 或轉換 Word 前執行，並搭配檔案類型與子資料夾設定；此欄位會保存至下次啟動，不受文字搜尋的 Regex 與區分大小寫設定影響。
 
@@ -54,7 +62,7 @@ Word 搜尋採三階段管線：先直接讀取 DOCX 文字初篩，找到第一
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/regex.png"><img src="docs/toolbar/regex.png" width="34" height="34" alt="規則表達式"></picture> | 規則表達式 | 切換 Regex；搜尋欄旁的說明圖示提供語法範例。 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/line_wrap.png"><img src="docs/toolbar/line_wrap.png" width="34" height="34" alt="Line wrap"></picture> | 忽略排版換行 | 接合相鄰行的中文文字、保留英文詞間空格與原座標標示；預設關閉。 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/highlighter.png"><img src="docs/toolbar/highlighter.png" width="34" height="34" alt="顏色色塊"></picture> | 螢光筆顏色 | 色塊顯示目前顏色；點選後可選預設色或自訂顏色。 |
-| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/cache.png"><img src="docs/toolbar/cache.png" width="34" height="34" alt="垃圾桶"></picture> | 清除 Word 快取 | 確認後刪除轉換產生的 PDF，保留原始 Word 文件；搜尋或批次匯出 PDF 期間停用。 |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/cache.png"><img src="docs/toolbar/cache.png" width="34" height="34" alt="垃圾桶"></picture> | 清除 Word 快取 | 刪除共用快取與各標籤的 Word 結果，保留來源；任一工作或轉檔期間停用。 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/export_pdf.png"><img src="docs/toolbar/export_pdf.png" width="34" height="34" alt="匯出 Word PDF"></picture> | 將 Word 檔匯出為 PDF | Word logo 搭配向外箭頭；勾選檔案與輸出資料夾，沿用快取或轉檔後匯出。 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/language_system.png"><img src="docs/toolbar/language_system.png" width="34" height="34" alt="系統語言"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/language_zh.png"><img src="docs/toolbar/language_zh.png" width="34" height="34" alt="中文"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/language_en.png"><img src="docs/toolbar/language_en.png" width="34" height="34" alt="英文"></picture> | 語言 | 循環切換跟隨系統 → 繁體中文 → English。 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/theme_system.png"><img src="docs/toolbar/theme_system.png" width="34" height="34" alt="系統配色"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/sun.png"><img src="docs/toolbar/sun.png" width="34" height="34" alt="淺色"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/moon.png"><img src="docs/toolbar/moon.png" width="34" height="34" alt="深色"></picture> | 配色 | 循環切換跟隨系統 → 淺色 → 深色。 |
@@ -64,6 +72,7 @@ Word 搜尋採三階段管線：先直接讀取 DOCX 文字初篩，找到第一
 | 圖示 | Tooltip／功能 |
 | --- | --- |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/browse.png"><img src="docs/toolbar/browse.png" width="34" height="34" alt="瀏覽…"></picture> | 瀏覽… |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/add_folder.png"><img src="docs/toolbar/add_folder.png" width="34" height="34" alt="Open folder tab"></picture> | 開啟資料夾標籤 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/search.png"><img src="docs/toolbar/search.png" width="34" height="34" alt="搜尋"></picture> | 搜尋 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/cancel.png"><img src="docs/toolbar/cancel.png" width="34" height="34" alt="取消"></picture> | 取消 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/help.png"><img src="docs/toolbar/help.png" width="34" height="34" alt="搜尋樣式說明"></picture> | 搜尋樣式說明 |

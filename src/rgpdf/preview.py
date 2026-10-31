@@ -15,12 +15,14 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QScrollArea,
+    QStackedWidget,
     QSizePolicy,
     QVBoxLayout,
     QWidget,
 )
 
 from rgpdf.buttons import SettingsButton
+from rgpdf.busy_indicator import BusyIndicator
 from rgpdf.i18n import translate
 from rgpdf.models import TextMatch
 from rgpdf.pdf_passwords import PdfPasswords
@@ -184,11 +186,24 @@ class PdfPreview(QWidget):
         self.scroll_area.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.scroll_area.setWidget(self.image_label)
         self.scroll_area.setWidgetResizable(False)
+        self.waiting_page = QWidget()
+        waiting_layout = QVBoxLayout(self.waiting_page)
+        waiting_layout.addStretch()
+        self.busy_indicator = BusyIndicator()
+        waiting_layout.addWidget(self.busy_indicator, 0, Qt.AlignmentFlag.AlignHCenter)
+        self.waiting_label = QLabel()
+        self.waiting_label.setWordWrap(True)
+        self.waiting_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        waiting_layout.addWidget(self.waiting_label)
+        waiting_layout.addStretch()
+        self.pages = QStackedWidget()
+        self.pages.addWidget(self.scroll_area)
+        self.pages.addWidget(self.waiting_page)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addLayout(toolbar)
-        layout.addWidget(self.scroll_area, 1)
+        layout.addWidget(self.pages, 1)
 
         self.previous_button.clicked.connect(lambda: self._move_page(-1))
         self.next_button.clicked.connect(lambda: self._move_page(1))
@@ -226,6 +241,7 @@ class PdfPreview(QWidget):
             self._render()
 
     def clear(self) -> None:
+        self.pages.setCurrentWidget(self.scroll_area)
         self._page_ready = False
         self._copy_timer.stop()
         self._pending_png = None
@@ -238,6 +254,16 @@ class PdfPreview(QWidget):
         self.image_label.clear()
         self.page_label.clear()
         self._update_controls()
+
+    def show_pending(self, text: str, *, animate: bool = True) -> None:
+        self.clear()
+        self.waiting_label.setText(text)
+        self.busy_indicator.setVisible(animate)
+        self.pages.setCurrentWidget(self.waiting_page)
+
+    def update_pending(self, text: str) -> None:
+        if self.pages.currentWidget() is self.waiting_page:
+            self.waiting_label.setText(text)
 
     def show_match(self, path: str, match: TextMatch) -> None:
         self.clear()

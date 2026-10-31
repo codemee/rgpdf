@@ -29,6 +29,8 @@ class PdfPasswordRequest:
 
 
 class WorkerSignals(QObject):
+    preliminary = Signal(object)
+    resolved = Signal(object, object, str)
     password_required = Signal(object)
     progress = Signal(int, int, str)
     screening = Signal(int, int, str)
@@ -45,12 +47,14 @@ class SearchWorker(QRunnable):
         self, options: SearchOptions,
         prepare_word: Callable[[Path, Event | None], Path] | None = None,
         passwords: PdfPasswords | None = None,
+        conversion_service=None,
     ) -> None:
         super().__init__()
         self.options = options
         self.signals = WorkerSignals()
         self.cancel_event = Event()
         self.prepare_word = prepare_word
+        self.conversion_service = conversion_service
         self.passwords = passwords if passwords is not None else PdfPasswords()
 
     def _request_password(self, path: Path, incorrect: bool) -> str | None:
@@ -87,6 +91,9 @@ class SearchWorker(QRunnable):
                 isolate_pdf_search=True,
                 password_requested=self._request_password,
                 password_accepted=self.passwords.remember,
+                conversion_service=self.conversion_service,
+                preliminary=self.signals.preliminary.emit,
+                document_resolved=self.signals.resolved.emit,
                 conversion_started=lambda path: self.signals.converting.emit(path.name),
                 conversion_finished=lambda: self.signals.converting.emit(""),
                 screening=lambda current, total, path: self.signals.screening.emit(

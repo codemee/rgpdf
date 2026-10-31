@@ -49,6 +49,21 @@ class DocumentMatch:
 
 
 @dataclass(frozen=True, slots=True)
+class PreliminaryMatch:
+    matched_text: str
+    context: str
+    start: int
+    end: int
+
+
+@dataclass(frozen=True, slots=True)
+class PreliminaryDocument:
+    path: Path
+    relative_path: Path
+    matches: tuple[PreliminaryMatch, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class SearchWarning:
     path: Path
     message: str

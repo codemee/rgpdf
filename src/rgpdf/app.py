@@ -19,6 +19,33 @@ from rgpdf.word_conversion import cleanup_word_cache
 BASE_STYLE = """
 QWidget { font-size: 13px; color: palette(window-text); }
 QMainWindow, QWidget#centralWidget, QMenuBar, QMenu { background: palette(window); }
+QTabWidget#folderTabs::pane {
+    border: 1px solid palette(mid);
+    border-radius: 4px;
+    background: palette(window);
+    top: -1px;
+}
+QTabBar#folderTabBar { background: palette(window); }
+QTabBar#folderTabBar::tab {
+    background: transparent;
+    color: palette(window-text);
+    border: 0;
+    border-bottom: 1px solid palette(mid);
+    padding: 6px 12px;
+    padding-bottom: 7px;
+    margin-top: 4px;
+    min-width: 110px;
+    max-width: 220px;
+    min-height: 24px;
+}
+QTabBar#folderTabBar::tab:hover:!selected { background: palette(alternate-base); }
+QTabBar#folderTabBar::tab:selected {
+    background: palette(base);
+    border-bottom: 2px solid palette(highlight);
+    padding-bottom: 6px;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+}
 QToolBar#settingsToolbar {
     background: palette(alternate-base);
     border: 0;
@@ -48,6 +75,7 @@ QToolButton:checked {
     background: palette(midlight);
     border: 0;
 }
+QToolButton#folderTabClose { border-radius: 4px; }
 QPushButton {
     border: 0;
     border-radius: 7px;
