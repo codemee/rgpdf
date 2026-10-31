@@ -93,21 +93,23 @@ class SettingsButton(QToolButton):
             if not self.isEnabled():
                 painter.setOpacity(0.45)
             size = self.COMBINED_DOCUMENT_ICON_SIZE
-            word_rect = QRectF(-10, -4, size, size)
+            word_rect = QRectF(-12, -12, size, size)
             painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(QColor("#2b579a"))
-            painter.drawRoundedRect(word_rect, 2, 2)
+            painter.drawRoundedRect(word_rect, 1.5, 1.5)
             painter.setPen(QColor("white"))
             font = painter.font()
             font.setBold(True)
             font.setPixelSize(9)
             painter.setFont(font)
             painter.drawText(word_rect, Qt.AlignmentFlag.AlignCenter, "W")
+            pdf_logo().render(painter, QRectF(-2, -2, size, size))
             painter.restore()
-            # Keep the complete mark, including the 1 px arrow stroke, within
-            # the shared 20×20 px icon footprint without scaling the pen.
-            painter.drawLine(QLineF(4, -4, 9.5, -9.5))
-            painter.drawPolyline([QPointF(4.5, -9.5), QPointF(9.5, -9.5), QPointF(9.5, -4.5)])
+            # Match scope_all's overlapping 14 px marks, reversing the order.
+            # Route down from Word, then turn right into PDF's left edge through
+            # the free lower-left corner without obscuring either logo.
+            painter.drawPolyline([QPointF(-7.5, 2.5), QPointF(-7.5, 6.5), QPointF(-2.5, 6.5)])
+            painter.drawPolyline([QPointF(-5, 4), QPointF(-2.5, 6.5), QPointF(-5, 9)])
         elif self.icon_kind == "copy_page":
             painter.translate(center)
             painter.drawPolyline([QPointF(-7, 4), QPointF(-9, 4), QPointF(-9, -9), QPointF(3, -9), QPointF(3, -7)])
@@ -165,7 +167,24 @@ class SettingsButton(QToolButton):
                 painter.setBrush(QColor(shade))
                 painter.drawEllipse(QPointF(x, y), 1.7, 1.7)
         elif self.icon_kind == "help":
-            painter.drawEllipse(center, 8, 8)
+            # Align the ring's outer edges to device pixels. A centered 1 px
+            # ellipse stroke otherwise spreads across two pixels at its axes.
+            # deviceTransform also accounts for redirected high-DPI exports.
+            transform = painter.deviceTransform()
+            inverse, _ = transform.inverted()
+            first = transform.map(center - QPointF(8, 8))
+            last = transform.map(center + QPointF(8, 8))
+            outer = inverse.mapRect(QRectF(
+                round(first.x()), round(first.y()),
+                round(last.x()) - round(first.x()),
+                round(last.y()) - round(first.y()),
+            ))
+            ring = QPainterPath()
+            ring.setFillRule(Qt.FillRule.OddEvenFill)
+            ring.addEllipse(outer)
+            ring.addEllipse(outer.adjusted(self.STROKE_WIDTH, self.STROKE_WIDTH,
+                                           -self.STROKE_WIDTH, -self.STROKE_WIDTH))
+            painter.fillPath(ring, color)
             painter.translate(center)
             question = QPainterPath()
             question.moveTo(-2.5, -3)

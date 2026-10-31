@@ -4,6 +4,11 @@
 
 All notable changes are documented here. Immutable releases use `vX.Y.Z`; the moving `latest` tag points to the newest published release.
 
+## Unreleased
+
+- Changed Word PDF export to match the combined search icon's larger overlapping marks, with Word upper-left, PDF lower-right and a 1 px arrow routed down from Word and then right into PDF.
+- Sharpened help-icon rings by aligning their outer edges to device pixels while preserving thin antialiased outlines; refreshed light/dark README icons.
+
 ## 0.1.5 — 2026-10-31
 
 - Added independent, reorderable folder tabs with multi-item drops, duplicate-path activation, per-folder settings and session restoration.
