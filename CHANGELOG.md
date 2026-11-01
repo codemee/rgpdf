@@ -4,7 +4,7 @@
 
 All notable changes are documented here. Immutable releases use `vX.Y.Z`; the moving `latest` tag points to the newest published release.
 
-## Unreleased
+## 0.1.6 — 2026-11-01
 
 - Changed Word PDF export to match the combined search icon's larger overlapping marks, with Word upper-left, PDF lower-right and a 1 px arrow routed down from Word and then right into PDF.
 - Sharpened help-icon rings by aligning their outer edges to device pixels while preserving thin antialiased outlines; refreshed light/dark README icons.
