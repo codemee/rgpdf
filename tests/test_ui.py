@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from PySide6.QtCore import QMargins, QSettings, QSize, Qt
-from PySide6.QtGui import QPalette
-from PySide6.QtWidgets import QToolBar
+from PySide6.QtCore import QMargins, QPoint, QSettings, QSize, Qt
+from PySide6.QtGui import QPalette, QPixmap, QRegion
+from PySide6.QtWidgets import QToolBar, QWidget
 
 from rgpdf import __version__
 from rgpdf.app import apply_application_theme
@@ -13,6 +13,31 @@ from rgpdf.resources import application_icon, pdf_logo
 
 import pymupdf as fitz
 import pytest
+
+
+@pytest.mark.parametrize('theme', ['light', 'dark'])
+def test_disabled_export_marks_remain_opaque_and_cover_overlap(qapp, qtbot, theme):
+    apply_application_theme(qapp, theme)
+    button = SettingsButton('export_pdf')
+    qtbot.addWidget(button)
+    button.setStyleSheet('QToolButton { background: transparent; border: 0; }')
+
+    def render():
+        pixmap = QPixmap(button.size())
+        pixmap.fill(Qt.GlobalColor.transparent)
+        button.render(pixmap, QPoint(), QRegion(), QWidget.RenderFlag.DrawChildren)
+        return pixmap.toImage()
+
+    enabled = render()
+    button.setEnabled(False)
+    muted = render()
+    word = muted.pixelColor(7, 7)
+    overlap = muted.pixelColor(17, 17)
+    pdf = muted.pixelColor(25, 17)
+    assert word.alpha() == overlap.alpha() == pdf.alpha() == 255
+    assert overlap == pdf  # The rear blue mark must not tint the front PDF.
+    assert word.lightness() > enabled.pixelColor(7, 7).lightness()
+    assert pdf.lightness() > enabled.pixelColor(25, 17).lightness()
 
 
 def test_main_window_has_three_result_columns(qtbot, monkeypatch, tmp_path) -> None:

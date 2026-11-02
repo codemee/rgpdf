@@ -15,6 +15,9 @@ def application_icon() -> QIcon:
     return QIcon(str(icon_path))
 
 
-@lru_cache(maxsize=1)
-def pdf_logo() -> QSvgRenderer:
-    return QSvgRenderer(files("rgpdf.assets").joinpath("acrobat.svg").read_bytes())
+@lru_cache(maxsize=2)
+def pdf_logo(*, disabled: bool = False) -> QSvgRenderer:
+    artwork = files("rgpdf.assets").joinpath("acrobat.svg").read_bytes()
+    if disabled:
+        artwork = artwork.replace(b'fill="#FA0F00"', b'fill="#f7a39c"')
+    return QSvgRenderer(artwork)

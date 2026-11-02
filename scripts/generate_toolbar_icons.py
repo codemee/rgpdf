@@ -16,7 +16,7 @@ def main() -> None:
     root = Path(__file__).resolve().parents[1] / "docs" / "toolbar"
     kinds = (
         "recursive", "scope_pdf", "scope_word", "scope_all", "case", "regex", "line_wrap",
-        "highlighter", "cache", "export_pdf", "language_system", "language_zh", "language_en",
+        "highlighter", "cache", "export_pdf", "export_pdf_disabled", "language_system", "language_zh", "language_en",
         "theme_system", "sun", "moon", "about",
         "browse", "add_folder", "search", "cancel", "help", "custom_color",
         "previous_page", "next_page", "zoom_out", "zoom_in", "fit_width", "fit_page", "select_text", "copy_page",
@@ -26,7 +26,8 @@ def main() -> None:
         destination = root if theme == "light" else root / "dark"
         destination.mkdir(parents=True, exist_ok=True)
         for kind in kinds:
-            button = SettingsButton(kind)
+            button = SettingsButton("export_pdf" if kind == "export_pdf_disabled" else kind)
+            button.setEnabled(kind != "export_pdf_disabled")
             button.icon_foreground = app.palette().color(QPalette.ColorRole.Text)
             if kind == "highlighter":
                 button.icon_foreground = QColor("#ffe128")

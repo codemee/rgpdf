@@ -90,12 +90,10 @@ class SettingsButton(QToolButton):
         elif self.icon_kind == "export_pdf":
             painter.translate(center)
             painter.save()
-            if not self.isEnabled():
-                painter.setOpacity(0.45)
             size = self.COMBINED_DOCUMENT_ICON_SIZE
             word_rect = QRectF(-12, -12, size, size)
             painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(QColor("#2b579a"))
+            painter.setBrush(QColor("#2b579a" if self.isEnabled() else "#9cafcc"))
             painter.drawRoundedRect(word_rect, 1.5, 1.5)
             painter.setPen(QColor("white"))
             font = painter.font()
@@ -103,7 +101,10 @@ class SettingsButton(QToolButton):
             font.setPixelSize(9)
             painter.setFont(font)
             painter.drawText(word_rect, Qt.AlignmentFlag.AlignCenter, "W")
-            pdf_logo().render(painter, QRectF(-2, -2, size, size))
+            # Muted fills stay opaque: compositing translucent marks separately
+            # would let the rear Word logo show through the foreground PDF.
+            renderer = pdf_logo() if self.isEnabled() else pdf_logo(disabled=True)
+            renderer.render(painter, QRectF(-2, -2, size, size))
             painter.restore()
             # Match scope_all's overlapping 14 px marks, reversing the order.
             # Route down from Word, then turn right into PDF's left edge through
