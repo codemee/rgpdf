@@ -5,7 +5,7 @@ import os
 
 from PySide6.QtCore import QEvent, QLocale, QSettings, Qt, QTimer
 from PySide6.QtGui import QAction, QColor
-from PySide6.QtWidgets import QFileDialog, QHBoxLayout, QLabel, QMainWindow, QMessageBox, QTabBar, QTabWidget, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QFileDialog, QFrame, QHBoxLayout, QLabel, QMainWindow, QMessageBox, QTabBar, QTabWidget, QVBoxLayout, QWidget
 
 from rgpdf import __version__
 from rgpdf.buttons import SettingsButton
@@ -54,15 +54,23 @@ class MainWindow(QMainWindow):
         central = QWidget()
         central.setObjectName('centralWidget')
         central_layout = QVBoxLayout(central)
+        self.workspace_layout = central_layout
         central_layout.setContentsMargins(12, 0, 12, 8)
-        central_layout.addWidget(self.tabs)
+        central_layout.setSpacing(0)
+        self.folder_frame = QFrame()
+        self.folder_frame.setObjectName('folderWorkspaceFrame')
+        frame_layout = QVBoxLayout(self.folder_frame)
+        frame_layout.setContentsMargins(0, 0, 0, 0)
+        frame_layout.setSpacing(0)
+        frame_layout.addWidget(self.tabs)
+        central_layout.addWidget(self.folder_frame)
         self.setCentralWidget(central)
         self.add_folder_button = SettingsButton('add_folder')
+        self.add_folder_button.setFixedSize(FolderTabBar.ADD_BUTTON_SIZE, FolderTabBar.ADD_BUTTON_SIZE)
         self.add_folder_button.clicked.connect(self.choose_folder)
-        # QTabWidget reserves sizeHint(), whereas the painted button uses a
-        # larger fixed footprint. A layout exposes that complete footprint.
+        # Expose the complete corner action footprint to QTabWidget metrics.
         corner = QWidget()
-        corner.setFixedSize(SettingsButton.BUTTON_SIZE, SettingsButton.BUTTON_SIZE)
+        corner.setFixedSize(FolderTabBar.ADD_BUTTON_SIZE, FolderTabBar.ADD_BUTTON_SIZE)
         corner_layout = QHBoxLayout(corner)
         corner_layout.setContentsMargins(0, 0, 0, 0)
         corner_layout.addWidget(self.add_folder_button)
@@ -223,7 +231,7 @@ class MainWindow(QMainWindow):
     def _switch_tab(self, index):
         previous = self._shown
         if previous is not None:
-            self.removeToolBar(previous.settings_toolbar)
+            self.workspace_layout.removeWidget(previous.settings_toolbar)
             previous.settings_toolbar.setParent(previous)
             previous.settings_toolbar.hide()
             for widget in (previous.status_label, previous.progress_bar):
@@ -234,7 +242,7 @@ class MainWindow(QMainWindow):
         self._shown = tab
         if tab is None:
             return
-        self.addToolBar(Qt.ToolBarArea.TopToolBarArea, tab.settings_toolbar)
+        self.workspace_layout.insertWidget(0, tab.settings_toolbar)
         tab.settings_toolbar.show()
         self.statusBar().addWidget(tab.status_label, 3)
         self.statusBar().addPermanentWidget(tab.progress_bar, 2)

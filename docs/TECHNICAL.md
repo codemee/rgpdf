@@ -54,6 +54,8 @@ Each tab excludes its own concurrent search/export, while different tabs run con
 8. Zero-width matches are ignored. Each non-empty match is mapped back to the bounding boxes of only the characters it covers.
 9. Match summaries stop at the nearest CJK/ASCII punctuation (`，。！？；：、,.!?;:`) or paragraph/cell newline boundary. Context radius limits always apply, even when distant punctuation exists. Whitespace is collapsed to one line and summaries are capped at 160 characters, abbreviating long matched spans when necessary. Full `matched_text`, match coordinates, and PDF highlights remain intact.
 
+`SearchOptions.whole_word` defaults to false. `compile_pattern` wraps the escaped literal or regex in `(?<!\w)(?:…)(?!\w)` so alternatives retain their scope, capture/backreference numbers are unchanged, and punctuation-ending terms such as C++ remain searchable. A verbose-mode trailing comment is terminated before closing the wrapper. Unicode word characters define boundaries, including Chinese characters and combining marks, without dictionary segmentation. PDF subprocesses and preliminary DOCX extraction share this compiler; conservative Word screening may still enqueue candidates for PDF confirmation. The per-tab `whole_word_button` sits between case and regex, uses a 1 px |ab| glyph, and is locked during that tab's search/export. Old sessions default off; new tabs inherit the current setting.
+
 The normalized text string and `CharacterRef` tuple always have identical lengths. Synthetic separators have a page reference but no rectangle, so expressions can cross pages without producing artificial highlights.
 
 ## Incremental results and concurrency
@@ -78,6 +80,10 @@ The default `README.md` is Traditional Chinese, so GitHub and the package readme
 
 ## UI and persisted settings
 
+Main and preview toolbar buttons keep their 34×34 px hit areas and centered glyphs. A 1 px QSS margin on each edge reduces hover, pressed, and checked backgrounds to 32×32 px while retaining the 8 px corner radius and existing control spacing.
+
+The tab/pane divider and inactive tab underlines use Midlight; the outer workspace frame retains Mid. Each FolderTab listens to QApplication.focusChanged and updates a focusWithin property on its search, file, match, and preview groups; QSS emphasizes only the focused pane's border. PdfPreview redirects focus to its page label, including clicks in the scroll viewport, and handles unmodified Left/Right and PageUp/PageDown before QScrollArea consumes them. Existing text copy/select shortcuts remain available. Both currentItemChanged and itemClicked select a match; show_match skips redundant renders for the same path/match/page, but returns to start_page and renders when the preview has moved, preserving zoom mode. Regression coverage exercises focus transitions, both paging key pairs, page boundaries, and re-clicking the selected match.
+
 The main window hosts the settings toolbar and folder tabs. Each folder tab uses a horizontal splitter:
 
 - Left: a Search target group containing folder, filename-stem filter, and pattern controls above file and match result tables. A three-state toolbar button selects PDF, Word, or combined discovery.
@@ -87,9 +93,9 @@ The official display name is rgPDF. The command, Python package, cache paths, an
 
 Result tables disable the header’s default last-section stretching so per-column resize modes apply: file counts size to contents and filenames use the remaining width.
 
-`MainWindow` hosts a QTabWidget; `FolderTab` owns its form, splitters, result models and preview. The host installs the active tab's toolbar and status widgets, preserving each tab's option state. Folder identities use resolved paths and Windows normcase, duplicate names use distinguishing parent suffixes, and drops open every valid local folder/file-parent even while other tabs work. A single empty tab remains after the last folder closes. FolderTabState is stored in a QSettings array, including search conditions, splitter states and export destination; order and active index are restored without results, credentials or automatic searches. Legacy settings seed the first session and remain last-used defaults. Missing paths remain visible with search/export disabled. Global appearance and session-only PDF passwords are shared. FolderTabBar reserves the full 34 px add-button footprint in its size hints, with a 42 px minimum tab row so style-specific corner metrics cannot clip the action.
+`MainWindow` hosts a QTabWidget; `FolderTab` owns its form, splitters, result models and preview. The host installs the active tab's toolbar and status widgets, preserving each tab's option state. Folder identities use resolved paths and Windows normcase, duplicate names use distinguishing parent suffixes, and drops open every valid local folder/file-parent even while other tabs work. A single empty tab remains after the last folder closes. FolderTabState is stored in a QSettings array, including search conditions, splitter states and export destination; order and active index are restored without results, credentials or automatic searches. Legacy settings seed the first session and remain last-used defaults. Missing paths remain visible with search/export disabled. Global appearance and session-only PDF passwords are shared. FolderTabBar reserves a compact 32 px tab row in its size hints; the corner add button uses a 28×28 px footprint so it remains fully visible.
 
-The folder tab stylesheet removes native bevels but gives the content pane a 1 px Mid frame with 4 px corners, shifted up 1 px to meet the selected underline. QTabWidget document mode is disabled so Qt paints the pane; a central layout provides 12 px side and 8 px bottom margins. Tab content height keeps the underline flush with the frame. Selected tabs use Base with a 2 px Highlight underline; inactive tabs are transparent with AlternateBase on hover and a 1 px Mid bottom border so their background cannot obscure the pane edge. Bottom padding is 7 px for inactive tabs and 6 px for the selected 2 px underline, preserving equal tab heights. Custom 20×20 px close buttons draw a 1 px, 6×6 px cross and dispatch through the folder widget identity, so reordering cannot change their target. Labels use middle elision and full-path tooltips.
+A shared `folderWorkspaceFrame` QFrame encloses the complete QTabWidget, including its tab bar, with a 1 px Mid border and 4 px corners. Its layout has zero margins/spacing; the central layout retains 12 px side and 8 px bottom margins, with no top gap below the toolbar. The toolbar uses the Window background and has no bottom border. QTabWidget document mode remains disabled so its pane can draw only a 1 px Midlight top divider, shifted up 1 px to meet the tab underlines; the pane has no separate side/bottom frame. Tabs have zero top margin, a 20 px minimum content height, and 5 px top padding, producing a 32 px row. Selected tabs use Base with a 2 px Highlight underline; inactive tabs are transparent with AlternateBase on hover and a 1 px Midlight bottom border so their background cannot obscure the pane edge. Bottom padding is 6 px for inactive tabs and 5 px for the selected 2 px underline, preserving equal tab heights. Custom 20×20 px close buttons draw a 1 px, 6×6 px cross and dispatch through the folder widget identity, so reordering cannot change their target. Labels use middle elision and full-path tooltips. The toolbar shares the frame’s 12 px side margins, aligning both left and right edges.
 
 Settings use `QSettings("rgpdf", "rgpdf")`:
 
@@ -107,6 +113,7 @@ Settings use `QSettings("rgpdf", "rgpdf")`:
 | `search/use_regex` | Regular-expression mode |
 | `search/ignore_line_wraps` | Layout-aware joining of physical line wraps; off by default |
 | `search/case_sensitive` | Case-sensitive matching |
+| `search/whole_word` | Whole-word matching for literal/regex; off by default, independently persisted per tab |
 | `search/recursive` | Include subfolders |
 | `search/scope` | `pdf`, `word`, or `all` |
 | `window/geometry` | Window geometry |
@@ -128,6 +135,8 @@ Tests cover literal and regex matching, case behavior, cross-page mapping, dehyp
 Tests also cover rotated and encrypted page text selection, automatic clipboard copying and retries, full-page PNG MIME data, system-menu dispatch/localization, Word export cache reuse and creation, output collisions, skip/overwrite, cancellation, file filtering, stale scan rejection, and the main-window export flow.
 
 Additional tests cover FIFO/deduplicated conversion, independent subscriber cancellation, cache bypass during blocked rendering, stale source rejection, simultaneous searches/exports across tabs, early results and ready PDFs bypassing blocked Word conversion, confirmation/no-hit/failure transitions, close confirmation and isolation, session migration/restoration, and preview state persistence.
+
+Whole-word tests cover prefixes/suffixes, underscores/digits, CJK and combining marks, punctuation-ending literals, regex alternatives and backreferences, verbose comments, case sensitivity, PDF geometry, preliminary DOCX results, subprocess propagation, and independent tab restoration.
 
 ```shell
 uv sync

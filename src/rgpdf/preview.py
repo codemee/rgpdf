@@ -7,7 +7,7 @@ from pathlib import Path
 import sys
 
 import pymupdf as fitz
-from PySide6.QtCore import QByteArray, QBuffer, QIODevice, QMimeData, QObject, QRunnable, QThreadPool, QTimer, Qt, Signal, Slot
+from PySide6.QtCore import QByteArray, QBuffer, QEvent, QIODevice, QMimeData, QObject, QRunnable, QThreadPool, QTimer, Qt, Signal, Slot
 from PySide6.QtGui import QColor, QImage, QPainter, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
@@ -118,6 +118,7 @@ class PreviewRenderWorker(QRunnable):
 class PdfPreview(QWidget):
     def __init__(self, parent: QWidget | None = None, *, passwords: PdfPasswords | None = None) -> None:
         super().__init__(parent)
+        self.setObjectName("pdfPreview")
         self._passwords = passwords
         self._path: Path | None = None
         self._match: TextMatch | None = None
@@ -186,6 +187,11 @@ class PdfPreview(QWidget):
         self.scroll_area.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.scroll_area.setWidget(self.image_label)
         self.scroll_area.setWidgetResizable(False)
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        self.setFocusProxy(self.image_label)
+        self.scroll_area.setFocusProxy(self.image_label)
+        for surface in (self.scroll_area, self.scroll_area.viewport(), self.image_label):
+            surface.installEventFilter(self)
         self.waiting_page = QWidget()
         waiting_layout = QVBoxLayout(self.waiting_page)
         waiting_layout.addStretch()
@@ -266,6 +272,13 @@ class PdfPreview(QWidget):
             self.waiting_label.setText(text)
 
     def show_match(self, path: str, match: TextMatch) -> None:
+        if self._path == Path(path) and self._match == match:
+            if self._page_index != match.start_page:
+                self._page_index = match.start_page
+                self._update_controls()
+                self._update_page_label()
+                self._render()
+            return
         self.clear()
         self._path = Path(path)
         self._match = match
@@ -275,6 +288,30 @@ class PdfPreview(QWidget):
         self._update_controls()
         self._update_page_label()
         self._render()
+
+    def eventFilter(self, watched, event) -> bool:
+        if event.type() == QEvent.Type.MouseButtonPress:
+            self.image_label.setFocus(Qt.FocusReason.MouseFocusReason)
+        if event.type() == QEvent.Type.KeyPress and self._handle_page_key(event):
+            return True
+        return super().eventFilter(watched, event)
+
+    def _handle_page_key(self, event) -> bool:
+        if event.modifiers() != Qt.KeyboardModifier.NoModifier:
+            return False
+        delta = {
+            Qt.Key.Key_Left: -1, Qt.Key.Key_PageUp: -1,
+            Qt.Key.Key_Right: 1, Qt.Key.Key_PageDown: 1,
+        }.get(event.key())
+        if delta is None:
+            return False
+        self._move_page(delta)
+        event.accept()
+        return True
+
+    def keyPressEvent(self, event) -> None:
+        if not self._handle_page_key(event):
+            super().keyPressEvent(event)
 
     def _move_page(self, delta: int) -> None:
         target = self._page_index + delta

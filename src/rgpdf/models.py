@@ -21,6 +21,7 @@ class SearchOptions:
     search_scope: str = "pdf"
     stem_glob: str = ""
     ignore_line_wraps: bool = False
+    whole_word: bool = False
 
 
 @dataclass(frozen=True, slots=True)

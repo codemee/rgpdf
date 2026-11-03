@@ -19,9 +19,14 @@ from rgpdf.word_conversion import cleanup_word_cache
 BASE_STYLE = """
 QWidget { font-size: 13px; color: palette(window-text); }
 QMainWindow, QWidget#centralWidget, QMenuBar, QMenu { background: palette(window); }
-QTabWidget#folderTabs::pane {
+QFrame#folderWorkspaceFrame {
     border: 1px solid palette(mid);
     border-radius: 4px;
+    background: palette(window);
+}
+QTabWidget#folderTabs::pane {
+    border: 0;
+    border-top: 1px solid palette(midlight);
     background: palette(window);
     top: -1px;
 }
@@ -30,26 +35,25 @@ QTabBar#folderTabBar::tab {
     background: transparent;
     color: palette(window-text);
     border: 0;
-    border-bottom: 1px solid palette(mid);
-    padding: 6px 12px;
-    padding-bottom: 7px;
-    margin-top: 4px;
+    border-bottom: 1px solid palette(midlight);
+    padding: 5px 12px;
+    padding-bottom: 6px;
+    margin-top: 0;
     min-width: 110px;
     max-width: 220px;
-    min-height: 24px;
+    min-height: 20px;
 }
 QTabBar#folderTabBar::tab:hover:!selected { background: palette(alternate-base); }
 QTabBar#folderTabBar::tab:selected {
     background: palette(base);
     border-bottom: 2px solid palette(highlight);
-    padding-bottom: 6px;
+    padding-bottom: 5px;
     border-top-left-radius: 4px;
     border-top-right-radius: 4px;
 }
 QToolBar#settingsToolbar {
-    background: palette(alternate-base);
+    background: palette(window);
     border: 0;
-    border-bottom: 1px solid palette(mid);
     padding: 0;
     spacing: 4px;
 }
@@ -68,6 +72,9 @@ QToolButton {
     border: 0;
     border-radius: __TOOL_BUTTON_RADIUS__;
     background: transparent;
+}
+QToolBar#settingsToolbar QToolButton, QWidget#pdfPreview QToolButton {
+    margin: 1px;
 }
 QToolButton:hover { background: palette(midlight); }
 QToolButton:pressed { background: palette(mid); }
@@ -93,6 +100,7 @@ QGroupBox {
     font-weight: 600;
 }
 QGroupBox::title { subcontrol-origin: margin; left: 9px; padding: 0 4px; }
+QGroupBox[focusWithin="true"] { border-color: palette(highlight); }
 QFrame#highlightPanel {
     background: palette(alternate-base);
     border: 1px solid palette(mid);

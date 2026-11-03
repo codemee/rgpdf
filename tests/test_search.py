@@ -38,6 +38,37 @@ def test_compile_plain_text_escapes_regex_characters(tmp_path: Path) -> None:
     assert not pattern.search("axb")
 
 
+@pytest.mark.parametrize('source,use_regex,text,expected', [
+    ('cat', False, 'cat Cat catalog bobcat cat2 2cat cat_cat cat-cat', ['cat', 'Cat', 'cat', 'cat']),
+    ('cat|catalog', True, 'catalog cat dogcat', ['catalog', 'cat']),
+    (r'(cat)\s+\1', True, 'cat cat cat catfish', ['cat cat']),
+    ('C++', False, 'C++ C++17 XC++', ['C++']),
+    ('貓', False, '貓 黑貓 貓咪，貓。', ['貓', '貓']),
+    ('cafe', False, 'cafe\u0301 cafe', ['cafe']),
+    ('(?x)(cat) # comment', True, 'cat catalog', ['cat']),
+])
+def test_whole_word_boundaries_and_regex_compatibility(tmp_path, source, use_regex, text, expected):
+    options = SearchOptions(tmp_path, source, use_regex=use_regex, whole_word=True)
+    compiled = compile_pattern(options)
+    assert [match.group() for match in compiled.finditer(text)] == expected
+
+
+def test_whole_word_case_and_default_substring_behavior(tmp_path):
+    assert compile_pattern(SearchOptions(tmp_path, 'cat')).search('catalog')
+    sensitive = compile_pattern(SearchOptions(tmp_path, 'cat', whole_word=True, case_sensitive=True))
+    assert sensitive.search('cat') and not sensitive.search('Cat')
+    assert not sensitive.search('catalog')
+    insensitive = compile_pattern(SearchOptions(tmp_path, '(cat)', use_regex=True, whole_word=True))
+    assert insensitive.search('CAT').group(1) == 'CAT'
+
+
+def test_pdf_whole_word_matching_preserves_result_geometry(tmp_path):
+    _write_pdf(tmp_path / 'words.pdf', [[((40, 60), 'cat catalog bobcat cat_1 Cat')]])
+    report = search_folder(SearchOptions(tmp_path, 'cat', whole_word=True))
+    assert [match.matched_text for match in report.documents[0].matches] == ['cat', 'Cat']
+    assert all(match.highlights and match.start_page == 0 for match in report.documents[0].matches)
+
+
 def test_context_is_bounded_by_nearest_chinese_punctuation() -> None:
     text = "上一句。這裡包含命中項目，後面還有內容；下一段。"
     start = text.index("命中")

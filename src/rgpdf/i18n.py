@@ -6,6 +6,7 @@ from __future__ import annotations
 
 TRANSLATIONS: dict[str, dict[str, str]] = {
     "zh_TW": {
+        'whole_word': '完整單字',
         'empty_folder_tab': '未開啟資料夾',
         'folder_missing': '資料夾不存在或無法存取，請開啟其他資料夾，或確認路徑後再試。',
         'add_folder_tab': '開啟資料夾標籤',
@@ -84,6 +85,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
             "• <code>範例\\s*\\d+</code>：『範例』、可選空白與一串數字<br>"
             "• <code>錯誤|警告</code>：符合其中任一文字<br>"
             "• <code>\\b[A-Z]{{2}}\\d{{4}}\\b</code>：兩個大寫字母加四位數字<br>"
+            "<b>完整單字</b>預設關閉，適用於純文字與 Regex。啟用時，命中前後不可緊接字母、數字或底線等 Unicode 單字字元；例如 <code>cat</code> 不符合 <code>catalog</code> 或 <code>cat_1</code>。中文不做斷詞。<br>"
             "語法參考：<a href=\"https://github.com/mrabarnett/mrab-regex#readme\">"
             "regex 語法文件</a>"
         ),
@@ -155,6 +157,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "match_count": "{count} 筆",
     },
     "en": {
+        'whole_word': 'Whole word',
         'empty_folder_tab': 'No folder open',
         'folder_missing': 'Folder is missing or inaccessible. Open another folder or check its path.',
         'add_folder_tab': 'Open folder tab',
@@ -233,6 +236,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
             "• <code>example\\s*\\d+</code>: ‘example’, optional whitespace, then digits<br>"
             "• <code>error|warning</code>: either word<br>"
             "• <code>\\b[A-Z]{{2}}\\d{{4}}\\b</code>: two uppercase letters and four digits<br>"
+            "<b>Whole word</b> is off by default and applies to literal text and regex. Matches cannot touch Unicode word characters such as letters, digits, or underscores: <code>cat</code> excludes <code>catalog</code> and <code>cat_1</code>. Chinese text is not dictionary-segmented.<br>"
             "Syntax reference: <a href=\"https://github.com/mrabarnett/mrab-regex#readme\">"
             "regex documentation</a>"
         ),

@@ -75,6 +75,15 @@ class SettingsButton(QToolButton):
                 painter.drawLine(QLineF(-5, -2, 1, -2))
                 if self.icon_kind == "zoom_in":
                     painter.drawLine(QLineF(-2, -5, -2, 1))
+        elif self.icon_kind == "whole_word":
+            painter.translate(center)
+            painter.drawLine(-9, -6, -9, 6)
+            painter.drawLine(9, -6, 9, 6)
+            font = painter.font()
+            font.setBold(True)
+            font.setPixelSize(10)
+            painter.setFont(font)
+            painter.drawText(QRectF(-7, -8, 14, 16), Qt.AlignmentFlag.AlignCenter, "ab")
         elif self.icon_kind == "line_wrap":
             painter.translate(center)
             painter.drawLine(-8, -6, 8, -6)

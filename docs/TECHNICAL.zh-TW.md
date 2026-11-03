@@ -54,6 +54,8 @@ rgPDF 支援 Python 3.12–3.13，並由 uv 管理。PySide6 提供桌面介面�
 8. 忽略零寬度命中；其他命中只映射實際涵蓋字元的方框。
 9. 命中摘要以最近的中英文標點（`，。！？；：、,.!?;:`）及段落／儲存格換行分隔為邊界，且無論有無標點，前後文都受半徑限制。摘要中的換行與空白合併成單一空格，總長度最多 160 字元；過長的命中文字亦縮略，但 `matched_text`、實際命中座標及 PDF 標示完整保留。
 
+`SearchOptions.whole_word` 預設為 false。`compile_pattern` 將跳脫後的純文字或 Regex 包在 `(?<!\w)(?:…)(?!\w)` 中，保留選擇分支範圍、捕捉群組／反向參照編號，並支援 C++ 等以標點結尾的文字；verbose 模式行尾註解會先終止再關閉包覆群組。詞界依 Unicode 單字字元判斷，包含中文與組合字元，不做字典斷詞。PDF 子程序與 DOCX 初步擷取共用此編譯器；保守 Word 初篩仍可排入待 PDF 確認的候選。各頁 `whole_word_button` 放在大小寫與 Regex 之間，使用 1 px 的 |ab| 圖示，該頁搜尋／匯出期間停用；舊設定預設關閉，新標籤沿用目前設定。
+
 正規化文字與 `CharacterRef` tuple 的長度永遠相同。人工加入的分隔空格帶有頁面參照但沒有方框，因此規則表達式可以跨頁，又不會產生不存在的反白區域。
 
 ## 漸進結果與並行處理
@@ -78,6 +80,10 @@ rgPDF 支援 Python 3.12–3.13，並由 uv 管理。PySide6 提供桌面介面�
 
 ## 介面與保存設定
 
+主工具列與預覽工具列按鈕保留 34×34 px 點擊範圍與置中圖示，以 QSS 四邊各 1 px margin 將移入、按下及啟用底色縮為 32×32 px，保留 8 px 圓角與原有按鈕間距。
+
+標籤與內容間的分隔線及未選取標籤底線使用 Midlight，工作區外框保留 Mid。各 FolderTab 監聽 QApplication.focusChanged，更新搜尋、檔案、命中與預覽群組的 focusWithin 屬性，由 QSS 強調目前焦點所在窗格的外框。PdfPreview 將焦點導向頁面標籤，包含捲動區空白處的點擊，並在 QScrollArea 處理按鍵前接收不含修飾鍵的 Left／Right、PageUp／PageDown；原有文字複製及全選快捷鍵保留。命中選取同時接收 currentItemChanged 與 itemClicked；show_match 在檔案、命中及頁面皆相同時略過重繪，已瀏覽別頁時則返回 start_page 並重繪，保留縮放模式。回歸測試涵蓋焦點轉移、兩組翻頁鍵、頁面邊界及重點同一筆命中。
+
 主視窗提供頂端設定工具列與資料夾標籤，每個標籤使用水平 splitter：
 
 - 左側：上方「搜尋標的」群組包含資料夾／主檔名篩選／樣式，下方是檔案與命中結果表；工具列三態按鈕可選擇 PDF、Word 或兩者。
@@ -87,9 +93,9 @@ rgPDF 支援 Python 3.12–3.13，並由 uv 管理。PySide6 提供桌面介面�
 
 結果表停用標頭預設的最後一欄伸展，讓各欄的調整模式生效：檔案筆數依內容取寬，檔名使用剩餘寬度。
 
-`MainWindow` 管理 QTabWidget，`FolderTab` 各自持有表單、splitter、結果模型與預覽；主視窗安裝目前頁的工具列及狀態元件，以保留各頁選項。資料夾以解析後路徑與 Windows normcase 去重，同名標籤增加可區別的上層路徑；拖放逐一開啟有效資料夾／檔案所在目錄，其他頁工作中仍可開啟。最後一頁關閉後保留空白起始頁。FolderTabState 透過 QSettings array 保存各頁條件、splitter 與匯出目的地，恢復順序與目前頁但不還原結果、密碼或自動搜尋。舊設定建立首次工作階段，並保留為最後使用的預設值；失效路徑仍顯示但停用搜尋與匯出。外觀與僅本次工作階段有效的 PDF 密碼共用。 FolderTabBar 的尺寸提示為完整 34 px 新增按鈕預留空間，標籤列最小高度為 42 px，避免不同樣式的 corner widget 度量裁切按鈕。
+`MainWindow` 管理 QTabWidget，`FolderTab` 各自持有表單、splitter、結果模型與預覽；主視窗安裝目前頁的工具列及狀態元件，以保留各頁選項。資料夾以解析後路徑與 Windows normcase 去重，同名標籤增加可區別的上層路徑；拖放逐一開啟有效資料夾／檔案所在目錄，其他頁工作中仍可開啟。最後一頁關閉後保留空白起始頁。FolderTabState 透過 QSettings array 保存各頁條件、splitter 與匯出目的地，恢復順序與目前頁但不還原結果、密碼或自動搜尋。舊設定建立首次工作階段，並保留為最後使用的預設值；失效路徑仍顯示但停用搜尋與匯出。外觀與僅本次工作階段有效的 PDF 密碼共用。FolderTabBar 的尺寸提示保留 32 px 標籤列，新增按鈕為 28×28 px，避免裁切。
 
-資料夾標籤樣式移除原生立體效果，內容面板則使用 1 px Mid 細框與 4 px 圓角，向上貼合 1 px 以連接選取底線。QTabWidget 關閉 document mode 才能繪出面板框線；中央布局保留左右 12 px、下方 8 px 留白，標籤內容高度讓底線緊貼內容框上緣。選取標籤以 Base 底色搭配 2 px Highlight 下緣線，未選取時透明、移入時使用 AlternateBase，並以 1 px Mid 下緣框線延續面板上緣，避免背景遮線。未選取標籤下方 padding 為 7 px，選取的 2 px 底線則搭配 6 px padding，維持相同高度。自訂 20×20 px 關閉按鈕以 1 px 線條繪製 6×6 px 叉號，依資料夾元件識別觸發關閉，排序後不會關錯標籤；長標題從中間省略，完整路徑保留在 tooltip。
+共用的 `folderWorkspaceFrame` QFrame 以 1 px Mid 細框與 4 px 圓角完整包住 QTabWidget，包含標籤列與內容。框內布局 margins／spacing 均為零；中央布局保留左右 12 px、下方 8 px 留白，工具列與外框之間沒有頂端間隔，工具列也不繪製底線。QTabWidget 保持關閉 document mode，面板只繪製向上貼合 1 px 的頂端細分隔線，接續標籤底線，不另繪側框或底框。標籤頂端 margin 為零、內容最小高度為 20 px，維持 32 px 標籤列而不增加垂直空隙。選取標籤以 Base 底色搭配 2 px Highlight 下緣線，未選取時透明、移入時使用 AlternateBase，並以 1 px Midlight 下緣框線延續面板上緣，避免背景遮線。未選取標籤下方 padding 為 6 px，選取的 2 px 底線則搭配 5 px padding，維持相同高度。自訂 20×20 px 關閉按鈕以 1 px 線條繪製 6×6 px 叉號，依資料夾元件識別觸發關閉，排序後不會關錯標籤；長標題從中間省略，完整路徑保留在 tooltip。工具列使用 Window 底色；標籤上方 padding 為 5 px。工具列與圓角框共用左右各 12 px 留白，左右邊界對齊。
 
 設定使用 `QSettings("rgpdf", "rgpdf")`：
 
@@ -107,6 +113,7 @@ rgPDF 支援 Python 3.12–3.13，並由 uv 管理。PySide6 提供桌面介面�
 | `search/use_regex` | 規則表達式模式 |
 | `search/ignore_line_wraps` | 忽略排版換行；預設關閉 |
 | `search/case_sensitive` | 區分大小寫 |
+| `search/whole_word` | 純文字／Regex 完整單字比對；預設關閉，各標籤獨立保存 |
 | `search/recursive` | 包含子資料夾 |
 | `search/scope` | `pdf`、`word` 或 `all` |
 | `window/geometry` | 視窗位置與大小 |
@@ -128,6 +135,8 @@ README 圖示由 `uv run python scripts/generate_toolbar_icons.py` 匯出：淺�
 測試亦涵蓋旋轉與加密頁面的文字選取、自動複製與剪貼簿重試、整頁 PNG MIME 資料、系統功能表事件與語言切換、Word 匯出的快取重用與建立、檔名衝突、略過／覆寫、取消、檔案篩選、舊掃描結果拒絕及主視窗匯出流程。
 
 新增測試涵蓋 FIFO／合併轉檔、獨立訂閱取消、轉檔忙碌時快取直接使用、來源變更拒絕、多標籤搜尋／匯出並行、初步結果與原生 PDF 不等待 Word、確認後無命中／失敗狀態、關閉確認與隔離、工作階段遷移／恢復及預覽狀態保存。
+
+完整單字測試涵蓋前後綴、底線／數字、中文與組合字元、標點結尾的純文字、Regex 分支及反向參照、verbose 註解、大小寫、PDF 座標、DOCX 初步結果、子程序傳遞及各頁獨立恢復。
 
 ```shell
 uv sync

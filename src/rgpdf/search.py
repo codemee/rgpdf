@@ -93,7 +93,15 @@ def compile_pattern(options: SearchOptions) -> regex.Pattern[str]:
     if not options.case_sensitive:
         flags |= regex.IGNORECASE | regex.FULLCASE
     try:
-        return regex.compile(source, flags)
+        compiled = regex.compile(source, flags)
+        if options.whole_word:
+            # Group alternatives without changing capture numbers, and use
+            # lookarounds so punctuation-ending terms such as C++ still work.
+            # A trailing verbose-mode comment must not swallow the wrapper.
+            suffix = "\n" if compiled.flags & regex.VERBOSE else ""
+            source = rf"(?<!\w)(?:{source}{suffix})(?!\w)"
+            compiled = regex.compile(source, flags)
+        return compiled
     except regex.error as exc:
         raise SearchInputError(str(exc)) from exc
 

@@ -61,6 +61,7 @@ def test_main_window_has_three_result_columns(qtbot, monkeypatch, tmp_path) -> N
         window.theme_button,
         window.recursive_button,
         window.case_button,
+        window.whole_word_button,
         window.scope_button,
         window.regex_button,
         window.line_wrap_button,
@@ -74,7 +75,7 @@ def test_main_window_has_three_result_columns(qtbot, monkeypatch, tmp_path) -> N
     assert all(button.contentsMargins() == QMargins(4, 4, 4, 4) for button in settings_buttons)
     assert isinstance(window.settings_toolbar, QToolBar)
     assert window.settings_toolbar.layout().spacing() == 4
-    assert len(window.settings_toolbar.findChildren(SettingsButton)) == 10
+    assert len(window.settings_toolbar.findChildren(SettingsButton)) == 11
     toolbar_buttons = [
         widget
         for action in window.settings_toolbar.actions()
@@ -86,6 +87,7 @@ def test_main_window_has_three_result_columns(qtbot, monkeypatch, tmp_path) -> N
         window.recursive_button,
         window.scope_button,
         window.case_button,
+        window.whole_word_button,
         window.regex_button,
         window.line_wrap_button,
         window.highlight_button,

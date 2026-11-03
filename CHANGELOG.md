@@ -4,6 +4,13 @@
 
 All notable changes are documented here. Immutable releases use `vX.Y.Z`; the moving `latest` tag points to the newest published release.
 
+## 0.1.8 — 2026-11-03
+
+- Reduced main and preview toolbar hover/checked backgrounds to 32×32 px while retaining 34×34 px hit areas and existing spacing.
+- Softened the tab/content divider, added pane focus indicators and preview keyboard paging, and made clicking the selected match return to its page after browsing elsewhere.
+- Extended the rounded workspace frame around both tabs and content, removing the toolbar bottom rule and extra top spacing. Matched the toolbar background to the window and reduced the tab row to 32 px.
+- Added a per-tab Whole word search toggle for literal and regex modes, shared by preliminary DOCX and authoritative PDF matching, with Unicode boundaries, persisted settings, localized help and light/dark toolbar artwork.
+
 ## 0.1.7 — 2026-11-02
 
 - Replaced translucent disabled Word-to-PDF export marks with opaque pastel versions so overlapping logos remain solid; added light/dark disabled-icon documentation artwork.

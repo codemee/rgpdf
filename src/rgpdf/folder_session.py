@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 TAB_DEFAULTS = {
     "search/folder": "", "search/pattern": "", "search/stem_glob": "",
     "search/scope": "pdf", "search/use_regex": True,
-    "search/case_sensitive": False, "search/recursive": True,
+    "search/case_sensitive": False, "search/whole_word": False, "search/recursive": True,
     "search/ignore_line_wraps": False, "export/folder": "",
     "window/main_splitter": None, "window/result_splitter": None,
 }

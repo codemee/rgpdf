@@ -13,7 +13,7 @@ from rgpdf.conversion_service import WordConversionService
 from rgpdf.export_dialog import WordExportDialog
 from rgpdf.folder_tab import FolderTab
 from rgpdf.main_window import MainWindow
-from rgpdf.models import PreliminaryDocument, SearchOptions
+from rgpdf.models import DocumentMatch, PreliminaryDocument, SearchOptions, TextMatch
 from rgpdf.search import search_folder
 from rgpdf.word_text import preliminary_document
 
@@ -49,6 +49,12 @@ def test_tab_identity_independent_conditions_and_restore(qtbot, tmp_path):
     button = window.add_folder_button
     assert window.tabs.rect().contains(QRect(button.mapTo(window.tabs, QPoint(0, 0)), button.size()))
     assert button.parentWidget().rect().contains(button.geometry())
+    assert window.folder_frame.isAncestorOf(window.tabs.tabBar())
+    assert window.folder_frame.isAncestorOf(window.current_tab)
+    assert window.folder_frame.layout().contentsMargins().isNull()
+    frame_top = window.folder_frame.mapTo(window, QPoint(0, 0)).y()
+    toolbar_bottom = window.settings_toolbar.mapTo(window, QPoint(0, window.settings_toolbar.height())).y()
+    assert frame_top == toolbar_bottom
     first = window.open_folder(a)
     assert isinstance(first, FolderTab)
     first.pattern_edit.setText('first')
@@ -126,7 +132,7 @@ def test_inactive_tab_does_not_cover_content_border(qapp, qtbot, tmp_path, theme
     image = pixmap.toImage()
     for index in range(bar.count()):
         rect = bar.tabRect(index)
-        role = QPalette.ColorRole.Highlight if index == 0 else QPalette.ColorRole.Mid
+        role = QPalette.ColorRole.Highlight if index == 0 else QPalette.ColorRole.Midlight
         assert image.pixelColor(rect.center().x(), rect.bottom()) == bar.palette().color(role)
 
 
@@ -138,6 +144,90 @@ def test_preliminary_text_has_no_pages_and_keeps_paragraph_context(tmp_path):
     assert not preliminary_document(source, SearchOptions(tmp_path, 'NEEDLE', case_sensitive=True)).matches
     regex = preliminary_document(source, SearchOptions(tmp_path, r'n.e+dl.', use_regex=True))
     assert regex.matches[0].matched_text == 'needle'
+
+
+def test_preview_keyboard_focus_and_reclick_returns_to_hit(qapp, qtbot, tmp_path):
+    window = _window(qtbot, tmp_path)
+    path = tmp_path / 'pages.pdf'
+    with fitz.open() as pdf:
+        for _ in range(3):
+            pdf.new_page().insert_text((72, 72), 'needle')
+        pdf.save(path)
+    match = TextMatch('needle', 'needle', 0, 6, 1, 1, ())
+    tab = window.current_tab
+    tab.documents = [DocumentMatch(path, path.name, (match,))]
+    tab._populate_files()
+    preview = tab.preview
+    qtbot.waitUntil(lambda: preview._page_ready and not preview._workers)
+    tab.match_list.setFocus()
+    qtbot.waitUntil(lambda: bool(tab.match_group.property('focusWithin')))
+    qtbot.mouseClick(preview.scroll_area.viewport(), Qt.MouseButton.LeftButton, pos=QPoint(1, 1))
+    qtbot.waitUntil(lambda: preview.image_label.hasFocus())
+    assert tab.preview_group.property('focusWithin')
+    assert not tab.match_group.property('focusWithin')
+    qtbot.keyClick(preview.image_label, Qt.Key.Key_Right)
+    assert preview._page_index == 2
+    qtbot.keyClick(preview.image_label, Qt.Key.Key_PageDown)
+    assert preview._page_index == 2  # Last-page boundary.
+    qtbot.keyClick(preview.image_label, Qt.Key.Key_Left)
+    assert preview._page_index == 1
+    qtbot.keyClick(preview.image_label, Qt.Key.Key_PageUp)
+    assert preview._page_index == 0
+    qtbot.keyClick(preview.image_label, Qt.Key.Key_PageUp)
+    assert preview._page_index == 0
+    item = tab.match_list.currentItem()
+    qtbot.mouseClick(tab.match_list.viewport(), Qt.MouseButton.LeftButton,
+                    pos=tab.match_list.visualItemRect(item).center())
+    assert preview._page_index == 1
+    qtbot.waitUntil(lambda: preview._page_ready and not preview._workers)
+    assert tab.match_group.property('focusWithin')
+    assert not tab.preview_group.property('focusWithin')
+    request = preview._request_id
+    qtbot.mouseClick(tab.match_list.viewport(), Qt.MouseButton.LeftButton,
+                    pos=tab.match_list.visualItemRect(item).center())
+    assert preview._request_id == request  # Same hit/page does not rerender.
+    window.close()
+    qtbot.waitUntil(lambda: not window.isVisible())
+
+
+def test_whole_word_applies_to_preliminary_docx_results(tmp_path):
+    source = _docx(tmp_path / 'words.docx', 'cat catalog cat_cat Cat', 'cat')
+    result = preliminary_document(source, SearchOptions(tmp_path, 'cat', whole_word=True))
+    assert [match.matched_text for match in result.matches] == ['cat', 'Cat', 'cat']
+
+
+def test_whole_word_is_independent_persisted_and_reaches_pdf_child(qtbot, tmp_path):
+    a, b = tmp_path / 'a', tmp_path / 'b'
+    a.mkdir()
+    b.mkdir()
+    _pdf(a / 'words.pdf', 'cat catalog')
+    _pdf(b / 'words.pdf', 'cat catalog')
+    window = _window(qtbot, tmp_path)
+    first = window.open_folder(a)
+    assert not first.whole_word_button.isChecked()
+    assert first.whole_word_button.toolTip().startswith('Whole word')
+    first.pattern_edit.setText('cat')
+    first.whole_word_button.click()
+    first._start_search()
+    assert not first.whole_word_button.isEnabled()
+    second = window.open_folder(b)
+    assert second.whole_word_button.isChecked()
+    second.whole_word_button.click()
+    second._start_search()
+    qtbot.waitUntil(lambda: first.worker is None and second.worker is None, timeout=15000)
+    assert len(first.documents[0].matches) == 1
+    assert len(second.documents[0].matches) == 2
+    assert first.whole_word_button.isEnabled()
+    assert first._options().whole_word and not second._options().whole_word
+    window.close()
+    qtbot.waitUntil(lambda: not window.isVisible())
+    reopened = MainWindow(lambda _: None, window.settings)
+    qtbot.addWidget(reopened)
+    assert reopened.tabs.widget(0).whole_word_button.isChecked()
+    assert not reopened.tabs.widget(1).whole_word_button.isChecked()
+    reopened.language = 'zh_TW'
+    reopened.retranslate_ui()
+    assert reopened.tabs.widget(0).whole_word_button.toolTip().startswith('完整單字')
 
 
 def test_ready_pdfs_and_later_preliminary_results_bypass_blocked_word(qtbot, tmp_path, monkeypatch):

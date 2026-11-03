@@ -7,16 +7,19 @@ from rgpdf.buttons import SettingsButton
 
 
 class FolderTabBar(QTabBar):
-    """Reserve the actual action-button height in QTabWidget style metrics."""
+    """Keep compact tabs tall enough for their corner action."""
+
+    ROW_HEIGHT = 32
+    ADD_BUTTON_SIZE = 28
 
     def sizeHint(self):
         size = super().sizeHint()
-        size.setHeight(max(size.height(), SettingsButton.BUTTON_SIZE + 2 * SettingsButton.PADDING))
+        size.setHeight(max(size.height(), self.ROW_HEIGHT))
         return size
 
     def minimumSizeHint(self):
         size = super().minimumSizeHint()
-        size.setHeight(max(size.height(), SettingsButton.BUTTON_SIZE + 2 * SettingsButton.PADDING))
+        size.setHeight(max(size.height(), self.ROW_HEIGHT))
         return size
 
 

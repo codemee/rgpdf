@@ -9,6 +9,7 @@ from PySide6.QtCore import QFileSystemWatcher, QLocale, Qt, QThreadPool, QTimer,
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QAbstractItemView,
+    QApplication,
     QColorDialog,
     QFormLayout,
     QFrame,
@@ -115,6 +116,10 @@ class FolderTab(QWidget):
         self.case_button.setChecked(
             self.settings.value("search/case_sensitive", False, type=bool)
         )
+        self.whole_word_button = self._settings_button(checkable=True)
+        self.whole_word_button.setChecked(
+            self.settings.value("search/whole_word", False, type=bool)
+        )
         self.recursive_button = self._settings_button(checkable=True)
         self.recursive_button.setChecked(
             self.settings.value("search/recursive", True, type=bool)
@@ -190,6 +195,7 @@ class FolderTab(QWidget):
             self.recursive_button,
             self.scope_button,
             self.case_button,
+            self.whole_word_button,
             self.regex_button,
             self.line_wrap_button,
         ):
@@ -279,6 +285,7 @@ class FolderTab(QWidget):
         self.setObjectName("folderTab")
 
         self._connect_signals()
+        QApplication.instance().focusChanged.connect(self._focus_changed)
         self._restore_window_state()
         self.retranslate_ui()
         self._queue_word_scan()
@@ -374,6 +381,7 @@ class FolderTab(QWidget):
         self.theme_button.clicked.connect(self._cycle_theme)
         self.recursive_button.toggled.connect(self._recursive_changed)
         self.case_button.toggled.connect(self._case_changed)
+        self.whole_word_button.toggled.connect(self._whole_word_changed)
         self.regex_button.toggled.connect(self._regex_changed)
         self.line_wrap_button.toggled.connect(self._line_wrap_changed)
         self.scope_button.clicked.connect(self._cycle_search_scope)
@@ -385,6 +393,7 @@ class FolderTab(QWidget):
         self.custom_color_button.clicked.connect(self._choose_highlight_color)
         self.file_list.currentItemChanged.connect(self._file_selected)
         self.match_list.currentItemChanged.connect(self._match_selected)
+        self.match_list.itemClicked.connect(self._match_selected)
 
     def _restore_window_state(self) -> None:
         main_splitter_state = self.settings.value("window/main_splitter")
@@ -548,6 +557,7 @@ class FolderTab(QWidget):
             search_scope=self.search_scope,
             stem_glob=self.stem_filter_edit.text(),
             ignore_line_wraps=self.line_wrap_button.isChecked(),
+            whole_word=self.whole_word_button.isChecked(),
         )
 
     def _start_search(self) -> None:
@@ -648,6 +658,7 @@ class FolderTab(QWidget):
             self.regex_button,
             self.line_wrap_button,
             self.case_button,
+            self.whole_word_button,
             self.recursive_button,
             self.scope_button,
             self.cache_button,
@@ -833,6 +844,15 @@ class FolderTab(QWidget):
         if select_first and self.match_list.currentItem() is None:
             self.match_list.setCurrentItem(match_item)
 
+    def _focus_changed(self, _old, current) -> None:
+        for group in (self.search_area, self.file_group, self.match_group, self.preview_group):
+            focused = current is not None and (current is group or group.isAncestorOf(current))
+            if group.property("focusWithin") != focused:
+                group.setProperty("focusWithin", focused)
+                group.style().unpolish(group)
+                group.style().polish(group)
+                group.update()
+
     def _match_selected(self, item: QTreeWidgetItem | None, _previous=None) -> None:
         current_file = self.file_list.currentItem()
         file_row = self.file_list.indexOfTopLevelItem(current_file) if current_file else -1
@@ -875,6 +895,10 @@ class FolderTab(QWidget):
 
     def _case_changed(self, checked: bool) -> None:
         self.settings.setValue("search/case_sensitive", checked)
+        self._refresh_settings_buttons()
+
+    def _whole_word_changed(self, checked: bool) -> None:
+        self.settings.setValue("search/whole_word", checked)
         self._refresh_settings_buttons()
 
     def _line_wrap_changed(self, checked: bool) -> None:
@@ -948,6 +972,10 @@ class FolderTab(QWidget):
             f"{self.t('case')}：{self.t('enabled' if self.case_button.isChecked() else 'disabled')}"
         )
         self.case_button.setAccessibleName(self.case_button.toolTip())
+        self.whole_word_button.set_icon_kind("whole_word")
+        self.whole_word_button.setToolTip(
+            f"{self.t('whole_word')}：{self.t('enabled' if self.whole_word_button.isChecked() else 'disabled')}"
+        )
         self.line_wrap_button.setToolTip(
             f"{self.t('ignore_line_wraps')}：{self.t('enabled' if self.line_wrap_button.isChecked() else 'disabled')}"
         )

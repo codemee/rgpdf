@@ -11,7 +11,7 @@ The **rg** in its name pays homage to the text-search tool **ripgrep**.
 - Multiple folder tabs with independent search conditions, results, and preview state; concurrent searches and Word PDF exports.
 
 - Search PDFs, Word documents (`.doc` and `.docx`), or both in a folder, optionally including subfolders.
-- Plain-text and regular-expression modes with optional case sensitivity.
+- Plain-text and regular-expression modes with optional case sensitivity and whole-word matching.
 - Password-protected PDFs with retry, per-file skip, and authenticated page preview.
 - Matches across lines and page boundaries, including line-end dehyphenation.
 - Incremental per-match results without blocking the interface.
@@ -20,9 +20,13 @@ The **rg** in its name pays homage to the text-search tool **ripgrep**.
 - English and Traditional Chinese interfaces, plus system/light/dark themes.
 - Persistent search and appearance preferences.
 
+Click the preview page or its surrounding blank area to focus it, then use Left/Right or Page Up/Page Down to browse pages. The search target, file, match, and preview panes emphasize their border when they contain keyboard focus. Clicking the same match again returns to its first page after browsing elsewhere; clicking it on that page avoids reloading. A subtle thin divider sits below the tab row.
+
 rgPDF searches existing PDF text layers and can display preliminary DOCX text matches immediately. Official Word verification and page previews require Microsoft Word (Windows), LibreOffice, or a valid cached PDF. rgPDF never runs document macros, performs OCR, or modifies source files.
 
 Word search displays preliminary DOCX text matches marked unconfirmed, without page numbers, then replaces them with PDF-confirmed passages, counts, pages, and highlights. All tabs share one FIFO Word-to-PDF queue, merging requests for the same source and bypassing the queue for valid caches. Waiting for conversion never stops searching other files or tabs. Selecting a pending result shows an animated waiting/converting/verifying preview, updated automatically when ready. Preliminary false positives are removed. Legacy `.doc`, unsupported content, or unreadable text may require PDF verification before results are available. Opening folders does not start searches or conversion. Cancelling one tab releases only its requests and preserves conversions needed by other tabs.
+
+**Whole word**, between Case sensitive and Regex, is off by default. When enabled, matches cannot touch Unicode word characters such as letters, digits, or underscores: `cat` matches `cat` and `cat-cat`, but excludes `catalog`, `bobcat`, and `cat_1`. It applies to literal text and regex and can be combined with case sensitivity. Preliminary DOCX and authoritative PDF results use the same setting. Contiguous Chinese characters count as word characters; no dictionary-based segmentation is performed. The option is saved independently per tab and cannot be changed during that tab's search.
 
 The **Ignore layout line wraps** button beside Regex is off by default. When enabled, text blocks, adjacent-line geometry, and detected table cells guide joining: `循環` followed by `緩衝區` on the next line matches `循環緩衝區`; `buffer` / `size` retains a word space, and `inter-` / `national` removes the wrap hyphen. Actual spaces within lines are preserved. Paragraphs, columns, and different cells are not deliberately joined; page boundaries retain a space. Regex runs on this normalized text, while preview highlights retain each original character location. The setting is saved.
 
@@ -32,7 +36,7 @@ Use Browse in Search target, the add-folder button on the tab bar, or file/folde
 
 Each tab retains its own pattern, stem filter, file types, search options, results, preview page, zoom, and scrolling. New tabs inherit current search conditions but start with empty results and default their export destination to the new folder. Tabs can be reordered and closed; duplicate folder names include parent paths, and tooltips show full paths. Closing a busy tab asks to cancel its work, then cleans up only that tab. One search or export runs per tab, while different tabs can run concurrently. Restarting restores tab order, active tab, conditions, and export destinations without restoring results or automatically searching. Language, theme, and highlight color are application-wide.
 
-Flat tabs connect to the entire content area through a thin enclosing frame. Inactive tabs blend into the background; the selected tab has a contrasting surface and a bottom accent line (blue in light mode, neon green in dark mode) meeting the frame's top edge; inactive tabs also continue that thin edge. Close buttons use a thin × with a background only on hover.
+One thin rounded frame encloses both the tab strip and content, immediately below the toolbar without a separate toolbar bottom rule or extra top gap. The toolbar matches the window background, and the tab row is a compact 32 px high. Flat inactive tabs blend into the background; the selected tab has a contrasting surface and a bottom accent line (blue in light mode, neon green in dark mode). Inactive tabs continue the thin divider between tabs and content. Close buttons use a thin × with a background only on hover. The toolbar shares the frame’s 12 px side margins, aligning both left and right edges.
 
 Clearing the shared Word cache removes Word results from all tabs while preserving native PDF results. Clearing is disabled while any tab or shared conversion remains active.
 
@@ -59,6 +63,7 @@ The toolbar places Language and Theme on the right; search tools remain on the l
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/recursive.png"><img src="docs/toolbar/recursive.png" width="34" height="34" alt="Nested folders"></picture> | Include subfolders | Toggle recursive folder search. |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/scope_pdf.png"><img src="docs/toolbar/scope_pdf.png" width="34" height="34" alt="PDF"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/scope_word.png"><img src="docs/toolbar/scope_word.png" width="34" height="34" alt="Word"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/scope_all.png"><img src="docs/toolbar/scope_all.png" width="34" height="34" alt="PDF and Word"></picture> | File types | Cycle PDF → Word (DOC/DOCX) → both. Word requires Microsoft Word on Windows or LibreOffice. |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/case.png"><img src="docs/toolbar/case.png" width="34" height="34" alt="Aa"></picture> | Case sensitive | Toggle case-sensitive matching. |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/whole_word.png"><img src="docs/toolbar/whole_word.png" width="34" height="34" alt="Whole word"></picture> | Whole word | Match complete words in literal and regex modes; off by default. |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/regex.png"><img src="docs/toolbar/regex.png" width="34" height="34" alt="Regular expression"></picture> | Regular expression | Toggle regex; use the help icon beside the search field for examples. |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/line_wrap.png"><img src="docs/toolbar/line_wrap.png" width="34" height="34" alt="Line wrap"></picture> | Ignore layout line wraps | Join adjacent CJK lines, preserve English word spaces and original highlights; off by default. |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/highlighter.png"><img src="docs/toolbar/highlighter.png" width="34" height="34" alt="Color swatch"></picture> | Highlight color | The swatch shows the current color; click to choose a preset or custom color. |

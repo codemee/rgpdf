@@ -11,7 +11,7 @@ rgPDF 是一套跨平台桌面工具，可使用純文字或規則表達式搜�
 - 多資料夾標籤，各自保留搜尋條件、結果與預覽；可同時搜尋或匯出 Word PDF。
 
 - 可選擇搜尋 PDF、Word 文件（`.doc`、`.docx`）或兩者，並可選擇是否包含子資料夾。
-- 支援純文字、規則表達式及區分大小寫。
+- 支援純文字、規則表達式、區分大小寫與完整單字。
 - 支援需要密碼的 PDF：可重試、略過單一文件，並沿用已驗證密碼預覽。
 - 支援跨行、跨頁匹配與行尾英文斷字合併。
 - 每找到一筆結果就立即顯示，搜尋期間介面仍可操作。
@@ -20,9 +20,13 @@ rgPDF 是一套跨平台桌面工具，可使用純文字或規則表達式搜�
 - 繁體中文／英文介面，以及系統／淺色／深色主題。
 - 保存搜尋與外觀偏好。
 
+點選預覽頁面或其空白區域即可取得輸入焦點，以 ←／→ 或 Page Up／Page Down 翻到前後頁。搜尋標的、檔案、命中項目與預覽窗格會以外框強調目前焦點所在位置。翻頁後再次點選同一筆命中，也會返回該命中的起始頁；已在該頁時不重複載入。標籤列下方使用較淡的細分隔線。
+
 rgPDF 搜尋 PDF 已有的文字層，也能先顯示 DOCX 的初步文字命中。Word 的正式確認與頁面預覽需要 Microsoft Word（Windows）、LibreOffice 或有效的 PDF 快取。rgPDF 不會執行文件巨集、不執行 OCR，也不修改來源檔案。
 
 Word 搜尋會先直接讀取 DOCX 文字，立即顯示標為「待確認」的初步命中，再以 PDF 校正正式段落、筆數、頁碼及螢光標示；初步結果不提供頁碼。所有標籤的 Word 轉 PDF 共用一個依序處理的佇列，相同來源會合併轉檔，已有有效快取則直接使用。等待轉檔不會暫停其他檔案或標籤的搜尋。選到尚未就緒的結果時，預覽顯示等待／轉檔／確認動畫，PDF 完成後自動更新；確認沒有命中就移除初步結果。舊式 `.doc`、特殊內容或無法抽取的文件必要時等 PDF 確認。開啟資料夾不會自動搜尋或轉檔；取消某個標籤只取消該標籤的需求，不影響其他標籤共用的轉檔。
+
+工具列「完整單字」預設關閉，位於「區分大小寫」與 Regex 之間。啟用後，命中前後不能緊接 Unicode 單字字元（字母、數字、底線等）：例如 `cat` 可命中 `cat`、`cat-cat`，不會命中 `catalog`、`bobcat` 或 `cat_1`。純文字與 Regex 都適用，也可搭配區分大小寫；DOCX 初步結果與 PDF 正式結果使用相同設定。中文連續字元視為同一段單字字元，不進行自然語言斷詞。設定由各標籤獨立保存，搜尋期間停用切換。
 
 工具列 Regex 按鈕旁的「忽略排版換行」預設關閉。啟用後，會依文字區塊、相鄰行位置及偵測到的表格儲存格接合排版換行：例如 `循環` 換行 `緩衝區` 可搜尋 `循環緩衝區`，英文 `buffer` 換行 `size` 保留詞間空格，`inter-` 換行 `national` 合併斷字。行內實際空格保留，段落／欄位／不同儲存格不主動接合，跨頁維持空格。Regex 套用在此正規化後的文字上；預覽仍標示原本每行的字元位置。此設定會保存。
 
@@ -34,7 +38,7 @@ Word 搜尋會先直接讀取 DOCX 文字，立即顯示標為「待確認」的
 
 各標籤獨立保存搜尋樣式、主檔名篩選、檔案類型、搜尋選項、結果、預覽頁面、縮放與捲動位置。新標籤沿用目前搜尋條件，清空結果，匯出目的地預設為新資料夾。標籤可拖曳排序及關閉，同名資料夾會補上上層路徑，滑鼠停留可查看完整路徑；關閉工作中的標籤會詢問是否取消，確認後清理該頁工作。每個標籤一次執行一個搜尋或匯出，不同標籤可同時進行。下次啟動恢復標籤順序、目前標籤、各頁條件與匯出目的地，不恢復結果、不自動搜尋。語言、配色與螢光筆顏色全視窗共用。
 
-標籤採平面樣式，並以細線外框連接下方整個內容區。未選取時與背景融合，選取時顯示淡色底與下緣色線（淺色為藍色、深色沿用螢光綠），底線與內容框上緣貼合，未選取標籤下方也會延續細框線。關閉按鈕使用細線 ×，滑鼠移入才顯示底色。
+標籤列與內容區由同一個圓角細框完整包住，緊接工具列下緣，不另畫工具列底線或加入頂端間隔。工具列底色與主視窗一致，標籤列採精簡的 32 px 高度。標籤採平面樣式，未選取時與背景融合，選取時顯示淡色底與下緣色線（淺色為藍色、深色沿用螢光綠），未選取標籤下方也會延續標籤列與內容之間的細分隔線。關閉按鈕使用細線 ×，滑鼠移入才顯示底色。工具列與圓角框共用左右各 12 px 留白，左右邊界對齊。
 
 手動清除 Word 快取會影響所有標籤並移除其 Word 結果，保留原生 PDF 結果；任一標籤工作或共用轉檔尚未完成時不能清除。
 
@@ -59,6 +63,7 @@ Word 搜尋會先直接讀取 DOCX 文字，立即顯示標為「待確認」的
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/recursive.png"><img src="docs/toolbar/recursive.png" width="34" height="34" alt="父子資料夾"></picture> | 包含子資料夾 | 切換是否遞迴搜尋子資料夾。 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/scope_pdf.png"><img src="docs/toolbar/scope_pdf.png" width="34" height="34" alt="PDF"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/scope_word.png"><img src="docs/toolbar/scope_word.png" width="34" height="34" alt="Word"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/scope_all.png"><img src="docs/toolbar/scope_all.png" width="34" height="34" alt="PDF 與 Word"></picture> | 搜尋檔案類型 | 循環切換 PDF → Word（DOC／DOCX）→ 兩者。搜尋 Word 需已有 Windows Microsoft Word 或 LibreOffice。 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/case.png"><img src="docs/toolbar/case.png" width="34" height="34" alt="Aa"></picture> | 區分大小寫 | 切換搜尋時是否區分大小寫。 |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/whole_word.png"><img src="docs/toolbar/whole_word.png" width="34" height="34" alt="完整單字"></picture> | 完整單字 | 僅比對完整單字，適用於純文字與 Regex，預設關閉。 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/regex.png"><img src="docs/toolbar/regex.png" width="34" height="34" alt="規則表達式"></picture> | 規則表達式 | 切換 Regex；搜尋欄旁的說明圖示提供語法範例。 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/line_wrap.png"><img src="docs/toolbar/line_wrap.png" width="34" height="34" alt="Line wrap"></picture> | 忽略排版換行 | 接合相鄰行的中文文字、保留英文詞間空格與原座標標示；預設關閉。 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/highlighter.png"><img src="docs/toolbar/highlighter.png" width="34" height="34" alt="顏色色塊"></picture> | 螢光筆顏色 | 色塊顯示目前顏色；點選後可選預設色或自訂顏色。 |
