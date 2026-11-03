@@ -5,6 +5,9 @@ from __future__ import annotations
 
 import sys
 import multiprocessing
+import argparse
+import subprocess
+from pathlib import Path
 
 from PySide6.QtCore import QSettings, Qt
 from PySide6.QtGui import QColor, QPalette
@@ -200,8 +203,35 @@ def apply_application_theme(app: QApplication, theme: str) -> None:
         widget.update()
 
 
-def main() -> int:
+def parse_arguments(argv=None):
+    parser = argparse.ArgumentParser(prog="rgpdf", description="Search PDF and Word documents with rgPDF.")
+    integration = parser.add_mutually_exclusive_group()
+    integration.add_argument("--install-context-menu", action="store_true",
+                             help="Install the per-user Explorer/Finder context menu")
+    integration.add_argument("--remove-context-menu", action="store_true",
+                             help="Remove the per-user Explorer/Finder context menu")
+    parser.add_argument("paths", nargs="*", help="Folders to open (files use their parent folder)")
+    return parser.parse_args(argv)
+
+
+def open_startup_paths(window, paths) -> None:
+    for value in paths:
+        path = Path(value).expanduser().resolve()
+        window.open_folder(path.parent if path.is_file() else path)
+
+
+def main(argv=None) -> int:
     multiprocessing.freeze_support()
+    arguments = parse_arguments(argv)
+    if arguments.install_context_menu or arguments.remove_context_menu:
+        from rgpdf.context_menu import set_enabled
+        try:
+            set_enabled(arguments.install_context_menu)
+        except (OSError, ValueError, subprocess.TimeoutExpired) as exc:
+            if sys.stderr is not None:
+                print(str(exc), file=sys.stderr)
+            return 1
+        return 0
     cleanup_word_cache()
     QApplication.setHighDpiScaleFactorRoundingPolicy(
         Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
@@ -220,6 +250,7 @@ def main() -> int:
     settings = QSettings("rgpdf", "rgpdf")
     apply_theme(settings.value("appearance/theme", "system", type=str))
     window = MainWindow(apply_theme)
+    open_startup_paths(window, arguments.paths)
     app.styleHints().colorSchemeChanged.connect(
         lambda _scheme: apply_theme("system")
         if settings.value("appearance/theme", "system", type=str) == "system"

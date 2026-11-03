@@ -158,6 +158,31 @@ class SettingsButton(QToolButton):
             if self.icon_kind == "add_folder":
                 painter.drawLine(0, 0, 0, 5)
                 painter.drawLine(-2, 2, 2, 2)
+        elif self.icon_kind == "context_menu":
+            painter.translate(center)
+            folder = QPainterPath()
+            folder.moveTo(-9, 5)
+            folder.lineTo(-9, -7)
+            folder.lineTo(-4, -7)
+            folder.lineTo(-2, -4)
+            folder.lineTo(5, -4)
+            folder.lineTo(5, 5)
+            folder.closeSubpath()
+            menu = QPainterPath()
+            menu.addRoundedRect(QRectF(-2, -1, 11, 11), 1, 1)
+            outside = QPainterPath()
+            outside.addRect(QRectF(-17, -17, 34, 34))
+            painter.save()
+            painter.setClipPath(outside.subtracted(menu))
+            painter.drawPath(folder)
+            painter.restore()
+            painter.drawPath(menu)
+            for y in (2, 5, 8):
+                painter.drawLine(1, y, 6, y)
+        elif self.icon_kind == "trim_box":
+            painter.translate(center)
+            painter.drawPolyline([QPointF(-8, -10), QPointF(-8, 6), QPointF(10, 6)])
+            painter.drawPolyline([QPointF(-10, -6), QPointF(6, -6), QPointF(6, 10)])
         elif self.icon_kind in {"fit_width", "fit_page"}:
             painter.translate(center)
             if self.icon_kind == "fit_width":

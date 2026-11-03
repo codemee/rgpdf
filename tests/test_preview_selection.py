@@ -8,7 +8,7 @@ from PySide6.QtGui import QContextMenuEvent, QImage, QKeySequence
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 
-from rgpdf.models import TextMatch
+from rgpdf.models import PageHighlight, TextMatch
 from rgpdf.pdf_passwords import PdfPasswords
 from rgpdf.preview import PdfPreview
 
@@ -78,6 +78,60 @@ def _preview(qtbot, path, passwords=None):
     preview.fit_page_button.click()
     qtbot.waitUntil(lambda: not preview._workers and not preview._resize_timer.isActive(), timeout=5000)
     return preview
+
+
+@pytest.mark.parametrize('rotation', [0, 90, 180, 270])
+@pytest.mark.parametrize('crop_origin', [0, 20])
+def test_trim_box_preserves_selection_highlights_and_source(qtbot, tmp_path, rotation, crop_origin):
+    path = tmp_path / 'trim.pdf'
+    with fitz.open() as pdf:
+        page = pdf.new_page(width=400, height=500)
+        page.insert_text((100, 160), 'Hello world', fontsize=14)
+        page.insert_text((25, 45), 'Outside trim', fontsize=12)
+        page.set_cropbox(fitz.Rect(crop_origin, crop_origin, 400, 500))
+        page.set_trimbox(fitz.Rect(80, 100, 300, 400))
+        page.set_rotation(rotation)
+        rect = page.search_for('Hello')[0] + (-2, -2, 2, 2)
+        match = TextMatch('Hello', 'Hello world', 0, 5, 0, 0,
+                          (PageHighlight(0, (tuple(rect),)),))
+        pdf.new_page(width=400, height=500)  # Missing TrimBox falls back to full page.
+        pdf.save(path)
+    original = path.read_bytes()
+    preview = _preview(qtbot, path)
+    preview.show_match(str(path), match)
+    qtbot.waitUntil(lambda: preview._page_ready and not preview._workers)
+    original_zoom = preview._zoom
+    preview.trim_box_button.click()
+    qtbot.waitUntil(lambda: preview._page_ready and not preview._workers)
+    assert preview._zoom > original_zoom
+    assert 'Outside' not in preview.image_label._page_text.text
+    _drag(qtbot, preview, 'Hello world')
+    assert QApplication.clipboard().text() == 'Hello world'
+    with fitz.open(path) as pdf:
+        page = pdf[0]
+        offset = page.cropbox.top_left - page.trimbox.top_left
+        page.set_cropbox(page.trimbox)
+        expected = page.get_pixmap(matrix=fitz.Matrix(preview._zoom, preview._zoom))
+        moved = (rect + (offset.x, offset.y, offset.x, offset.y)) * page.rotation_matrix
+    image = preview.image_label.pixmap().toImage()
+    assert (image.width(), image.height()) == (expected.width, expected.height)
+    color = image.pixelColor(int(moved.x0 * preview._zoom) + 1,
+                             int(moved.y0 * preview._zoom) + 1)
+    assert color.red() > 240 and color.green() > 200 and color.blue() < 230
+    preview.copy_page_button.click()
+    copied = QApplication.clipboard().mime.imageData()
+    assert copied.size() == image.size()
+    preview.next_button.click()
+    qtbot.waitUntil(lambda: preview._page_ready and not preview._workers)
+    assert preview.trim_box_button.isChecked()
+    assert preview.image_label.pixmap().width() / preview.image_label.pixmap().height() == pytest.approx(.8, abs=.01)
+    preview.previous_button.click()
+    qtbot.waitUntil(lambda: preview._page_ready and not preview._workers)
+    preview.trim_box_button.click()
+    qtbot.waitUntil(lambda: preview._page_ready and not preview._workers)
+    assert 'Outside' in preview.image_label._page_text.text
+    assert path.read_bytes() == original
+    preview.close()
 
 
 @pytest.mark.parametrize('encrypted', [False, True])

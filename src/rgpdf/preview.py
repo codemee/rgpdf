@@ -48,6 +48,7 @@ class PreviewRenderWorker(QRunnable):
         available_height: int,
         highlight_color: str,
         password: str | None = None,
+        trim_box: bool = False,
     ) -> None:
         super().__init__()
         self.request_id = request_id
@@ -61,6 +62,7 @@ class PreviewRenderWorker(QRunnable):
         self.available_height = available_height
         self.highlight_color = highlight_color
         self.password = password
+        self.trim_box = trim_box
         self.signals = PreviewRenderSignals()
 
     @Slot()
@@ -70,6 +72,16 @@ class PreviewRenderWorker(QRunnable):
                 if document.needs_pass and (self.password is None or not document.authenticate(self.password)):
                     raise PermissionError("The PDF requires a valid password.")
                 page = document.load_page(self.page_index)
+                offset = fitz.Point(0, 0)
+                if self.trim_box:
+                    crop = page.cropbox
+                    trim = page.trimbox & crop
+                    if not trim.is_empty and not trim.is_infinite and trim.is_valid:
+                        # This worker owns an isolated, unsaved document. Crop it
+                        # in memory so rasterization and selectable text share
+                        # the same rotated coordinate system and page origin.
+                        page.set_cropbox(trim)
+                        offset = crop.top_left - trim.top_left
                 zoom = self.zoom
                 if self.fit_page:
                     zoom = min(
@@ -99,7 +111,9 @@ class PreviewRenderWorker(QRunnable):
                 if highlight.page_index != self.page_index:
                     continue
                 for x0, y0, x1, y1 in highlight.rectangles:
-                    x0, y0, x1, y1 = fitz.Rect(x0, y0, x1, y1) * rotation
+                    rectangle = fitz.Rect(x0, y0, x1, y1)
+                    rectangle += (offset.x, offset.y, offset.x, offset.y)
+                    x0, y0, x1, y1 = rectangle * rotation
                     painter.drawRect(
                         int(x0 * zoom),
                         int(y0 * zoom),
@@ -149,6 +163,7 @@ class PdfPreview(QWidget):
         self.zoom_in_button = SettingsButton("zoom_in")
         self.fit_button = SettingsButton("fit_width")
         self.fit_page_button = SettingsButton("fit_page")
+        self.trim_box_button = SettingsButton("trim_box", checkable=True)
         self.select_text_button = SettingsButton("select_text", checkable=True)
         self.select_text_button.setChecked(True)
         self.copy_page_button = SettingsButton("copy_page")
@@ -179,6 +194,7 @@ class PdfPreview(QWidget):
         toolbar.addWidget(self.zoom_in_button)
         toolbar.addWidget(self.fit_button)
         toolbar.addWidget(self.fit_page_button)
+        toolbar.addWidget(self.trim_box_button)
 
         self.image_label = SelectablePageLabel()
         self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -217,6 +233,7 @@ class PdfPreview(QWidget):
         self.zoom_in_button.clicked.connect(lambda: self._change_zoom(1.25))
         self.fit_button.clicked.connect(self._fit)
         self.fit_page_button.clicked.connect(self._fit_entire_page)
+        self.trim_box_button.toggled.connect(self._trim_box_changed)
         self.select_text_button.toggled.connect(self.image_label.set_selection_mode)
         self.copy_page_button.clicked.connect(self._copy_page)
         self.image_label.selection_dragged.connect(
@@ -233,6 +250,7 @@ class PdfPreview(QWidget):
         self.zoom_in_button.setToolTip(translate(language, "zoom_in"))
         self.fit_button.setToolTip(translate(language, "fit"))
         self.fit_page_button.setToolTip(translate(language, "fit_page"))
+        self.trim_box_button.setToolTip(translate(language, "trim_box"))
         self.copy_page_button.setToolTip(translate(language, "copy_page"))
         self.image_label.set_language(language)
         self._update_controls()
@@ -337,6 +355,9 @@ class PdfPreview(QWidget):
         self._fit_page = True
         self._render()
 
+    def _trim_box_changed(self, _checked: bool) -> None:
+        self._render()
+
     def _render(self) -> None:
         if self._path is None or self._match is None:
             return
@@ -361,6 +382,7 @@ class PdfPreview(QWidget):
             available_height,
             self._highlight_color,
             password=self._passwords.get(self._path) if self._passwords is not None else None,
+            trim_box=self.trim_box_button.isChecked(),
         )
         worker.signals.finished.connect(self._render_finished)
         worker.signals.failed.connect(self._render_failed)
@@ -445,6 +467,7 @@ class PdfPreview(QWidget):
         self.zoom_in_button.setEnabled(has_page)
         self.fit_button.setEnabled(has_page)
         self.fit_page_button.setEnabled(has_page)
+        self.trim_box_button.setEnabled(has_page)
 
     def resizeEvent(self, event) -> None:  # noqa: N802 - Qt API
         super().resizeEvent(event)

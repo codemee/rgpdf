@@ -104,6 +104,7 @@ class FolderTab(QWidget):
         self.pattern_edit.setText(self.settings.value("search/pattern", "", type=str))
         use_regex = self.settings.value("search/use_regex", True, type=bool)
         self.language_button = self._settings_button()
+        self.context_menu_button = SettingsButton("context_menu", checkable=True)
         self.theme_button = self._settings_button()
         self.regex_button = self._settings_button(checkable=True)
         self.regex_button.setChecked(use_regex)
@@ -212,6 +213,7 @@ class FolderTab(QWidget):
         self.settings_toolbar.addWidget(self.toolbar_spacer)
         self.settings_toolbar.addSeparator()
         for button in (
+            self.context_menu_button,
             self.language_button,
             self.theme_button,
         ):
@@ -378,6 +380,7 @@ class FolderTab(QWidget):
         self.pattern_help_button.clicked.connect(self._show_pattern_help)
         self.stem_filter_help_button.clicked.connect(self._show_stem_filter_help)
         self.language_button.clicked.connect(self._cycle_language)
+        self.context_menu_button.clicked.connect(self.host._toggle_context_menu)
         self.theme_button.clicked.connect(self._cycle_theme)
         self.recursive_button.toggled.connect(self._recursive_changed)
         self.case_button.toggled.connect(self._case_changed)

@@ -17,9 +17,9 @@ def main() -> None:
     kinds = (
         "recursive", "scope_pdf", "scope_word", "scope_all", "case", "whole_word", "regex", "line_wrap",
         "highlighter", "cache", "export_pdf", "export_pdf_disabled", "language_system", "language_zh", "language_en",
-        "theme_system", "sun", "moon", "about",
+        "theme_system", "sun", "moon", "about", "context_menu",
         "browse", "add_folder", "search", "cancel", "help", "custom_color",
-        "previous_page", "next_page", "zoom_out", "zoom_in", "fit_width", "fit_page", "select_text", "copy_page",
+        "previous_page", "next_page", "zoom_out", "zoom_in", "fit_width", "fit_page", "trim_box", "select_text", "copy_page",
     )
     for theme in ("light", "dark"):
         apply_application_theme(app, theme)

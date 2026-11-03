@@ -75,7 +75,7 @@ def test_main_window_has_three_result_columns(qtbot, monkeypatch, tmp_path) -> N
     assert all(button.contentsMargins() == QMargins(4, 4, 4, 4) for button in settings_buttons)
     assert isinstance(window.settings_toolbar, QToolBar)
     assert window.settings_toolbar.layout().spacing() == 4
-    assert len(window.settings_toolbar.findChildren(SettingsButton)) == 11
+    assert len(window.settings_toolbar.findChildren(SettingsButton)) == 12
     toolbar_buttons = [
         widget
         for action in window.settings_toolbar.actions()
@@ -93,6 +93,7 @@ def test_main_window_has_three_result_columns(qtbot, monkeypatch, tmp_path) -> N
         window.highlight_button,
         window.cache_button,
         window.export_word_button,
+        window.context_menu_button,
         window.language_button,
         window.theme_button,
     ]
@@ -128,6 +129,7 @@ def test_main_window_has_three_result_columns(qtbot, monkeypatch, tmp_path) -> N
         (window.preview.zoom_in_button, "Zoom in"),
         (window.preview.fit_button, "Fit width"),
         (window.preview.fit_page_button, "Fit page"),
+        (window.preview.trim_box_button, "Crop preview to TrimBox (source unchanged)"),
         (window.preview.select_text_button, "Select and copy text"),
         (window.preview.copy_page_button, "Copy current page as PNG"),
         (window.export_word_button, "Export Word files as PDF"),

@@ -2,12 +2,15 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 from pathlib import Path
 import os
+import subprocess
+import sys
 
 from PySide6.QtCore import QEvent, QLocale, QSettings, Qt, QTimer
 from PySide6.QtGui import QAction, QColor
 from PySide6.QtWidgets import QFileDialog, QFrame, QHBoxLayout, QLabel, QMainWindow, QMessageBox, QTabBar, QTabWidget, QVBoxLayout, QWidget
 
 from rgpdf import __version__
+from rgpdf import context_menu
 from rgpdf.buttons import SettingsButton
 from rgpdf.conversion_service import WordConversionService
 from rgpdf.folder_session import FolderSettings, FolderTabState, TAB_DEFAULTS
@@ -84,12 +87,12 @@ class MainWindow(QMainWindow):
         self.about_action.setMenuRole(QAction.MenuRole.AboutRole)
         self.about_action.triggered.connect(self._show_about)
         self._system_menu = None
-        import sys
         if sys.platform == 'win32':
             from rgpdf.system_menu import WindowsSystemMenu
             self._system_menu = WindowsSystemMenu()
         else:
-            self.menuBar().addMenu('rgPDF').addAction(self.about_action)
+            menu = self.menuBar().addMenu('rgPDF')
+            menu.addAction(self.about_action)
         self._restoring = True
         self._restore_tabs()
         self._restoring = False
@@ -244,6 +247,7 @@ class MainWindow(QMainWindow):
             return
         self.workspace_layout.insertWidget(0, tab.settings_toolbar)
         tab.settings_toolbar.show()
+        self._refresh_context_menu_button()
         self.statusBar().addWidget(tab.status_label, 3)
         self.statusBar().addPermanentWidget(tab.progress_bar, 2)
         tab.status_label.show()
@@ -335,8 +339,9 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(self.t('app_title', version=__version__))
         self.add_folder_button.setToolTip(self.t('add_folder_tab'))
         self.about_action.setText(self.t('about_title'))
+        self._refresh_context_menu_button()
         if self._system_menu is not None and self.isVisible():
-            self._system_menu.update(int(self.winId()), self.about_action.text())
+            self._update_system_menu()
         for tab in self._pages:
             tab.language = self.language
             tab.language_preference = self.language_preference
@@ -428,10 +433,38 @@ class MainWindow(QMainWindow):
     def _show_about(self):
         QMessageBox.about(self, self.t('about_title'), self.t('about_content', version=__version__))
 
-    def showEvent(self, event):
-        super().showEvent(event)
+    def _refresh_context_menu_button(self):
+        manager = 'finder' if sys.platform == 'darwin' else 'explorer'
+        installed = context_menu.is_installed()
+        operation = 'remove' if installed else 'install'
+        supported = sys.platform in {'win32', 'darwin'}
+        for tab in self._pages:
+            tab.context_menu_button.setChecked(installed)
+            tab.context_menu_button.setEnabled(supported)
+            tab.context_menu_button.setToolTip(self.t(
+                f'context_{operation}_{manager}' if supported else 'context_unsupported'))
+
+    def _toggle_context_menu(self):
+        enabled = not context_menu.is_installed()
+        try:
+            context_menu.set_enabled(enabled, title=self.t('context_open'))
+        except (OSError, ValueError, subprocess.TimeoutExpired) as exc:
+            QMessageBox.warning(self, self.t('context_title'), str(exc))
+        else:
+            key = ('context_installed_finder' if sys.platform == 'darwin'
+                   else 'context_installed_explorer') if enabled else 'context_removed'
+            QMessageBox.information(self, self.t('context_title'), self.t(key))
+        self._refresh_context_menu_button()
+
+    def _update_system_menu(self):
         if self._system_menu is not None:
             self._system_menu.update(int(self.winId()), self.about_action.text())
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        self._refresh_context_menu_button()
+        if self._system_menu is not None:
+            self._update_system_menu()
 
     def nativeEvent(self, event_type, message):
         menu = getattr(self, '_system_menu', None)

@@ -48,15 +48,17 @@ Use **Export Word files as PDF** on the toolbar to select `.doc`/`.docx` files a
 
 Use the preview’s Previous page / Next page buttons to browse all document pages, including pages without a match. Select another passage in the match pane to jump to its matched page. **Fit page** scales the whole page to the preview’s width and height and adapts when the pane is resized; **Fit width** remains available for reading at a larger size.
 
+<picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/trim_box.png"><img src="docs/toolbar/trim_box.png" width="34" height="34" alt="Crop preview to TrimBox"></picture> **Crop preview to TrimBox**, at the right of the preview zoom tools, is off by default. Enable it to show each PDF page's finished TrimBox area; Fit width/page then scales that area for easier reading. Toggle it off to restore the full preview. This uses PDF metadata rather than detecting text bounds; missing or unusable boxes retain the original visible page. The toggle survives page/match changes independently per folder tab but is not saved across app restarts. Cropping affects only the preview and clipboard PNG/selectable text, leaving source files, search scope, and Word PDF exports unchanged.
+
 The preview toolbar provides <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/select_text.png"><img src="docs/toolbar/select_text.png" width="34" height="34" alt="Select and copy text"></picture> **Select and copy text**, enabled by default. Drag to select text on the current page; releasing the mouse automatically copies it to the clipboard. Dragging does not repeatedly write to the clipboard. Ctrl+A/⌘A selects and copies all page text; Esc clears the visible selection. Selection supports CJK text, multiple lines, zoom, rotated pages, and authenticated PDFs. Changing pages/files or re-rendering at a new scale clears the selection. Pages without a text layer cannot be selected; existing search highlights remain visible.
 
-Separators group the preview toolbar into page navigation, copying, and zoom controls. <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/copy_page.png"><img src="docs/toolbar/copy_page.png" width="34" height="34" alt="Copy current page as PNG"></picture> **Copy current page as PNG** places the complete page image on the clipboard for pasting into image-capable applications. It uses the current preview resolution and includes search highlights and content outside the scroll viewport, excluding toolbar controls and text selection overlays. No disk file is created. Pages without a text layer can also be copied; copying is disabled while loading.
+Separators group the preview toolbar into page navigation, copying, and zoom controls. <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/copy_page.png"><img src="docs/toolbar/copy_page.png" width="34" height="34" alt="Copy current page as PNG"></picture> **Copy current page as PNG** places the complete rendered preview area on the clipboard for pasting into image-capable applications. It uses the current preview resolution and includes search highlights and content outside the scroll viewport, excluding toolbar controls and text selection overlays. No disk file is created. Pages without a text layer can also be copied; copying is disabled while loading.
 The toolbar controls below are listed in their on-screen order. Hover over a
 button to see its current setting; clicking a three-state button cycles modes.
 
 Enabled toggle buttons retain the same background as their hover state. The dark theme uses an EVA Unit-01-inspired palette: deep purple surfaces, neon-green selections and enabled controls, with restrained orange focus and link accents. Document previews retain their original page colors.
 
-The toolbar places Language and Theme on the right; search tools remain on the left. On Windows, About rgPDF is in the system menu opened by clicking the application icon at the top-left of the main window or pressing Alt+Space. macOS uses the native application menu; other platforms use the rgPDF menu. About provides version, license, and source links.
+The toolbar places File manager integration, Language, and Theme on the right; search tools remain on the left. On Windows, About rgPDF is in the system menu opened by clicking the application icon at the top-left of the main window or pressing Alt+Space. macOS uses the native application menu; other platforms use the rgPDF menu. About provides version, license, and source links.
 
 | Toolbar icon | Control | Usage |
 | --- | --- | --- |
@@ -69,6 +71,7 @@ The toolbar places Language and Theme on the right; search tools remain on the l
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/highlighter.png"><img src="docs/toolbar/highlighter.png" width="34" height="34" alt="Color swatch"></picture> | Highlight color | The swatch shows the current color; click to choose a preset or custom color. |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/cache.png"><img src="docs/toolbar/cache.png" width="34" height="34" alt="Trash can"></picture> | Clear Word cache | Clear shared conversion PDFs and Word results across tabs; preserve sources. Disabled while any job or conversion is active. |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/export_pdf.png"><img src="docs/toolbar/export_pdf.png" width="34" height="34" alt="Export Word PDF"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/export_pdf_disabled.png"><img src="docs/toolbar/export_pdf_disabled.png" width="34" height="34" alt="Disabled Word PDF export"></picture> | Export Word files as PDF | Overlapping Word (upper-left) and PDF (lower-right) logos, connected by an arrow going down from Word and turning right into PDF; select files and an output folder to export cached or newly converted PDFs. |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/context_menu.png"><img src="docs/toolbar/context_menu.png" width="34" height="34" alt="File manager integration"></picture> | File manager integration | Toggle Explorer context menus / Finder Quick Action; checked when registered. |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/language_system.png"><img src="docs/toolbar/language_system.png" width="34" height="34" alt="System language"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/language_zh.png"><img src="docs/toolbar/language_zh.png" width="34" height="34" alt="Chinese"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/language_en.png"><img src="docs/toolbar/language_en.png" width="34" height="34" alt="English"></picture> | Language | Cycle system → Traditional Chinese → English. |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/theme_system.png"><img src="docs/toolbar/theme_system.png" width="34" height="34" alt="System theme"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/sun.png"><img src="docs/toolbar/sun.png" width="34" height="34" alt="Light theme"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/moon.png"><img src="docs/toolbar/moon.png" width="34" height="34" alt="Dark theme"></picture> | Color theme | Cycle system → light → dark. |
 
@@ -88,10 +91,29 @@ Hover over an icon to see its action. Search, color, and preview controls:
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/zoom_in.png"><img src="docs/toolbar/zoom_in.png" width="34" height="34" alt="Zoom in"></picture> | Zoom in |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/fit_width.png"><img src="docs/toolbar/fit_width.png" width="34" height="34" alt="Fit width"></picture> | Fit width |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/fit_page.png"><img src="docs/toolbar/fit_page.png" width="34" height="34" alt="Fit page"></picture> | Fit page |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/trim_box.png"><img src="docs/toolbar/trim_box.png" width="34" height="34" alt="TrimBox crop"></picture> | Crop preview to TrimBox |
 
 Search settings are saved between sessions. Conversion cache is cleaned at
 startup: entries unused for 30 days expire, then the oldest entries are removed
 if total size exceeds 500 MB. Use **Cancel** to stop a search.
+
+## Explorer and Finder context menus
+
+The **File manager integration** toggle immediately left of Language installs or removes the integration. Its checked background reflects actual registration and stays synchronized across folder tabs; the tooltip describes the available action. Windows and macOS share this control; it is disabled on other platforms.
+
+Windows: click the toggle to add the Explorer context menu. Right-click a folder or a folder's blank background and choose **Open in rgPDF**. On Windows 11, it may appear under **Show more options**. Click the toggle again to remove it.
+
+macOS: place the app in a permanent location first (preferably Applications), then click the toggle to add a Finder Quick Action. Right-click selected folders and choose **Open in rgPDF** under **Quick Actions/Services**. Multiple selected folders are supported; Finder's blank background has no equivalent action. If absent, enable the service in System Settings keyboard shortcuts / Services, or log in again. Click the toggle again to remove it.
+
+Both integrations are opt-in, per-user, require no administrator privileges, and are never installed automatically. The action starts a new rgPDF instance and adds folder tabs to the restored session without starting a search. Register again after moving the app; on macOS, remove and reinstall the action. Commands are also available:
+
+```shell
+rgpdf --install-context-menu
+rgpdf --remove-context-menu
+rgpdf "folder path" "another folder path"
+```
+
+Passing a file opens its parent folder. In a development checkout, use `uv run rgpdf ...`; the Windows portable executable accepts the same arguments.
 
 ## Install the latest release
 

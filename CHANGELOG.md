@@ -4,6 +4,11 @@
 
 All notable changes are documented here. Immutable releases use `vX.Y.Z`; the moving `latest` tag points to the newest published release.
 
+## 0.1.9 — 2026-11-03
+
+- Added opt-in per-user Explorer context menus and Finder Quick Actions, controlled by a synchronized status button immediately left of Language or install/remove CLI commands, plus folder/file startup arguments that open folder tabs without starting a search.
+- Added a TrimBox preview crop toggle with crop-aware fit scaling, rotated highlights and text selection, and cropped clipboard PNG/text; source files, searches and Word PDF exports are unchanged.
+
 ## 0.1.8 — 2026-11-03
 
 - Reduced main and preview toolbar hover/checked backgrounds to 32×32 px while retaining 34×34 px hit areas and existing spacing.

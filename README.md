@@ -48,15 +48,17 @@ Word 搜尋會先直接讀取 DOCX 文字，立即顯示標為「待確認」的
 
 預覽窗格的「上一頁／下一頁」會逐頁瀏覽整份文件，包含未命中頁；選取命中項目窗格中的其他段落即可跳至其命中頁面。「符合頁面」會依預覽區域的寬度與高度完整顯示整頁，並隨窗格大小調整；「符合寬度」則可用較大尺寸閱讀。
 
+<picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/trim_box.png"><img src="docs/toolbar/trim_box.png" width="34" height="34" alt="依 TrimBox 裁切預覽"></picture>「依 TrimBox 裁切預覽」位於縮放工具的右側，預設關閉。啟用後依 PDF 每頁的 TrimBox 成品範圍去除外圍區域，搭配「符合寬度／頁面」可放大閱讀；再次按下恢復完整預覽。這不是自動偵測文字邊界：沒有 TrimBox 或範圍無效時，保留原本可見頁面。切換頁面或命中時保留開關狀態，各資料夾標籤獨立，關閉程式後不保存。裁切只影響預覽與複製到剪貼簿的 PNG／可選取文字，不修改來源、搜尋範圍或 Word PDF 匯出內容。
+
 預覽工具列提供 <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/select_text.png"><img src="docs/toolbar/select_text.png" width="34" height="34" alt="選取並複製文字"></picture>「選取並複製文字」工具，預設啟用。以滑鼠拖曳選取目前頁面的文字，放開滑鼠後即自動複製到剪貼簿；拖曳期間不會重複寫入。Ctrl+A／⌘A 可選取並複製整頁文字，Esc 清除畫面選取。支援中文、跨行、縮放與旋轉頁面，以及已解鎖的加密 PDF；換頁、換檔或重新縮放會清除選取。沒有文字層的頁面無法選取文字，原命中標示仍保留。
 
-預覽工具列以分隔線區分翻頁、複製及縮放功能。<picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/copy_page.png"><img src="docs/toolbar/copy_page.png" width="34" height="34" alt="複製目前頁面為 PNG"></picture>「複製目前頁面為 PNG」會將完整頁面影像放入剪貼簿，可直接貼入支援圖片的應用程式。影像採目前預覽解析度，包含命中標示與捲動區外的內容，不包含工具列或文字選取底色；不建立磁碟檔案。沒有文字層的頁面亦可複製，載入期間按鈕會停用。
+預覽工具列以分隔線區分翻頁、複製及縮放功能。<picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/copy_page.png"><img src="docs/toolbar/copy_page.png" width="34" height="34" alt="複製目前頁面為 PNG"></picture>「複製目前頁面為 PNG」會將目前預覽範圍的完整影像放入剪貼簿，可直接貼入支援圖片的應用程式。影像採目前預覽解析度，包含命中標示與捲動區外的內容，不包含工具列或文字選取底色；不建立磁碟檔案。沒有文字層的頁面亦可複製，載入期間按鈕會停用。
 
 下表依工具列由左至右排列；滑鼠停留可查看目前設定，三態按鈕每按一次切換一個狀態。
 
 狀態按鈕啟用後會持續顯示與滑鼠移入相同的底色。深色配色採初號機風格：深紫底色、螢光綠的選取與啟用狀態，搭配少量橘色焦點與連結；文件預覽保留原始頁面顏色。
 
-工具列右側為「語言、配色」，其餘搜尋工具靠左排列。「關於 rgPDF」位於 Windows 主視窗左上角應用程式圖示的系統功能表（亦可按 Alt+Space 開啟）；macOS 使用原生應用程式功能表，其他平台則位於 rgPDF 功能表，可查看版本、授權與原始碼連結。
+工具列右側為「檔案管理員整合、語言、配色」，其餘搜尋工具靠左排列。「關於 rgPDF」位於 Windows 主視窗左上角應用程式圖示的系統功能表（亦可按 Alt+Space 開啟）；macOS 使用原生應用程式功能表，其他平台則位於 rgPDF 功能表，可查看版本、授權與原始碼連結。
 
 | 工具列圖示 | 功能 | 操作說明 |
 | --- | --- | --- |
@@ -69,6 +71,7 @@ Word 搜尋會先直接讀取 DOCX 文字，立即顯示標為「待確認」的
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/highlighter.png"><img src="docs/toolbar/highlighter.png" width="34" height="34" alt="顏色色塊"></picture> | 螢光筆顏色 | 色塊顯示目前顏色；點選後可選預設色或自訂顏色。 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/cache.png"><img src="docs/toolbar/cache.png" width="34" height="34" alt="垃圾桶"></picture> | 清除 Word 快取 | 刪除共用快取與各標籤的 Word 結果，保留來源；任一工作或轉檔期間停用。 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/export_pdf.png"><img src="docs/toolbar/export_pdf.png" width="34" height="34" alt="匯出 Word PDF"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/export_pdf_disabled.png"><img src="docs/toolbar/export_pdf_disabled.png" width="34" height="34" alt="停用 Word PDF 匯出"></picture> | 將 Word 檔匯出為 PDF | Word 在左上、PDF 在右下交疊，箭頭從 Word 下緣向下，再轉直角向右指向 PDF；勾選檔案與輸出資料夾，沿用快取或轉檔後匯出。 |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/context_menu.png"><img src="docs/toolbar/context_menu.png" width="34" height="34" alt="檔案管理員整合"></picture> | 檔案管理員整合 | 切換檔案總管右鍵選單／Finder 快速動作；已註冊時顯示啟用底色。 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/language_system.png"><img src="docs/toolbar/language_system.png" width="34" height="34" alt="系統語言"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/language_zh.png"><img src="docs/toolbar/language_zh.png" width="34" height="34" alt="中文"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/language_en.png"><img src="docs/toolbar/language_en.png" width="34" height="34" alt="英文"></picture> | 語言 | 循環切換跟隨系統 → 繁體中文 → English。 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/theme_system.png"><img src="docs/toolbar/theme_system.png" width="34" height="34" alt="系統配色"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/sun.png"><img src="docs/toolbar/sun.png" width="34" height="34" alt="淺色"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/moon.png"><img src="docs/toolbar/moon.png" width="34" height="34" alt="深色"></picture> | 配色 | 循環切換跟隨系統 → 淺色 → 深色。 |
 
@@ -88,8 +91,27 @@ Word 搜尋會先直接讀取 DOCX 文字，立即顯示標為「待確認」的
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/zoom_in.png"><img src="docs/toolbar/zoom_in.png" width="34" height="34" alt="放大"></picture> | 放大 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/fit_width.png"><img src="docs/toolbar/fit_width.png" width="34" height="34" alt="符合寬度"></picture> | 符合寬度 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/fit_page.png"><img src="docs/toolbar/fit_page.png" width="34" height="34" alt="符合頁面"></picture> | 符合頁面 |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/trim_box.png"><img src="docs/toolbar/trim_box.png" width="34" height="34" alt="TrimBox 裁切"></picture> | 依 TrimBox 裁切預覽 |
 
 搜尋設定會保存至下次啟動。啟動時會刪除 30 天未使用的轉換快取，若總量仍超過 500 MB，優先刪除最久未使用的項目。搜尋期間可按「取消」停止。
+
+## 檔案總管與 Finder 右鍵選單
+
+工具列語系按鈕左側的「檔案管理員整合」狀態按鈕可註冊／解除整合。已註冊時顯示啟用底色，各資料夾標籤同步狀態；tooltip 顯示目前可執行的動作。Windows 與 macOS 使用相同入口，其他平台停用此按鈕。
+
+Windows：點擊此按鈕加入檔案總管右鍵選單。之後可在資料夾或資料夾內空白處按右鍵，選擇「用 rgPDF 開啟」；Windows 11 可能需先選「顯示其他選項」。再按一次即可解除。
+
+macOS：先將 App 放到固定位置（建議 Applications），點擊此按鈕加入 Finder 快速動作，便可在選取的資料夾上按右鍵，於「快速動作／服務」中選擇「用 rgPDF 開啟」（Open in rgPDF）。支援同時選取多個資料夾；Finder 空白處沒有對應動作。若未顯示，可在系統設定的鍵盤快捷鍵／服務中啟用，或重新登入。再按一次可移除快速動作。
+
+兩者皆為目前使用者的選用整合，不需要管理員權限，也不會在啟動時自動安裝。右鍵動作會開啟新的 rgPDF 執行個體，在恢復的工作階段中加入資料夾標籤，不自動搜尋。搬移或更新程式路徑後請重新註冊；macOS 請先移除再加入。也可使用命令：
+
+```shell
+rgpdf --install-context-menu
+rgpdf --remove-context-menu
+rgpdf "資料夾路徑" "另一個資料夾路徑"
+```
+
+直接傳入檔案路徑時會開啟其所在資料夾。開發環境請使用 `uv run rgpdf ...`；免安裝版可直接執行 `rgpdf.exe` 搭配上述參數。
 
 ## 安裝最新版本
 

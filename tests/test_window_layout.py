@@ -118,7 +118,8 @@ def test_target_title_statusbar_and_right_toolbar_group(qtbot, tmp_path):
     actions = window.settings_toolbar.actions()
     language_index = next(i for i, action in enumerate(actions)
                           if window.settings_toolbar.widgetForAction(action) is window.language_button)
-    assert actions[language_index - 1].isSeparator()
+    assert window.settings_toolbar.widgetForAction(actions[language_index - 1]) is window.context_menu_button
+    assert actions[language_index - 2].isSeparator()
     assert window.about_action not in actions
     assert window.settings_toolbar.width() - window.theme_button.geometry().right() <= 12
     window.progress_bar.setRange(0, 100)
