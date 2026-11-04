@@ -89,7 +89,8 @@ def compile_pattern(options: SearchOptions) -> regex.Pattern[str]:
     if not options.pattern:
         raise SearchInputError("Search pattern cannot be empty.")
     source = options.pattern if options.use_regex else regex.escape(options.pattern)
-    flags = regex.VERSION1
+    # Match text-editor line anchors against preserved PDF line/page breaks.
+    flags = regex.VERSION1 | regex.MULTILINE
     if not options.case_sensitive:
         flags |= regex.IGNORECASE | regex.FULLCASE
     try:
@@ -165,18 +166,11 @@ def extract_document(document: fitz.Document, *, ignore_line_wraps: bool = False
                 _append_text(text_parts, refs, value, page_index, rectangle)
 
             if line_index < len(lines) - 1:
-                last_character = line[-1][0] if line else ""
-                next_line = lines[line_index + 1]
-                if last_character == "-" and next_line:
-                    if text_parts and text_parts[-1].endswith("-"):
-                        text_parts[-1] = text_parts[-1][:-1]
-                        refs.pop()
-                else:
-                    _append_text(text_parts, refs, " ", page_index, None)
+                _append_text(text_parts, refs, "\n", page_index, None)
 
         if page_index < document.page_count - 1:
             separator_page = page_index if lines else page_index + 1
-            _append_text(text_parts, refs, " ", separator_page, None)
+            _append_text(text_parts, refs, "\n", separator_page, None)
 
     text = "".join(text_parts)
     if len(text) != len(refs):

@@ -34,6 +34,17 @@ def test_latin_wraps_and_hyphenation(text, query):
         assert len(_matches(document, query)) == 1
 
 
+def test_layout_mode_only_removes_joined_line_boundaries():
+    with fitz.open() as document:
+        page = document.new_page()
+        page.insert_text((72, 72), 'alpha\nbeta', fontsize=12)
+        assert len(_matches(document, '^beta$', enabled=False, regex=True)) == 1
+        assert not _matches(document, '^beta$', regex=True)
+        assert len(_matches(document, '^alpha beta$', regex=True)) == 1
+        document.new_page().insert_text((72, 72), 'gamma', fontsize=12)
+        assert len(_matches(document, '^gamma$', regex=True)) == 1
+
+
 def test_real_spaces_are_preserved_within_and_at_line_edges():
     with fitz.open() as document:
         page = document.new_page()
@@ -78,7 +89,8 @@ def test_page_boundaries_retain_existing_space_semantics():
     with fitz.open() as document:
         document.new_page().insert_text((72, 72), 'alpha', fontsize=12)
         document.new_page().insert_text((72, 72), 'beta', fontsize=12)
-        assert len(_matches(document, 'alpha beta')) == 1
+        assert not _matches(document, 'alpha beta')
+        assert len(_matches(document, r'alpha\s+beta', regex=True)) == 1
 
 
 def test_subprocess_search_carries_wrap_option_and_original_rectangles(tmp_path):

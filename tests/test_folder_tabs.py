@@ -196,6 +196,12 @@ def test_whole_word_applies_to_preliminary_docx_results(tmp_path):
     assert [match.matched_text for match in result.matches] == ['cat', 'Cat', 'cat']
 
 
+def test_line_anchors_apply_to_preliminary_docx_paragraphs(tmp_path):
+    source = _docx(tmp_path / 'anchors.docx', 'intro', '6-1')
+    result = preliminary_document(source, SearchOptions(tmp_path, r'^\d+-\d+$', use_regex=True))
+    assert [match.matched_text for match in result.matches] == ['6-1']
+
+
 def test_whole_word_is_independent_persisted_and_reaches_pdf_child(qtbot, tmp_path):
     a, b = tmp_path / 'a', tmp_path / 'b'
     a.mkdir()

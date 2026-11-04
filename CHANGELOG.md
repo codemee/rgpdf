@@ -4,6 +4,10 @@
 
 All notable changes are documented here. Immutable releases use `vX.Y.Z`; the moving `latest` tag points to the newest published release.
 
+## 0.1.10 — 2026-11-04
+
+- Preserved PDF line/page breaks and line-ending hyphens by default, enabled multiline regex anchors so `^`/`$` match each line without `(?m)`, and limited dehyphenation to opt-in layout joining. Cross-line/page queries can use `\s+` or explicit newlines; literal spaces no longer span breaks. Updated bilingual pattern help and documentation.
+
 ## 0.1.9 — 2026-11-03
 
 - Added opt-in per-user Explorer context menus and Finder Quick Actions, controlled by a synchronized status button immediately left of Language or install/remove CLI commands, plus folder/file startup arguments that open folder tabs without starting a search.

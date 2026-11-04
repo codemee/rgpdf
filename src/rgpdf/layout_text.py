@@ -101,7 +101,7 @@ def extract_layout_document(document: fitz.Document) -> ExtractedDocument:
             if previous is not None:
                 same_page = previous.refs[-1].page_index == page.number
                 soft_wrap = same_page and _wrap(previous, line)
-                separator = "\n\n" if same_page else " "
+                separator = "\n\n" if same_page else "\n"
                 if soft_wrap:
                     left, right = previous.text[-1], line.text[0]
                     separator = " "

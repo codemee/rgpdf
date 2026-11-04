@@ -120,6 +120,31 @@ def test_compile_regex_and_case_sensitivity(tmp_path: Path) -> None:
     assert not sensitive.search("FOO12")
 
 
+def test_line_anchors_are_multiline_and_can_be_overridden(tmp_path):
+    text = 'intro\n6-1\nlast'
+    pattern = compile_pattern(SearchOptions(tmp_path, r'^\d+-\d+$', use_regex=True))
+    assert pattern.search(text).group() == '6-1'
+    assert not compile_pattern(SearchOptions(tmp_path, r'(?-m)^\d+-\d+$', use_regex=True)).search(text)
+    assert not compile_pattern(SearchOptions(tmp_path, r'\A\d+-\d+\Z', use_regex=True)).search(text)
+    assert not compile_pattern(SearchOptions(tmp_path, r'intro.*last', use_regex=True)).search(text)
+    assert compile_pattern(SearchOptions(tmp_path, r'(?s)intro.*last', use_regex=True)).search(text)
+
+
+@pytest.mark.parametrize('isolate', [False, True])
+@pytest.mark.parametrize('whole_word', [False, True])
+def test_pdf_anchors_follow_physical_lines_and_page_boundaries(tmp_path, isolate, whole_word):
+    path = tmp_path / 'anchors.pdf'
+    _write_pdf(path, [[((72, 72), 'intro'), ((72, 94), '6-1'), ((72, 116), 'body 8-8')],
+                     [((72, 72), '6-2'), ((72, 94), 'last')]])
+    options = SearchOptions(tmp_path, r'^\d+-\d+$', use_regex=True, whole_word=whole_word)
+    report = search_folder(options, isolate_pdf_search=isolate)
+    assert not report.warnings
+    matches = report.documents[0].matches
+    assert [match.matched_text for match in matches] == ['6-1', '6-2']
+    assert [match.start_page for match in matches] == [0, 1]
+    assert [len(match.highlights[0].rectangles) for match in matches] == [3, 3]
+
+
 def test_invalid_and_empty_patterns(tmp_path: Path) -> None:
     with pytest.raises(SearchInputError):
         compile_pattern(SearchOptions(tmp_path, ""))
@@ -235,19 +260,20 @@ def test_find_matches_reports_cross_page_highlights(tmp_path: Path) -> None:
     assert [highlight.page_index for highlight in matches[0].highlights] == [0, 1]
 
 
-def test_extract_document_merges_line_end_hyphen(tmp_path: Path) -> None:
+def test_extract_document_preserves_line_end_hyphen_and_line_break(tmp_path: Path) -> None:
     path = tmp_path / "hyphen.pdf"
     _write_pdf(path, [[((72, 72), "inter-"), ((72, 92), "national search")]])
     with fitz.open(path) as document:
         extracted = extract_document(document)
-    assert "international search" in extracted.text
+    assert "inter-\nnational search" in extracted.text
     assert len(extracted.text) == len(extracted.character_refs)
 
 
-def test_search_folder_finds_plain_text_across_pages(tmp_path: Path) -> None:
+def test_search_folder_finds_explicit_whitespace_across_pages(tmp_path: Path) -> None:
     path = tmp_path / "sample.pdf"
     _write_pdf(path, [[((72, 72), "alpha")], [((72, 72), "beta")]])
-    report = search_folder(SearchOptions(tmp_path, "alpha beta"))
+    assert not search_folder(SearchOptions(tmp_path, "alpha beta")).documents
+    report = search_folder(SearchOptions(tmp_path, r"alpha\s+beta", use_regex=True))
     assert report.scanned_files == 1
     assert len(report.documents) == 1
     assert len(report.documents[0].matches) == 1
