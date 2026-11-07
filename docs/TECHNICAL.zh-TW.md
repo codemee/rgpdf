@@ -139,6 +139,10 @@ README 圖示由 `uv run python scripts/generate_toolbar_icons.py` 匯出：淺�
 
 ## 測試與封裝
 
+Windows spec 共用同一次 Analysis／PYZ，先建立並收集 `dist/rgpdf/rgpdf.exe` 與 `_internal`，再建立單檔 `dist/rgpdf.exe`；此順序避免共用中間 PKG 檔名影響已收集的輸出。CI 將資料夾封裝為 `rgpdf-VERSION-windows-x86_64.zip`，保留 EXE，兩者各附 SHA-256，僅在 GitHub 建置。啟動檢查會分別執行單檔 EXE 與實際解壓的 ZIP，最多輪詢 30 秒確認視窗可回應，記錄啟動耗時，並只終止符合該執行檔路徑的程序。Python 測試本身不代表封裝版已驗證。
+
+Windows 建議使用 ZIP，讓程式庫維持解壓狀態。單檔 bootloader 必須先準備暫存 `_MEI*` 資料夾，才啟動 GUI 子程序；這個階段發生在 app.py 之前，Qt 載入動畫或搜尋工作執行緒無法改善此處的等待。兩種發行格式的右鍵命令都使用選定執行檔的固定路徑。參考 [PyInstaller 執行模式](https://www.pyinstaller.org/en/stable/operating-mode.html)。
+
 測試涵蓋純文字與 Regex、大小寫、跨頁映射、斷字合併、摘要、損壞與無文字 PDF、逐筆結果、設定、主題與預覽；另驗證 DOCX 初篩、特殊內容備援、快取略過初篩、候選與正式結果分離、轉檔期間持續初篩、已就緒 PDF 優先、子程序重用及取消清理。另涵蓋 AES 加密 PDF 的開啟／擁有者密碼、錯密碼重試、逐檔略過、免開啟密碼、預覽換頁、工作階段密碼清除，以及等待密碼時取消或關閉。
 
 測試亦涵蓋旋轉與加密頁面的文字選取、自動複製與剪貼簿重試、整頁 PNG MIME 資料、系統功能表事件與語言切換、Word 匯出的快取重用與建立、檔名衝突、略過／覆寫、取消、檔案篩選、舊掃描結果拒絕及主視窗匯出流程。

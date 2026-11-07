@@ -121,8 +121,9 @@ Passing a file opens its parent folder. In a development checkout, use `uv run r
 
 ### Windows standalone download
 
-Download the versioned `rgpdf-*-windows-x86_64.exe` and its `.sha256` file
-from the [latest GitHub Release](https://github.com/codemee/rgpdf/releases/latest).
+The recommended [GitHub Release](https://github.com/codemee/rgpdf/releases/latest) download is `rgpdf-*-windows-x86_64.zip` with its `.sha256` file. Verify SHA-256, extract it to a permanent folder, and run `rgpdf\rgpdf.exe`. Keep the complete neighboring `_internal` folder; create a shortcut rather than copying the EXE alone. Extract once after downloading; subsequent launches do not unpack the libraries again. This is suitable for frequent use or environments where the single-file version starts slowly. Register Explorer integration again after changing the application path.
+
+The `rgpdf-*-windows-x86_64.exe` single-file download and its `.sha256` remain available. It unpacks libraries to a temporary directory on every launch, so a background process may exist before any window appears. Busy disks or high system load can increase this delay.
 The executable is currently unsigned, so Windows SmartScreen may show an
 unknown-publisher warning. Verify that the SHA-256 value matches the published
 file before choosing to run it.

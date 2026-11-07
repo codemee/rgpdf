@@ -13,4 +13,4 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 & $Python -m PyInstaller --noconfirm --clean rgpdf.spec
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-Write-Host "Built dist\rgpdf.exe"
+Write-Host "Built dist\rgpdf\rgpdf.exe (directory bundle) and dist\rgpdf.exe (single-file)"

@@ -77,12 +77,7 @@ a = Analysis(
 )
 pyz = PYZ(a.pure)
 
-exe = EXE(
-    pyz,
-    a.scripts,
-    a.binaries,
-    a.datas,
-    [],
+exe_options = dict(
     name="rgpdf",
     debug=False,
     bootloader_ignore_signals=False,
@@ -97,3 +92,13 @@ exe = EXE(
     icon=str(project_root / "build-assets" / "rgpdf.ico"),
     version=version_info,
 )
+
+# Build the directory bundle first. Its bootloader and dependencies are copied
+# into dist/rgpdf before the single-file EXE reuses the intermediate PKG name.
+# Both share the same analysis, artwork, version and application code.
+portable_exe = EXE(pyz, a.scripts, [], exclude_binaries=True, **exe_options)
+portable_files = COLLECT(
+    portable_exe, a.binaries, a.datas,
+    strip=False, upx=False, name="rgpdf",
+)
+exe = EXE(pyz, a.scripts, a.binaries, a.datas, [], **exe_options)

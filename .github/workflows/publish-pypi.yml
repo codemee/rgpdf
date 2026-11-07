@@ -53,25 +53,39 @@ jobs:
       - name: Build executable
         shell: pwsh
         run: ./scripts/build-windows.ps1 -Python .venv/Scripts/python.exe
-      - name: Smoke test executable
-        shell: pwsh
-        run: |
-          try {
-            Start-Process -FilePath dist\rgpdf.exe
-            Start-Sleep -Seconds 8
-            $visible = Get-Process -Name rgpdf -ErrorAction SilentlyContinue |
-              Where-Object { $_.MainWindowHandle -ne 0 -and $_.Responding }
-            if (-not $visible) { throw "rgpdf.exe did not create a responsive window" }
-          } finally {
-            Get-Process -Name rgpdf -ErrorAction SilentlyContinue | Stop-Process -Force
-          }
       - name: Prepare release assets
         shell: pwsh
         run: |
-          $filename = "rgpdf-${{ needs.validate.outputs.version }}-windows-x86_64.exe"
-          Copy-Item dist\rgpdf.exe "dist\$filename"
-          $hash = (Get-FileHash "dist\$filename" -Algorithm SHA256).Hash.ToLowerInvariant()
-          "$hash  $filename" | Set-Content "dist\$filename.sha256" -Encoding ascii
+          $stem = "rgpdf-${{ needs.validate.outputs.version }}-windows-x86_64"
+          Copy-Item dist\rgpdf.exe "dist\$stem.exe"
+          Compress-Archive -LiteralPath dist\rgpdf -DestinationPath "dist\$stem.zip" -Force
+          foreach ($extension in @('exe', 'zip')) {
+            $filename = "$stem.$extension"
+            $hash = (Get-FileHash "dist\$filename" -Algorithm SHA256).Hash.ToLowerInvariant()
+            "$hash  $filename" | Set-Content "dist\$filename.sha256" -Encoding ascii
+          }
+      - name: Smoke test single-file and extracted ZIP
+        shell: pwsh
+        run: |
+          $expanded = Join-Path $env:RUNNER_TEMP 'rgpdf-portable-smoke'
+          Expand-Archive -LiteralPath "dist\rgpdf-${{ needs.validate.outputs.version }}-windows-x86_64.zip" -DestinationPath $expanded
+          foreach ($candidate in @('dist\rgpdf.exe', (Join-Path $expanded 'rgpdf\rgpdf.exe'))) {
+            $binary = (Resolve-Path -LiteralPath $candidate).Path
+            try {
+              $watch = [Diagnostics.Stopwatch]::StartNew()
+              Start-Process -FilePath $binary
+              do {
+                Start-Sleep -Milliseconds 250
+                $visible = Get-Process -Name rgpdf -ErrorAction SilentlyContinue |
+                  Where-Object { $_.Path -eq $binary -and $_.MainWindowHandle -ne 0 -and $_.Responding }
+              } until ($visible -or $watch.Elapsed.TotalSeconds -ge 30)
+              if (-not $visible) { throw "$binary did not create a responsive window within 30 seconds" }
+              Write-Host "$candidate displayed a responsive window in $($watch.Elapsed.TotalSeconds.ToString('F2')) seconds"
+            } finally {
+              Get-Process -Name rgpdf -ErrorAction SilentlyContinue |
+                Where-Object { $_.Path -eq $binary } | Stop-Process -Force -ErrorAction SilentlyContinue
+            }
+          }
       - uses: actions/upload-artifact@v4
         with:
           name: release-windows-x86_64
@@ -79,6 +93,8 @@ jobs:
           path: |
             dist/rgpdf-*-windows-x86_64.exe
             dist/rgpdf-*-windows-x86_64.exe.sha256
+            dist/rgpdf-*-windows-x86_64.zip
+            dist/rgpdf-*-windows-x86_64.zip.sha256
 
   build-macos:
     name: Build macOS arm64

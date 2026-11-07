@@ -119,7 +119,9 @@ rgpdf "資料夾路徑" "另一個資料夾路徑"
 
 ### Windows 免安裝版
 
-從 [最新 GitHub Release](https://github.com/codemee/rgpdf/releases/latest)下載有版本編號的 `rgpdf-*-windows-x86_64.exe` 與對應 `.sha256` 檔。執行檔目前未簽章，因此 Windows SmartScreen 可能顯示未知發布者警告；選擇執行前，請先確認 SHA-256 與發布頁提供的值相同。
+建議從 [最新 GitHub Release](https://github.com/codemee/rgpdf/releases/latest)下載 `rgpdf-*-windows-x86_64.zip` 與對應 `.sha256`，核對 SHA-256 後解壓到固定資料夾，執行其中的 `rgpdf\rgpdf.exe`。請保留旁邊完整的 `_internal` 資料夾；可以建立捷徑，但不要只複製 EXE 到其他位置。ZIP 版只需在下載後解壓一次，啟動時不必重新展開程式庫，適合經常使用或單檔版啟動緩慢的環境。更換程式位置後，請重新註冊檔案總管右鍵整合。
+
+也保留 `rgpdf-*-windows-x86_64.exe` 單檔版與對應 `.sha256`。單檔版每次啟動會先在暫存資料夾展開程式庫，這段期間可能只有背景程序而沒有視窗；磁碟繁忙或系統負載高時等待會更長。執行檔目前未簽章，因此 Windows SmartScreen 可能顯示未知發布者警告；選擇執行前，請先確認 SHA-256 與發布頁提供的值相同。
 
 免安裝版不需要 Python 或 uv。搜尋 PDF 不需其他軟體；搜尋 Word 則需要 Windows 上既有的 Microsoft Word，或已安裝 LibreOffice。
 

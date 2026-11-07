@@ -1,0 +1,57 @@
+name: Windows test build
+
+on:
+  push:
+    branches:
+      - 'codex/windows-startup-test-*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+      - name: Install dependencies and test
+        run: |
+          uv sync --frozen
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          uv run --frozen pytest
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Build Windows bundles
+        run: ./scripts/build-windows.ps1 -Python .venv/Scripts/python.exe
+      - name: Package and test directory bundle
+        run: |
+          $archive = 'dist/rgpdf-windows-startup-test.zip'
+          Compress-Archive -LiteralPath dist/rgpdf -DestinationPath $archive
+          $hash = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  rgpdf-windows-startup-test.zip" | Set-Content "$archive.sha256" -Encoding ascii
+          $expanded = Join-Path $env:RUNNER_TEMP 'rgpdf-startup-test'
+          Expand-Archive -LiteralPath $archive -DestinationPath $expanded
+          $binary = (Resolve-Path -LiteralPath (Join-Path $expanded 'rgpdf/rgpdf.exe')).Path
+          try {
+            $watch = [Diagnostics.Stopwatch]::StartNew()
+            Start-Process -FilePath $binary
+            do {
+              Start-Sleep -Milliseconds 250
+              $visible = Get-Process -Name rgpdf -ErrorAction SilentlyContinue |
+                Where-Object { $_.Path -eq $binary -and $_.MainWindowHandle -ne 0 -and $_.Responding }
+            } until ($visible -or $watch.Elapsed.TotalSeconds -ge 30)
+            if (-not $visible) { throw 'Directory bundle did not create a responsive window within 30 seconds' }
+            Write-Host "Directory bundle responsive in $($watch.Elapsed.TotalSeconds.ToString('F2')) seconds"
+          } finally {
+            Get-Process -Name rgpdf -ErrorAction SilentlyContinue |
+              Where-Object { $_.Path -eq $binary } | Stop-Process -Force -ErrorAction SilentlyContinue
+          }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rgpdf-windows-startup-test
+          if-no-files-found: error
+          path: |
+            dist/rgpdf-windows-startup-test.zip
+            dist/rgpdf-windows-startup-test.zip.sha256
