@@ -18,6 +18,30 @@ jobs:
           python-version: '3.12'
       - run: uv sync --frozen
       - run: uv run --frozen pytest
+      - name: Build macOS App
+        if: runner.os == 'macOS'
+        run: ./scripts/build-macos.sh
+      - name: Test macOS App startup and forwarding
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          set -eu
+          codesign --verify --deep --strict dist/rgpdf.app
+          export RGPDF_STARTUP_TRACE="$RUNNER_TEMP/rgpdf-startup.jsonl"
+          QT_QPA_PLATFORM=offscreen dist/rgpdf.app/Contents/MacOS/rgpdf &
+          app_pid=$!
+          trap 'kill "$app_pid" 2>/dev/null || true' EXIT
+          sleep 8
+          kill -0 "$app_pid"
+          dist/rgpdf.app/Contents/MacOS/rgpdf -- "$RUNNER_TEMP"
+          uv run python - <<'PY'
+          import json, os
+          from pathlib import Path
+          events = [json.loads(line) for line in Path(os.environ['RGPDF_STARTUP_TRACE']).read_text().splitlines()]
+          forwarded = [event for event in events if event['event'] == 'forwarded']
+          assert len(forwarded) == 1 and not forwarded[0]['heavy_modules'], events
+          print(events)
+          PY
       - name: Build Windows folder bundle
         if: runner.os == 'Windows'
         run: ./scripts/build-windows.ps1

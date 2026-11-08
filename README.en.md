@@ -107,7 +107,7 @@ Windows: click the toggle to add the Explorer context menu. Right-click a folder
 
 macOS: place the app in a permanent location first (preferably Applications), then click the toggle to add a Finder Quick Action. Right-click selected folders and choose **Open in rgPDF** under **Quick Actions/Services**. Multiple selected folders are supported; Finder's blank background has no equivalent action. If absent, enable the service in System Settings keyboard shortcuts / Services, or log in again. Click the toggle again to remove it.
 
-Both integrations are opt-in, per-user, require no administrator privileges, and are never installed automatically. If rgPDF is running, the action forwards paths to its existing window and opens or selects folder tabs; otherwise it starts the app and restores the session. Neither starts a search. Paths can also be queued while the app is starting, avoiding duplicate GUI and PDF-engine loading. Register again after moving the app; on macOS, remove and reinstall the action. Commands are also available:
+Both integrations are opt-in, per-user, require no administrator privileges, and are never installed automatically. The action starts a new rgPDF instance and adds folder tabs to the restored session without starting a search. Register again after moving the app; on macOS, remove and reinstall the action. Commands are also available:
 
 ```shell
 rgpdf --install-context-menu
@@ -115,15 +115,17 @@ rgpdf --remove-context-menu
 rgpdf "folder path" "another folder path"
 ```
 
-Passing a file opens its parent folder. Launching without arguments brings back the existing window; use `rgpdf --new-window` for an independent window. In a development checkout, use `uv run rgpdf ...`; the Windows portable executable accepts the same arguments.
+Passing a file opens its parent folder. In a development checkout, use `uv run rgpdf ...`; the Windows portable executable accepts the same arguments.
 
 ## Install the latest release
 
 ### Windows standalone download
 
-Download the versioned `rgpdf-*-windows-x86_64.zip` and its `.sha256` file
+Download the versioned `rgpdf-*-windows-x86_64.exe` and its `.sha256` file
 from the [latest GitHub Release](https://github.com/codemee/rgpdf/releases/latest).
-Verify the ZIP's SHA-256, extract it completely, and run `rgpdf/rgpdf.exe`. Keep the adjacent `_internal` folder and move the entire `rgpdf` directory together. The app uses these files directly, without startup extraction or a separate runtime cache; existing settings and Word conversion cache locations are unchanged. The executable is currently unsigned, so Windows SmartScreen may show an unknown-publisher warning.
+The executable is currently unsigned, so Windows SmartScreen may show an
+unknown-publisher warning. Verify that the SHA-256 value matches the published
+file before choosing to run it.
 
 No Python or uv installation is required for the standalone executable. PDF search has no additional requirement. Word search requires an existing Microsoft Word installation on Windows or an existing LibreOffice installation.
 

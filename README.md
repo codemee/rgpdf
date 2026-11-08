@@ -105,7 +105,7 @@ Windows：點擊此按鈕加入檔案總管右鍵選單。之後可在資料夾�
 
 macOS：先將 App 放到固定位置（建議 Applications），點擊此按鈕加入 Finder 快速動作，便可在選取的資料夾上按右鍵，於「快速動作／服務」中選擇「用 rgPDF 開啟」（Open in rgPDF）。支援同時選取多個資料夾；Finder 空白處沒有對應動作。若未顯示，可在系統設定的鍵盤快捷鍵／服務中啟用，或重新登入。再按一次可移除快速動作。
 
-兩者皆為目前使用者的選用整合，不需要管理員權限，也不會在啟動時自動安裝。若 rgPDF 已在執行，右鍵動作會將路徑交給既有視窗，開啟或切換資料夾標籤；否則啟動程式並恢復工作階段，皆不自動搜尋。程式尚在啟動時也能接收後續路徑，避免重複載入介面與 PDF 引擎。搬移或更新程式路徑後請重新註冊；macOS 請先移除再加入。也可使用命令：
+兩者皆為目前使用者的選用整合，不需要管理員權限，也不會在啟動時自動安裝。右鍵動作會開啟新的 rgPDF 執行個體，在恢復的工作階段中加入資料夾標籤，不自動搜尋。搬移或更新程式路徑後請重新註冊；macOS 請先移除再加入。也可使用命令：
 
 ```shell
 rgpdf --install-context-menu
@@ -113,13 +113,13 @@ rgpdf --remove-context-menu
 rgpdf "資料夾路徑" "另一個資料夾路徑"
 ```
 
-直接傳入檔案路徑時會開啟其所在資料夾。沒有參數時會喚回既有視窗；需要獨立視窗時使用 `rgpdf --new-window`。開發環境請使用 `uv run rgpdf ...`；免安裝版可直接執行 `rgpdf.exe` 搭配上述參數。
+直接傳入檔案路徑時會開啟其所在資料夾。開發環境請使用 `uv run rgpdf ...`；免安裝版可直接執行 `rgpdf.exe` 搭配上述參數。
 
 ## 安裝最新版本
 
 ### Windows 免安裝版
 
-從 [最新 GitHub Release](https://github.com/codemee/rgpdf/releases/latest)下載有版本編號的 `rgpdf-*-windows-x86_64.zip` 與對應 `.sha256` 檔。核對 ZIP 的 SHA-256 後，完整解壓縮並執行 `rgpdf/rgpdf.exe`；請保留相鄰的 `_internal` 資料夾，搬移時一併搬移整個 `rgpdf` 資料夾。程式直接使用這些檔案，啟動時不再解壓縮，也不另建執行環境快取；既有設定與 Word 轉換快取的儲存方式不變。執行檔目前未簽章，因此 Windows SmartScreen 可能顯示未知發布者警告。
+從 [最新 GitHub Release](https://github.com/codemee/rgpdf/releases/latest)下載有版本編號的 `rgpdf-*-windows-x86_64.exe` 與對應 `.sha256` 檔。執行檔目前未簽章，因此 Windows SmartScreen 可能顯示未知發布者警告；選擇執行前，請先確認 SHA-256 與發布頁提供的值相同。
 
 免安裝版不需要 Python 或 uv。搜尋 PDF 不需其他軟體；搜尋 Word 則需要 Windows 上既有的 Microsoft Word，或已安裝 LibreOffice。
 

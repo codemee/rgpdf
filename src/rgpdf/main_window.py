@@ -475,9 +475,6 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event):
         if not self._closing:
-            instance = self.__dict__.get('_external_instance')
-            if instance is not None:
-                instance.stop_accepting()
             self._save_session()
             self.settings.setValue('window/geometry', self.saveGeometry())
             self._closing = True
