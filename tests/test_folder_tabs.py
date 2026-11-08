@@ -3,8 +3,8 @@ from zipfile import ZipFile
 
 import pymupdf as fitz
 import pytest
-from PySide6.QtCore import QPoint, QRect, QSettings, Qt
-from PySide6.QtWidgets import QMessageBox, QTabBar
+from PySide6.QtCore import QPoint, QSettings, Qt
+from PySide6.QtWidgets import QMessageBox, QSplitter, QTabBar, QWidget
 from PySide6.QtGui import QPalette, QPixmap
 
 from rgpdf import word_conversion
@@ -40,6 +40,26 @@ def _window(qtbot, tmp_path):
     return window
 
 
+def test_old_horizontal_splitter_restores_as_stacked_results(qtbot, tmp_path):
+    legacy = QSplitter(Qt.Orientation.Horizontal)
+    qtbot.addWidget(legacy)
+    legacy.addWidget(QWidget())
+    legacy.addWidget(QWidget())
+    legacy.setSizes([180, 420])
+    settings = QSettings(str(tmp_path / 'session.ini'), QSettings.Format.IniFormat)
+    settings.setValue('window/result_splitter', legacy.saveState())
+    window = _window(qtbot, tmp_path)
+    qtbot.wait(20)
+    tab = window.current_tab
+    assert tab.result_splitter.orientation() == Qt.Orientation.Vertical
+    assert tab.file_group.geometry().bottom() < tab.match_group.geometry().top()
+    assert tab.file_group.width() == tab.match_group.width()
+    assert tab.search_options.isAncestorOf(tab.case_button)
+    assert tab.search_area.isAncestorOf(tab.scope_button)
+    window.close()
+    qtbot.waitUntil(lambda: not window.isVisible())
+
+
 def test_tab_identity_independent_conditions_and_restore(qtbot, tmp_path):
     a, b = tmp_path / 'a' / 'docs', tmp_path / 'b' / 'docs'
     a.mkdir(parents=True)
@@ -47,7 +67,8 @@ def test_tab_identity_independent_conditions_and_restore(qtbot, tmp_path):
     window = _window(qtbot, tmp_path)
     qtbot.wait(20)
     button = window.add_folder_button
-    assert window.tabs.rect().contains(QRect(button.mapTo(window.tabs, QPoint(0, 0)), button.size()))
+    assert window.settings_toolbar.isAncestorOf(button)
+    assert window.tabs.cornerWidget(Qt.Corner.TopRightCorner) is None
     assert button.parentWidget().rect().contains(button.geometry())
     assert window.folder_frame.isAncestorOf(window.tabs.tabBar())
     assert window.folder_frame.isAncestorOf(window.current_tab)
@@ -61,6 +82,7 @@ def test_tab_identity_independent_conditions_and_restore(qtbot, tmp_path):
     first.stem_filter_edit.setText('ch0*')
     first.case_button.setChecked(True)
     second = window.open_folder(b)
+    assert window.settings_toolbar.widgetForAction(window.settings_toolbar.actions()[0]) is second.add_folder_button
     assert second.pattern_edit.text() == 'first'
     second.pattern_edit.setText('second')
     second.stem_filter_edit.setText('ch1*')

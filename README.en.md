@@ -34,7 +34,7 @@ The **Ignore layout line wraps** button beside Regex is off by default. When ena
 
 ## Usage
 
-Use Browse in Search target, the add-folder button on the tab bar, or file/folder drops to open folder tabs. Dropped files use their parent folders; all valid items are processed. Already-open folders are activated rather than duplicated. New tabs can be opened during searches or exports. Enter text or a regular expression and press Search, then select matching files/passages to preview them. The status bar shows the current tab and the number of other background jobs; Cancel affects only the current tab.
+Use Browse in Search target, Open folder at the start of the main toolbar, or file/folder drops to open folder tabs. Dropped files use their parent folders; all valid items are processed. Already-open folders are activated rather than duplicated. New tabs can be opened during searches or exports. Enter text or a regular expression and press Search, then select matching files/passages to preview them. The status bar shows the current tab and the number of other background jobs; Cancel affects only the current tab.
 
 Each tab retains its own pattern, stem filter, file types, search options, results, preview page, zoom, and scrolling. New tabs inherit current search conditions but start with empty results and default their export destination to the new folder. Tabs can be reordered and closed; duplicate folder names include parent paths, and tooltips show full paths. Closing a busy tab asks to cancel its work, then cleans up only that tab. One search or export runs per tab, while different tabs can run concurrently. Restarting restores tab order, active tab, conditions, and export destinations without restoring results or automatically searching. Language, theme, and highlight color are application-wide.
 
@@ -55,14 +55,14 @@ Use the preview’s Previous page / Next page buttons to browse all document pag
 The preview toolbar provides <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/select_text.png"><img src="docs/toolbar/select_text.png" width="34" height="34" alt="Select and copy text"></picture> **Select and copy text**, enabled by default. Drag to select text on the current page; releasing the mouse automatically copies it to the clipboard. Dragging does not repeatedly write to the clipboard. Ctrl+A/⌘A selects and copies all page text; Esc clears the visible selection. Selection supports CJK text, multiple lines, zoom, rotated pages, and authenticated PDFs. Changing pages/files or re-rendering at a new scale clears the selection. Pages without a text layer cannot be selected; existing search highlights remain visible.
 
 Separators group the preview toolbar into page navigation, copying, and zoom controls. <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/copy_page.png"><img src="docs/toolbar/copy_page.png" width="34" height="34" alt="Copy current page as PNG"></picture> **Copy current page as PNG** places the complete rendered preview area on the clipboard for pasting into image-capable applications. It uses the current preview resolution and includes search highlights and content outside the scroll viewport, excluding toolbar controls and text selection overlays. No disk file is created. Pages without a text layer can also be copied; copying is disabled while loading.
-The toolbar controls below are listed in their on-screen order. Hover over a
+The controls below list the Search target options first, followed by the main toolbar actions. Hover over a
 button to see its current setting; clicking a three-state button cycles modes.
 
 Enabled toggle buttons retain the same background as their hover state. The dark theme uses an EVA Unit-01-inspired palette: deep purple surfaces, neon-green selections and enabled controls, with restrained orange focus and link accents. Document previews retain their original page colors.
 
-The toolbar places File manager integration, Language, and Theme on the right; search tools remain on the left. On Windows, About rgPDF is in the system menu opened by clicking the application icon at the top-left of the main window or pressing Alt+Space. macOS uses the native application menu; other platforms use the rgPDF menu. About provides version, license, and source links.
+The toolbar places File manager integration, Language, and Theme on the right; Open folder, highlight color, cache clearing and Word export are on the left, in that order. Include subfolders, file type, case sensitivity, Whole word, Regex and Ignore line wraps belong to each tab’s Search target pane and are absent from the main toolbar. On Windows, About rgPDF is in the system menu opened by clicking the application icon at the top-left of the main window or pressing Alt+Space. macOS uses the native application menu; other platforms use the rgPDF menu. About provides version, license, and source links.
 
-| Toolbar icon | Control | Usage |
+| Icon | Control | Usage |
 | --- | --- | --- |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/recursive.png"><img src="docs/toolbar/recursive.png" width="34" height="34" alt="Nested folders"></picture> | Include subfolders | Toggle recursive folder search. |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/scope_pdf.png"><img src="docs/toolbar/scope_pdf.png" width="34" height="34" alt="PDF"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/scope_word.png"><img src="docs/toolbar/scope_word.png" width="34" height="34" alt="Word"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/scope_all.png"><img src="docs/toolbar/scope_all.png" width="34" height="34" alt="PDF and Word"></picture> | File types | Cycle PDF → Word (DOC/DOCX) → both. Word requires Microsoft Word on Windows or LibreOffice. |
@@ -70,6 +70,7 @@ The toolbar places File manager integration, Language, and Theme on the right; s
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/whole_word.png"><img src="docs/toolbar/whole_word.png" width="34" height="34" alt="Whole word"></picture> | Whole word | Match complete words in literal and regex modes; off by default. |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/regex.png"><img src="docs/toolbar/regex.png" width="34" height="34" alt="Regular expression"></picture> | Regular expression | Toggle regex; use the help icon beside the search field for examples. |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/line_wrap.png"><img src="docs/toolbar/line_wrap.png" width="34" height="34" alt="Line wrap"></picture> | Ignore layout line wraps | Join adjacent CJK lines, preserve English word spaces and original highlights; off by default. |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/add_folder.png"><img src="docs/toolbar/add_folder.png" width="34" height="34" alt="Open folder tab"></picture> | Open folder tab |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/highlighter.png"><img src="docs/toolbar/highlighter.png" width="34" height="34" alt="Color swatch"></picture> | Highlight color | The swatch shows the current color; click to choose a preset or custom color. |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/cache.png"><img src="docs/toolbar/cache.png" width="34" height="34" alt="Trash can"></picture> | Clear Word cache | Clear shared conversion PDFs and Word results across tabs; preserve sources. Disabled while any job or conversion is active. |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/export_pdf.png"><img src="docs/toolbar/export_pdf.png" width="34" height="34" alt="Export Word PDF"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/export_pdf_disabled.png"><img src="docs/toolbar/export_pdf_disabled.png" width="34" height="34" alt="Disabled Word PDF export"></picture> | Export Word files as PDF | Overlapping Word (upper-left) and PDF (lower-right) logos, connected by an arrow going down from Word and turning right into PDF; select files and an output folder to export cached or newly converted PDFs. |
@@ -82,7 +83,6 @@ Hover over an icon to see its action. Search, color, and preview controls:
 | Icon | Tooltip / action |
 | --- | --- |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/browse.png"><img src="docs/toolbar/browse.png" width="34" height="34" alt="Browse…"></picture> | Browse… |
-| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/add_folder.png"><img src="docs/toolbar/add_folder.png" width="34" height="34" alt="Open folder tab"></picture> | Open folder tab |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/search.png"><img src="docs/toolbar/search.png" width="34" height="34" alt="Search"></picture> | Search |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/cancel.png"><img src="docs/toolbar/cancel.png" width="34" height="34" alt="Cancel"></picture> | Cancel |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/help.png"><img src="docs/toolbar/help.png" width="34" height="34" alt="Search pattern help"></picture> | Search pattern help |
@@ -99,15 +99,17 @@ Search settings are saved between sessions. Conversion cache is cleaned at
 startup: entries unused for 30 days expire, then the oldest entries are removed
 if total size exceeds 500 MB. Use **Cancel** to stop a search.
 
+The file list sits above the match list on the left, each using the full left-pane width. Drag their divider to adjust heights; the page preview remains on the right.
+
 ## Explorer and Finder context menus
 
 The **File manager integration** toggle immediately left of Language installs or removes the integration. Its checked background reflects actual registration and stays synchronized across folder tabs; the tooltip describes the available action. Windows and macOS share this control; it is disabled on other platforms.
 
-Windows: click the toggle to add the Explorer context menu. Right-click a folder or a folder's blank background and choose **Open in rgPDF**. On Windows 11, it may appear under **Show more options**. Click the toggle again to remove it.
+Windows: click the toggle to add the Explorer context menu. Right-click a PDF/Word file (`.pdf`, `.doc`, `.docx`), a folder or a folder's blank background and choose **Open in rgPDF**. On Windows 11, it may appear under **Show more options**. Click the toggle again to remove it. The background action requires no selection; multiple selected folders are delivered individually to tabs in the same window.
 
-macOS: place the app in a permanent location first (preferably Applications), then click the toggle to add a Finder Quick Action. Right-click selected folders and choose **Open in rgPDF** under **Quick Actions/Services**. Multiple selected folders are supported; Finder's blank background has no equivalent action. If absent, enable the service in System Settings keyboard shortcuts / Services, or log in again. Click the toggle again to remove it.
+macOS: place the app in a permanent location first (preferably Applications), then click the toggle to add a Finder Quick Action. Right-click selected folders or PDF/Word files and choose **Open in rgPDF** under **Quick Actions/Services**. Multiple selected folders or supported files are accepted; Finder's blank background has no equivalent action. If absent, enable the service in System Settings keyboard shortcuts / Services, or log in again. Click the toggle again to remove it.
 
-Both integrations are opt-in, per-user, require no administrator privileges, and are never installed automatically. The action starts a new rgPDF instance and adds folder tabs to the restored session without starting a search. Register again after moving the app; on macOS, remove and reinstall the action. Commands are also available:
+Both integrations are opt-in, per-user, require no administrator privileges, and are never installed automatically. If rgPDF is running, the action forwards paths to its existing window and opens or selects folder tabs; otherwise it starts the app and restores the session. Neither starts a search. Paths can also be queued while the app is starting, avoiding duplicate GUI and PDF-engine loading. Register again after moving the app; on macOS, remove and reinstall the action. Commands are also available:
 
 ```shell
 rgpdf --install-context-menu
@@ -115,17 +117,15 @@ rgpdf --remove-context-menu
 rgpdf "folder path" "another folder path"
 ```
 
-Passing a file opens its parent folder. In a development checkout, use `uv run rgpdf ...`; the Windows portable executable accepts the same arguments.
+Opening a file from the context menu or command line uses its parent folder as the search target without starting a search. Existing default PDF/Word applications remain unchanged. Launching without arguments brings back the existing window; use `rgpdf --new-window` for an independent window. In a development checkout, use `uv run rgpdf ...`; the Windows portable executable accepts the same arguments.
 
 ## Install the latest release
 
 ### Windows standalone download
 
-Download the versioned `rgpdf-*-windows-x86_64.exe` and its `.sha256` file
+Download the versioned `rgpdf-*-windows-x86_64.zip` and its `.sha256` file
 from the [latest GitHub Release](https://github.com/codemee/rgpdf/releases/latest).
-The executable is currently unsigned, so Windows SmartScreen may show an
-unknown-publisher warning. Verify that the SHA-256 value matches the published
-file before choosing to run it.
+Verify the ZIP's SHA-256, extract it completely, and run `rgpdf/rgpdf.exe`. Keep the adjacent `_internal` folder and move the entire `rgpdf` directory together. The app uses these files directly, without startup extraction or a separate runtime cache; existing settings and Word conversion cache locations are unchanged. The executable is currently unsigned, so Windows SmartScreen may show an unknown-publisher warning.
 
 No Python or uv installation is required for the standalone executable. PDF search has no additional requirement. Word search requires an existing Microsoft Word installation on Windows or an existing LibreOffice installation.
 
@@ -192,7 +192,7 @@ See [Technical details](docs/TECHNICAL.md) for architecture, matching semantics,
 
 ## Releases
 
-[GitHub Releases](https://github.com/codemee/rgpdf/releases/latest) provide Windows executables, macOS Apps, SHA-256 checksums, and corresponding source archives. Python packages are available on PyPI. The `latest` Git tag points to the newest published source release.
+[GitHub Releases](https://github.com/codemee/rgpdf/releases/latest) provide Windows folder ZIPs, macOS Apps, SHA-256 checksums, and corresponding source archives. Python packages are available on PyPI. The `latest` Git tag points to the newest published source release.
 
 See [Technical details](docs/TECHNICAL.md#release-process) for the release workflow and maintenance instructions.
 

@@ -7,7 +7,7 @@ import sys
 
 from PySide6.QtCore import QEvent, QLocale, QSettings, Qt, QTimer
 from PySide6.QtGui import QAction, QColor
-from PySide6.QtWidgets import QFileDialog, QFrame, QHBoxLayout, QLabel, QMainWindow, QMessageBox, QTabBar, QTabWidget, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QFileDialog, QFrame, QLabel, QMainWindow, QMessageBox, QTabBar, QTabWidget, QVBoxLayout, QWidget
 
 from rgpdf import __version__
 from rgpdf import context_menu
@@ -68,16 +68,6 @@ class MainWindow(QMainWindow):
         frame_layout.addWidget(self.tabs)
         central_layout.addWidget(self.folder_frame)
         self.setCentralWidget(central)
-        self.add_folder_button = SettingsButton('add_folder')
-        self.add_folder_button.setFixedSize(FolderTabBar.ADD_BUTTON_SIZE, FolderTabBar.ADD_BUTTON_SIZE)
-        self.add_folder_button.clicked.connect(self.choose_folder)
-        # Expose the complete corner action footprint to QTabWidget metrics.
-        corner = QWidget()
-        corner.setFixedSize(FolderTabBar.ADD_BUTTON_SIZE, FolderTabBar.ADD_BUTTON_SIZE)
-        corner_layout = QHBoxLayout(corner)
-        corner_layout.setContentsMargins(0, 0, 0, 0)
-        corner_layout.addWidget(self.add_folder_button)
-        self.tabs.setCornerWidget(corner, Qt.Corner.TopRightCorner)
         self.tabs.currentChanged.connect(self._switch_tab)
         self.tabs.tabCloseRequested.connect(self.close_tab)
         self.tabs.tabBar().tabMoved.connect(lambda *_: self._save_session())
@@ -475,6 +465,9 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event):
         if not self._closing:
+            instance = self.__dict__.get('_external_instance')
+            if instance is not None:
+                instance.stop_accepting()
             self._save_session()
             self.settings.setValue('window/geometry', self.saveGeometry())
             self._closing = True

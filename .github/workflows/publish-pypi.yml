@@ -53,32 +53,19 @@ jobs:
       - name: Build executable
         shell: pwsh
         run: ./scripts/build-windows.ps1 -Python .venv/Scripts/python.exe
-      - name: Smoke test executable
+      - name: Smoke test extracted folder bundle and IPC
         shell: pwsh
         run: |
-          try {
-            Start-Process -FilePath dist\rgpdf.exe
-            Start-Sleep -Seconds 8
-            $visible = Get-Process -Name rgpdf -ErrorAction SilentlyContinue |
-              Where-Object { $_.MainWindowHandle -ne 0 -and $_.Responding }
-            if (-not $visible) { throw "rgpdf.exe did not create a responsive window" }
-          } finally {
-            Get-Process -Name rgpdf -ErrorAction SilentlyContinue | Stop-Process -Force
-          }
-      - name: Prepare release assets
-        shell: pwsh
-        run: |
-          $filename = "rgpdf-${{ needs.validate.outputs.version }}-windows-x86_64.exe"
-          Copy-Item dist\rgpdf.exe "dist\$filename"
-          $hash = (Get-FileHash "dist\$filename" -Algorithm SHA256).Hash.ToLowerInvariant()
-          "$hash  $filename" | Set-Content "dist\$filename.sha256" -Encoding ascii
+          $expanded = Join-Path $env:RUNNER_TEMP 'rgpdf-release-smoke'
+          Expand-Archive -LiteralPath "dist\rgpdf-${{ needs.validate.outputs.version }}-windows-x86_64.zip" -DestinationPath $expanded
+          ./scripts/test-windows-startup.ps1 -Binary (Join-Path $expanded 'rgpdf\rgpdf.exe')
       - uses: actions/upload-artifact@v4
         with:
           name: release-windows-x86_64
           if-no-files-found: error
           path: |
-            dist/rgpdf-*-windows-x86_64.exe
-            dist/rgpdf-*-windows-x86_64.exe.sha256
+            dist/rgpdf-*-windows-x86_64.zip
+            dist/rgpdf-*-windows-x86_64.zip.sha256
 
   build-macos:
     name: Build macOS arm64

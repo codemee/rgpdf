@@ -81,11 +81,13 @@ rgPDF 支援 Python 3.12–3.13，並由 uv 管理。PySide6 提供桌面介面�
 
 ## 介面與保存設定
 
-檔案管理員整合改由語系左側的 context_menu_button 狀態按鈕註冊／解除，並保留 CLI。MainWindow 在啟動、切換標籤及操作後依實際註冊同步所有標籤，失敗時還原狀態；tooltip 說明註冊／解除，不支援的平台停用按鈕。按鈕沿用 34 px 尺寸、32 px 狀態底色與 1 px 資料夾／選單圖示。`app.parse_arguments` 接受多個位置參數及 `--` 分隔符；`open_startup_paths` 解析路徑、將檔案映射為父資料夾，於恢復工作階段後開啟標籤。每次啟動建立新程序，不傳送至既有執行個體，也不自動搜尋。封裝版使用 sys.executable；Python 安裝使用目前直譯器搭配 `-m rgpdf`，Windows 優先使用同環境的 pythonw.exe，不依賴 PATH 或工作目錄。
+每個 FolderTab 的「搜尋標的」內新增有標籤的搜尋選項列，放入既有六個 34 px 按鈕並保留 4 px 間距；主工具列保留外觀、快取、匯出與整合工具。各標籤獨立保存及搜尋期間停用的行為不變。檔案與命中項目以垂直 QSplitter 上下排列，檔案在上，右側仍為預覽。Qt 的 splitter state 同時保存方向與尺寸，因此還原舊版狀態後強制改為垂直，既有分配比例可繼續使用。
 
-Windows 僅註冊 `HKCU\Software\Classes\Directory\shell\rgPDF` 與 `Directory\Background\shell\rgPDF`，分別使用 `%1`／`%V`、Single 選取模式，命令末尾為 `-- "<placeholder>\."`。附加點號避免磁碟／UNC 根目錄的尾端反斜線影響引號解析。移除僅刪除這兩個機碼及其 command 子機碼，SHChangeNotify 更新關聯狀態。參考 [Microsoft 快顯功能表文件](https://learn.microsoft.com/en-us/windows/win32/shell/context)。
+檔案管理員整合改由語系左側的 context_menu_button 狀態按鈕註冊／解除，並保留 CLI。MainWindow 在啟動、切換標籤及操作後依實際註冊同步所有標籤，失敗時還原狀態；tooltip 說明註冊／解除，不支援的平台停用按鈕。按鈕沿用 34 px 尺寸、32 px 狀態底色與 1 px 資料夾／選單圖示。`app.parse_arguments` 接受多個位置參數及 `--` 分隔符；`open_startup_paths` 解析路徑、將檔案映射為父資料夾，於恢復工作階段後開啟標籤。僅依賴標準函式庫的 bootstrap 會在載入 GUI／PDF 引擎前將路徑交給目前使用者的主要執行個體，不自動搜尋；未傳參數時喚回視窗，--new-window 則略過轉交。封裝版使用 sys.executable；Python 安裝使用目前直譯器搭配 `-m rgpdf`，Windows 優先使用同環境的 pythonw.exe，不依賴 PATH 或工作目錄。
 
-macOS 僅寫入 rgPDF 自有的 `~/Library/Services/Open in rgPDF.workflow`：Contents/Info.plist 宣告限定 Finder、接收 public.folder 的服務；document.wflow 使用內建 Automator shell action，以 inputMethod=1 與安全引用的 `"$@"` 傳入資料夾。封裝 App 透過 `open -n -a <絕對 App 路徑> --args` 啟動，原始碼／Python 安裝使用直譯器命令。Shell 非同步啟動後即結束，以 `pbs -update` 更新服務探索。移除前驗證 bundle identifier，拒絕符號連結或非自有檔案，只刪自有檔案及空目錄，不修改 App 簽章或全域偏好。移動程式後需重新註冊。參考 [Apple 快速動作說明](https://support.apple.com/guide/automator/aut73234890a/mac)。測試使用隔離登錄機碼與暫存 workflow，涵蓋 Windows argv、工具列狀態／位置、CLI、重複安裝／移除與所有權檢查；macOS 專用測試會呼叫 `/usr/bin/automator`，驗證資料夾輸入傳遞而不開啟實際 App。
+Windows 在目前使用者的 `HKCU\Software\Classes` 下註冊 `Directory\shell\rgPDF`、`Directory\Background\shell\rgPDF`，以及 `SystemFileAssociations\.pdf|.doc|.docx\shell\rgPDF`，不更動預設檔案關聯，分別使用 `%1`／`%V`、資料夾項目採 Document 選取模式、背景選單不設定 MultiSelectModel，命令末尾為 `-- "<placeholder>\."`。附加點號避免磁碟／UNC 根目錄的尾端反斜線影響引號解析。檔案命令直接引用 `%1`，不附加資料夾專用的 `\.`。安裝檢查涵蓋五個動作，可修復不完整或舊版註冊。移除僅刪除這五個機碼及其 command 子機碼，SHChangeNotify 更新關聯狀態。參考 [Microsoft 快顯功能表文件](https://learn.microsoft.com/en-us/windows/win32/shell/context)。
+
+macOS 僅寫入 rgPDF 自有的 `~/Library/Services/Open in rgPDF.workflow`：Contents/Info.plist 宣告限定 Finder、接收 public.folder、com.adobe.pdf、com.microsoft.word.doc 及 org.openxmlformats.wordprocessingml.document 的服務；document.wflow 使用內建 Automator shell action，以 inputMethod=1 與安全引用的 `"$@"` 傳入資料夾。封裝 App 透過 `open -n -a <絕對 App 路徑> --args` 啟動，原始碼／Python 安裝使用直譯器命令。Shell 非同步啟動後即結束，以 `pbs -update` 更新服務探索。移除前驗證 bundle identifier，拒絕符號連結或非自有檔案，只刪自有檔案及空目錄，不修改 App 簽章或全域偏好。移動程式後需重新註冊。參考 [Apple 快速動作說明](https://support.apple.com/guide/automator/aut73234890a/mac)。測試使用隔離登錄機碼與暫存 workflow，涵蓋 Windows argv、工具列狀態／位置、CLI、重複安裝／移除與所有權檢查；macOS 專用測試會呼叫 `/usr/bin/automator`，驗證資料夾及 PDF 檔案輸入傳遞而不開啟實際 App。
 
 `PdfPreview.trim_box_button` 為各預覽獨立、預設關閉的開關，切換頁面／命中時保留，不跨啟動保存。`PreviewRenderWorker` 將 page.trimbox 與 page.cropbox 取交集，有效且非空時僅對工作執行緒專用、未存檔的文件呼叫 set_cropbox；缺少或無法使用的範圍則保留可見頁面。符合尺寸、影像與 extract_page_text 均使用裁切後頁面；命中矩形先加上舊 CropBox 原點減去新原點的位移，再乘上新旋轉矩陣，讓偏移 CropBox 與旋轉頁面的文字選取和命中標示一致。PNG 複製沿用裁切影像，文字複製僅包含保留字元；搜尋與 PDF 匯出仍使用完整文件。回歸測試涵蓋四種旋轉、偏移 CropBox、符合縮放、文字／PNG 複製、命中標示、缺少 TrimBox 的退回行為及來源位元組不變。座標處理依據 [PyMuPDF Page 文件](https://pymupdf.readthedocs.io/en/latest/page.html)。
 
@@ -102,7 +104,7 @@ macOS 僅寫入 rgPDF 自有的 `~/Library/Services/Open in rgPDF.workflow`：Co
 
 結果表停用標頭預設的最後一欄伸展，讓各欄的調整模式生效：檔案筆數依內容取寬，檔名使用剩餘寬度。
 
-`MainWindow` 管理 QTabWidget，`FolderTab` 各自持有表單、splitter、結果模型與預覽；主視窗安裝目前頁的工具列及狀態元件，以保留各頁選項。資料夾以解析後路徑與 Windows normcase 去重，同名標籤增加可區別的上層路徑；拖放逐一開啟有效資料夾／檔案所在目錄，其他頁工作中仍可開啟。最後一頁關閉後保留空白起始頁。FolderTabState 透過 QSettings array 保存各頁條件、splitter 與匯出目的地，恢復順序與目前頁但不還原結果、密碼或自動搜尋。舊設定建立首次工作階段，並保留為最後使用的預設值；失效路徑仍顯示但停用搜尋與匯出。外觀與僅本次工作階段有效的 PDF 密碼共用。FolderTabBar 的尺寸提示保留 32 px 標籤列，新增按鈕為 28×28 px，避免裁切。
+`MainWindow` 管理 QTabWidget，`FolderTab` 各自持有表單、splitter、結果模型與預覽；主視窗安裝目前頁的工具列及狀態元件，以保留各頁選項。資料夾以解析後路徑與 Windows normcase 去重，同名標籤增加可區別的上層路徑；拖放逐一開啟有效資料夾／檔案所在目錄，其他頁工作中仍可開啟。最後一頁關閉後保留空白起始頁。FolderTabState 透過 QSettings array 保存各頁條件、splitter 與匯出目的地，恢復順序與目前頁但不還原結果、密碼或自動搜尋。舊設定建立首次工作階段，並保留為最後使用的預設值；失效路徑仍顯示但停用搜尋與匯出。外觀與僅本次工作階段有效的 PDF 密碼共用。FolderTabBar 的尺寸提示保留 32 px 標籤列，開啟資料夾按鈕移至主工具列第一個位置，採標準 34×34 px 尺寸，標籤列不再放角落按鈕。
 
 共用的 `folderWorkspaceFrame` QFrame 以 1 px Mid 細框與 4 px 圓角完整包住 QTabWidget，包含標籤列與內容。框內布局 margins／spacing 均為零；中央布局保留左右 12 px、下方 8 px 留白，工具列與外框之間沒有頂端間隔，工具列也不繪製底線。QTabWidget 保持關閉 document mode，面板只繪製向上貼合 1 px 的頂端細分隔線，接續標籤底線，不另繪側框或底框。標籤頂端 margin 為零、內容最小高度為 20 px，維持 32 px 標籤列而不增加垂直空隙。選取標籤以 Base 底色搭配 2 px Highlight 下緣線，未選取時透明、移入時使用 AlternateBase，並以 1 px Midlight 下緣框線延續面板上緣，避免背景遮線。未選取標籤下方 padding 為 6 px，選取的 2 px 底線則搭配 5 px padding，維持相同高度。自訂 20×20 px 關閉按鈕以 1 px 線條繪製 6×6 px 叉號，依資料夾元件識別觸發關閉，排序後不會關錯標籤；長標題從中間省略，完整路徑保留在 tooltip。工具列使用 Window 底色；標籤上方 padding 為 5 px。工具列與圓角框共用左右各 12 px 留白，左右邊界對齊。
 
@@ -138,6 +140,12 @@ README 圖示由 `uv run python scripts/generate_toolbar_icons.py` 匯出：淺�
 `SearchProgressBar` 保留原進度條背景與填滿區樣式，自繪百分比文字：底層採 `Text` 色，填滿區裁切後採 `HighlightedText` 色，使深色主題的螢光綠進度上使用深色文字、未填滿區使用淺色文字；也支援由右向左及反向進度。
 
 ## 測試與封裝
+
+Windows spec 使用 PyInstaller `COLLECT`（onedir），有版本編號的 ZIP 內包含 `rgpdf.exe` 與相鄰的 `_internal` 相依檔案。啟動時不解壓縮內嵌執行環境，也不另建持久的執行環境快取。macOS 保留資料夾形式的 App bundle。自訂 runtime hook 將 PyInstaller 的 QtCore 資源註冊延後至確定需要 GUI 時，原有 plugin 環境設定照常執行。
+
+`bootstrap.py` 最先呼叫 `freeze_support`，讓封裝版 PDF 子程序略過 GUI IPC，再由 `cli.py` 解析參數。`instance.py` 在匯入 `app.py`、讀取設定及清理 Word 快取前，啟動有容量上限的 JSON 佇列。Windows 使用具名管線；POSIX 使用目前使用者擁有、權限為 0600 的 Unix socket，以及暫存目錄中的鎖定檔，避免同時啟動並回收過時 socket。不接受 pickle。並行首次啟動只選出一個主要執行個體；後續程序以有時限的連線／重試交付路徑，在佇列接受後離開，此時 GUI 可能尚未實際處理。關閉時停止接受。Qt timer 在 GUI 執行緒取出要求，重用資料夾標籤、還原並喚回視窗；Windows 傳送端同時授予前景權限。路徑解析及檔案系統檢查在轉交後執行，不在輕量傳送端進行。`--new-window` 建立不占用主要 IPC 端點的獨立視窗。
+
+IPC 測試涵蓋沒有 GUI 事件迴圈時接收啟動要求、中文及空白路徑、並行端點所有權、關閉後重用、錯誤訊息、關閉時拒絕要求、匯入隔離，以及既有標籤／最小化視窗。遠端 Windows smoke test 會解壓縮實際 ZIP、啟動 GUI、轉交檔案並確認開啟父資料夾、檢查只有一個 GUI 程序，並驗證轉交追蹤沒有 GUI／PDF 匯入。只有明確設定 `RGPDF_STARTUP_TRACE` 才寫入 JSON-lines 診斷檔，預設不建立追蹤檔。原生啟動計時包含程序建立至視窗就緒；轉交完成僅代表要求已被接受。這些檢查不能據以確定先前偶發等待五分鐘的根因。
 
 測試涵蓋純文字與 Regex、大小寫、跨頁映射、斷字合併、摘要、損壞與無文字 PDF、逐筆結果、設定、主題與預覽；另驗證 DOCX 初篩、特殊內容備援、快取略過初篩、候選與正式結果分離、轉檔期間持續初篩、已就緒 PDF 優先、子程序重用及取消清理。另涵蓋 AES 加密 PDF 的開啟／擁有者密碼、錯密碼重試、逐檔略過、免開啟密碼、預覽換頁、工作階段密碼清除，以及等待密碼時取消或關閉。
 

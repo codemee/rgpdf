@@ -26,7 +26,7 @@ rgPDF 搜尋 PDF 已有的文字層，也能先顯示 DOCX 的初步文字命中
 
 Word 搜尋會先直接讀取 DOCX 文字，立即顯示標為「待確認」的初步命中，再以 PDF 校正正式段落、筆數、頁碼及螢光標示；初步結果不提供頁碼。所有標籤的 Word 轉 PDF 共用一個依序處理的佇列，相同來源會合併轉檔，已有有效快取則直接使用。等待轉檔不會暫停其他檔案或標籤的搜尋。選到尚未就緒的結果時，預覽顯示等待／轉檔／確認動畫，PDF 完成後自動更新；確認沒有命中就移除初步結果。舊式 `.doc`、特殊內容或無法抽取的文件必要時等 PDF 確認。開啟資料夾不會自動搜尋或轉檔；取消某個標籤只取消該標籤的需求，不影響其他標籤共用的轉檔。
 
-工具列「完整單字」預設關閉，位於「區分大小寫」與 Regex 之間。啟用後，命中前後不能緊接 Unicode 單字字元（字母、數字、底線等）：例如 `cat` 可命中 `cat`、`cat-cat`，不會命中 `catalog`、`bobcat` 或 `cat_1`。純文字與 Regex 都適用，也可搭配區分大小寫；DOCX 初步結果與 PDF 正式結果使用相同設定。中文連續字元視為同一段單字字元，不進行自然語言斷詞。設定由各標籤獨立保存，搜尋期間停用切換。
+「搜尋標的」窗格內的「完整單字」預設關閉，位於「區分大小寫」與 Regex 之間。啟用後，命中前後不能緊接 Unicode 單字字元（字母、數字、底線等）：例如 `cat` 可命中 `cat`、`cat-cat`，不會命中 `catalog`、`bobcat` 或 `cat_1`。純文字與 Regex 都適用，也可搭配區分大小寫；DOCX 初步結果與 PDF 正式結果使用相同設定。中文連續字元視為同一段單字字元，不進行自然語言斷詞。設定由各標籤獨立保存，搜尋期間停用切換。
 
 預設保留 PDF 的行界、換頁及行尾連字號，Regex 的 `^`／`$` 直接比對每行開頭／結尾，不需要額外輸入 `(?m)`。例如 `^\d+-\d+` 可找行首章節或頁碼。使用 `\A`／`\Z` 限定整份文件；`(?-m)` 可關閉多行錨點。跨行／跨頁可用 `alpha\s+beta`，或以 `\n` 指定換行；`.` 預設不跨行，`(?s)` 可讓它跨行。純文字中的空格不會自動比對換行。
 
@@ -36,7 +36,7 @@ Word 搜尋會先直接讀取 DOCX 文字，立即顯示標為「待確認」的
 
 搜尋遇到需要密碼的 PDF 時會提示輸入，密碼以遮罩顯示；輸入錯誤可重試，按「略過此檔」則繼續搜尋其他文件，並於完成後列入警告。同一份文件在本次程式工作階段內可沿用已驗證密碼搜尋、預覽、換頁與縮放；關閉程式即清除，來源檔案變更後會重新驗證。密碼不寫入設定、搜尋結果或快取，也不產生解密後的 PDF 副本。
 
-在左上「搜尋標的」窗格按「瀏覽」、按標籤列的新增資料夾按鈕，或將檔案／資料夾拖放到視窗，即可開啟資料夾標籤。檔案使用所在資料夾，多項拖放逐一處理；已開啟的資料夾直接切換，不重複建立，搜尋或匯出期間也可繼續開啟標籤。輸入文字或規則表達式後按「搜尋」，選取檔案及命中段落即可查看預覽。狀態列顯示目前標籤的進度與其他背景工作數量，取消按鈕只作用於目前標籤。
+在左上「搜尋標的」窗格按「瀏覽」、按主工具列最左側的開啟資料夾按鈕，或將檔案／資料夾拖放到視窗，即可開啟資料夾標籤。檔案使用所在資料夾，多項拖放逐一處理；已開啟的資料夾直接切換，不重複建立，搜尋或匯出期間也可繼續開啟標籤。輸入文字或規則表達式後按「搜尋」，選取檔案及命中段落即可查看預覽。狀態列顯示目前標籤的進度與其他背景工作數量，取消按鈕只作用於目前標籤。
 
 各標籤獨立保存搜尋樣式、主檔名篩選、檔案類型、搜尋選項、結果、預覽頁面、縮放與捲動位置。新標籤沿用目前搜尋條件，清空結果，匯出目的地預設為新資料夾。標籤可拖曳排序及關閉，同名資料夾會補上上層路徑，滑鼠停留可查看完整路徑；關閉工作中的標籤會詢問是否取消，確認後清理該頁工作。每個標籤一次執行一個搜尋或匯出，不同標籤可同時進行。下次啟動恢復標籤順序、目前標籤、各頁條件與匯出目的地，不恢復結果、不自動搜尋。語言、配色與螢光筆顏色全視窗共用。
 
@@ -56,13 +56,13 @@ Word 搜尋會先直接讀取 DOCX 文字，立即顯示標為「待確認」的
 
 預覽工具列以分隔線區分翻頁、複製及縮放功能。<picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/copy_page.png"><img src="docs/toolbar/copy_page.png" width="34" height="34" alt="複製目前頁面為 PNG"></picture>「複製目前頁面為 PNG」會將目前預覽範圍的完整影像放入剪貼簿，可直接貼入支援圖片的應用程式。影像採目前預覽解析度，包含命中標示與捲動區外的內容，不包含工具列或文字選取底色；不建立磁碟檔案。沒有文字層的頁面亦可複製，載入期間按鈕會停用。
 
-下表依工具列由左至右排列；滑鼠停留可查看目前設定，三態按鈕每按一次切換一個狀態。
+下表先列出「搜尋標的」窗格的選項，再列出主工具列的功能；滑鼠停留可查看目前設定，三態按鈕每按一次切換一個狀態。
 
 狀態按鈕啟用後會持續顯示與滑鼠移入相同的底色。深色配色採初號機風格：深紫底色、螢光綠的選取與啟用狀態，搭配少量橘色焦點與連結；文件預覽保留原始頁面顏色。
 
-工具列右側為「檔案管理員整合、語言、配色」，其餘搜尋工具靠左排列。「關於 rgPDF」位於 Windows 主視窗左上角應用程式圖示的系統功能表（亦可按 Alt+Space 開啟）；macOS 使用原生應用程式功能表，其他平台則位於 rgPDF 功能表，可查看版本、授權與原始碼連結。
+工具列右側為「檔案管理員整合、語言、配色」，左側依序為開啟資料夾、螢光筆顏色、清除快取與 Word 匯出。子資料夾、檔案類型、區分大小寫、完整單字、Regex 與忽略換行均位於各標籤的「搜尋標的」窗格，不會出現在主工具列。「關於 rgPDF」位於 Windows 主視窗左上角應用程式圖示的系統功能表（亦可按 Alt+Space 開啟）；macOS 使用原生應用程式功能表，其他平台則位於 rgPDF 功能表，可查看版本、授權與原始碼連結。
 
-| 工具列圖示 | 功能 | 操作說明 |
+| 圖示 | 功能 | 操作說明 |
 | --- | --- | --- |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/recursive.png"><img src="docs/toolbar/recursive.png" width="34" height="34" alt="父子資料夾"></picture> | 包含子資料夾 | 切換是否遞迴搜尋子資料夾。 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/scope_pdf.png"><img src="docs/toolbar/scope_pdf.png" width="34" height="34" alt="PDF"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/scope_word.png"><img src="docs/toolbar/scope_word.png" width="34" height="34" alt="Word"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/scope_all.png"><img src="docs/toolbar/scope_all.png" width="34" height="34" alt="PDF 與 Word"></picture> | 搜尋檔案類型 | 循環切換 PDF → Word（DOC／DOCX）→ 兩者。搜尋 Word 需已有 Windows Microsoft Word 或 LibreOffice。 |
@@ -70,6 +70,7 @@ Word 搜尋會先直接讀取 DOCX 文字，立即顯示標為「待確認」的
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/whole_word.png"><img src="docs/toolbar/whole_word.png" width="34" height="34" alt="完整單字"></picture> | 完整單字 | 僅比對完整單字，適用於純文字與 Regex，預設關閉。 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/regex.png"><img src="docs/toolbar/regex.png" width="34" height="34" alt="規則表達式"></picture> | 規則表達式 | 切換 Regex；搜尋欄旁的說明圖示提供語法範例。 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/line_wrap.png"><img src="docs/toolbar/line_wrap.png" width="34" height="34" alt="Line wrap"></picture> | 忽略排版換行 | 接合相鄰行的中文文字、保留英文詞間空格與原座標標示；預設關閉。 |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/add_folder.png"><img src="docs/toolbar/add_folder.png" width="34" height="34" alt="Open folder tab"></picture> | 開啟資料夾標籤 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/highlighter.png"><img src="docs/toolbar/highlighter.png" width="34" height="34" alt="顏色色塊"></picture> | 螢光筆顏色 | 色塊顯示目前顏色；點選後可選預設色或自訂顏色。 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/cache.png"><img src="docs/toolbar/cache.png" width="34" height="34" alt="垃圾桶"></picture> | 清除 Word 快取 | 刪除共用快取與各標籤的 Word 結果，保留來源；任一工作或轉檔期間停用。 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/export_pdf.png"><img src="docs/toolbar/export_pdf.png" width="34" height="34" alt="匯出 Word PDF"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/export_pdf_disabled.png"><img src="docs/toolbar/export_pdf_disabled.png" width="34" height="34" alt="停用 Word PDF 匯出"></picture> | 將 Word 檔匯出為 PDF | Word 在左上、PDF 在右下交疊，箭頭從 Word 下緣向下，再轉直角向右指向 PDF；勾選檔案與輸出資料夾，沿用快取或轉檔後匯出。 |
@@ -82,7 +83,6 @@ Word 搜尋會先直接讀取 DOCX 文字，立即顯示標為「待確認」的
 | 圖示 | Tooltip／功能 |
 | --- | --- |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/browse.png"><img src="docs/toolbar/browse.png" width="34" height="34" alt="瀏覽…"></picture> | 瀏覽… |
-| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/add_folder.png"><img src="docs/toolbar/add_folder.png" width="34" height="34" alt="Open folder tab"></picture> | 開啟資料夾標籤 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/search.png"><img src="docs/toolbar/search.png" width="34" height="34" alt="搜尋"></picture> | 搜尋 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/cancel.png"><img src="docs/toolbar/cancel.png" width="34" height="34" alt="取消"></picture> | 取消 |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/help.png"><img src="docs/toolbar/help.png" width="34" height="34" alt="搜尋樣式說明"></picture> | 搜尋樣式說明 |
@@ -97,15 +97,17 @@ Word 搜尋會先直接讀取 DOCX 文字，立即顯示標為「待確認」的
 
 搜尋設定會保存至下次啟動。啟動時會刪除 30 天未使用的轉換快取，若總量仍超過 500 MB，優先刪除最久未使用的項目。搜尋期間可按「取消」停止。
 
+檔案清單與命中項目在左側上下排列，各自使用整個左側寬度；拖曳兩者之間的分隔線可調整高度。頁面預覽保留在右側。
+
 ## 檔案總管與 Finder 右鍵選單
 
 工具列語系按鈕左側的「檔案管理員整合」狀態按鈕可註冊／解除整合。已註冊時顯示啟用底色，各資料夾標籤同步狀態；tooltip 顯示目前可執行的動作。Windows 與 macOS 使用相同入口，其他平台停用此按鈕。
 
-Windows：點擊此按鈕加入檔案總管右鍵選單。之後可在資料夾或資料夾內空白處按右鍵，選擇「用 rgPDF 開啟」；Windows 11 可能需先選「顯示其他選項」。再按一次即可解除。
+Windows：點擊此按鈕加入檔案總管右鍵選單。之後可在 PDF／Word（`.pdf`、`.doc`、`.docx`）檔案、資料夾或資料夾內空白處按右鍵，選擇「用 rgPDF 開啟」；Windows 11 可能需先選「顯示其他選項」。再按一次即可解除。資料夾空白處不要求選取項目；選取多個資料夾時，系統會逐一交給同一視窗的標籤。
 
-macOS：先將 App 放到固定位置（建議 Applications），點擊此按鈕加入 Finder 快速動作，便可在選取的資料夾上按右鍵，於「快速動作／服務」中選擇「用 rgPDF 開啟」（Open in rgPDF）。支援同時選取多個資料夾；Finder 空白處沒有對應動作。若未顯示，可在系統設定的鍵盤快捷鍵／服務中啟用，或重新登入。再按一次可移除快速動作。
+macOS：先將 App 放到固定位置（建議 Applications），點擊此按鈕加入 Finder 快速動作，便可在選取的資料夾或 PDF／Word 檔案上按右鍵，於「快速動作／服務」中選擇「用 rgPDF 開啟」（Open in rgPDF）。支援同時選取多個資料夾或支援的檔案；Finder 空白處沒有對應動作。若未顯示，可在系統設定的鍵盤快捷鍵／服務中啟用，或重新登入。再按一次可移除快速動作。
 
-兩者皆為目前使用者的選用整合，不需要管理員權限，也不會在啟動時自動安裝。右鍵動作會開啟新的 rgPDF 執行個體，在恢復的工作階段中加入資料夾標籤，不自動搜尋。搬移或更新程式路徑後請重新註冊；macOS 請先移除再加入。也可使用命令：
+兩者皆為目前使用者的選用整合，不需要管理員權限，也不會在啟動時自動安裝。若 rgPDF 已在執行，右鍵動作會將路徑交給既有視窗，開啟或切換資料夾標籤；否則啟動程式並恢復工作階段，皆不自動搜尋。程式尚在啟動時也能接收後續路徑，避免重複載入介面與 PDF 引擎。搬移或更新程式路徑後請重新註冊；macOS 請先移除再加入。也可使用命令：
 
 ```shell
 rgpdf --install-context-menu
@@ -113,13 +115,13 @@ rgpdf --remove-context-menu
 rgpdf "資料夾路徑" "另一個資料夾路徑"
 ```
 
-直接傳入檔案路徑時會開啟其所在資料夾。開發環境請使用 `uv run rgpdf ...`；免安裝版可直接執行 `rgpdf.exe` 搭配上述參數。
+右鍵開啟或直接傳入檔案路徑時，皆以該檔案所在資料夾為搜尋標的，不會自動搜尋；既有 PDF／Word 預設開啟程式不變。沒有參數時會喚回既有視窗；需要獨立視窗時使用 `rgpdf --new-window`。開發環境請使用 `uv run rgpdf ...`；免安裝版可直接執行 `rgpdf.exe` 搭配上述參數。
 
 ## 安裝最新版本
 
 ### Windows 免安裝版
 
-從 [最新 GitHub Release](https://github.com/codemee/rgpdf/releases/latest)下載有版本編號的 `rgpdf-*-windows-x86_64.exe` 與對應 `.sha256` 檔。執行檔目前未簽章，因此 Windows SmartScreen 可能顯示未知發布者警告；選擇執行前，請先確認 SHA-256 與發布頁提供的值相同。
+從 [最新 GitHub Release](https://github.com/codemee/rgpdf/releases/latest)下載有版本編號的 `rgpdf-*-windows-x86_64.zip` 與對應 `.sha256` 檔。核對 ZIP 的 SHA-256 後，完整解壓縮並執行 `rgpdf/rgpdf.exe`；請保留相鄰的 `_internal` 資料夾，搬移時一併搬移整個 `rgpdf` 資料夾。程式直接使用這些檔案，啟動時不再解壓縮，也不另建執行環境快取；既有設定與 Word 轉換快取的儲存方式不變。執行檔目前未簽章，因此 Windows SmartScreen 可能顯示未知發布者警告。
 
 免安裝版不需要 Python 或 uv。搜尋 PDF 不需其他軟體；搜尋 Word 則需要 Windows 上既有的 Microsoft Word，或已安裝 LibreOffice。
 
@@ -179,7 +181,7 @@ uv run rgpdf
 
 ## 發布版本
 
-[GitHub Releases](https://github.com/codemee/rgpdf/releases/latest) 提供 Windows 執行檔、macOS App、SHA-256 檢查碼與對應原始碼；Python 套件可從 PyPI 安裝。`latest` Git 標籤指向最新發布版本的原始碼。
+[GitHub Releases](https://github.com/codemee/rgpdf/releases/latest) 提供 Windows 資料夾 ZIP、macOS App、SHA-256 檢查碼與對應原始碼；Python 套件可從 PyPI 安裝。`latest` Git 標籤指向最新發布版本的原始碼。
 
 發布流程與維護說明請參閱[技術細節](docs/TECHNICAL.zh-TW.md#發布流程)。
 

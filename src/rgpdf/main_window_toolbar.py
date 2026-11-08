@@ -7,10 +7,9 @@ from rgpdf.buttons import SettingsButton
 
 
 class FolderTabBar(QTabBar):
-    """Keep compact tabs tall enough for their corner action."""
+    """Keep folder tabs at a compact, consistent height."""
 
     ROW_HEIGHT = 32
-    ADD_BUTTON_SIZE = 28
 
     def sizeHint(self):
         size = super().sizeHint()
