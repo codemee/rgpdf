@@ -70,7 +70,7 @@ a = Analysis(
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
-    runtime_hooks=[],
+    runtime_hooks=[str(project_root / "scripts" / "pyi_rth_defer_qt.py")],
     excludes=[],
     noarchive=False,
     optimize=1,
@@ -80,10 +80,10 @@ pyz = PYZ(a.pure)
 exe = EXE(
     pyz,
     a.scripts,
-    a.binaries,
-    a.datas,
+    [],
     [],
     name="rgpdf",
+    exclude_binaries=True,
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -97,3 +97,4 @@ exe = EXE(
     icon=str(project_root / "build-assets" / "rgpdf.ico"),
     version=version_info,
 )
+bundle_files = COLLECT(exe, a.binaries, a.datas, strip=False, upx=False, name="rgpdf")
