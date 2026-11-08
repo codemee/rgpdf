@@ -19,7 +19,7 @@ Repository = "https://github.com/codemee/rgpdf"
 Issues = "https://github.com/codemee/rgpdf/issues"
 
 [project.scripts]
-rgpdf = "rgpdf.app:main"
+rgpdf = "rgpdf.bootstrap:main"
 
 [dependency-groups]
 dev = [

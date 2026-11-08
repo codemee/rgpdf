@@ -1,0 +1,39 @@
+name: Folder bundle and early IPC test
+on:
+  push:
+    branches: ['codex/folder-startup-test-*']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  tests:
+    strategy:
+      matrix:
+        os: [windows-latest, macos-15]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+      - run: uv sync --frozen
+      - run: uv run --frozen pytest
+      - name: Build Windows folder bundle
+        if: runner.os == 'Windows'
+        run: ./scripts/build-windows.ps1
+      - name: Test extracted Windows ZIP and forwarding
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $version = uv run python -c 'from rgpdf import __version__; print(__version__)'
+          $expanded = Join-Path $env:RUNNER_TEMP 'rgpdf-folder-smoke'
+          Expand-Archive -LiteralPath "dist/rgpdf-$version-windows-x86_64.zip" -DestinationPath $expanded
+          ./scripts/test-windows-startup.ps1 -Binary (Join-Path $expanded 'rgpdf/rgpdf.exe')
+      - uses: actions/upload-artifact@v4
+        if: runner.os == 'Windows' && success()
+        with:
+          name: rgpdf-folder-startup-test
+          if-no-files-found: error
+          path: |
+            dist/rgpdf-*-windows-x86_64.zip
+            dist/rgpdf-*-windows-x86_64.zip.sha256

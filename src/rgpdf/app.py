@@ -4,12 +4,9 @@
 from __future__ import annotations
 
 import sys
-import multiprocessing
-import argparse
-import subprocess
 from pathlib import Path
 
-from PySide6.QtCore import QSettings, Qt
+from PySide6.QtCore import QSettings, Qt, QTimer
 from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import QApplication
 
@@ -17,6 +14,7 @@ from rgpdf.main_window import MainWindow
 from rgpdf.buttons import SettingsButton
 from rgpdf.resources import application_icon
 from rgpdf.word_conversion import cleanup_word_cache
+from rgpdf.cli import parse_arguments
 
 
 BASE_STYLE = """
@@ -203,17 +201,6 @@ def apply_application_theme(app: QApplication, theme: str) -> None:
         widget.update()
 
 
-def parse_arguments(argv=None):
-    parser = argparse.ArgumentParser(prog="rgpdf", description="Search PDF and Word documents with rgPDF.")
-    integration = parser.add_mutually_exclusive_group()
-    integration.add_argument("--install-context-menu", action="store_true",
-                             help="Install the per-user Explorer/Finder context menu")
-    integration.add_argument("--remove-context-menu", action="store_true",
-                             help="Remove the per-user Explorer/Finder context menu")
-    parser.add_argument("paths", nargs="*", help="Folders to open (files use their parent folder)")
-    return parser.parse_args(argv)
-
-
 def open_startup_paths(window, paths) -> None:
     for value in paths:
         path = Path(value).expanduser().resolve()
@@ -221,17 +208,23 @@ def open_startup_paths(window, paths) -> None:
 
 
 def main(argv=None) -> int:
-    multiprocessing.freeze_support()
-    arguments = parse_arguments(argv)
-    if arguments.install_context_menu or arguments.remove_context_menu:
-        from rgpdf.context_menu import set_enabled
-        try:
-            set_enabled(arguments.install_context_menu)
-        except (OSError, ValueError, subprocess.TimeoutExpired) as exc:
-            if sys.stderr is not None:
-                print(str(exc), file=sys.stderr)
-            return 1
-        return 0
+    from rgpdf.bootstrap import main as start
+    return start(argv)
+
+
+def deliver_external_request(window, paths):
+    if window._closing:
+        return
+    open_startup_paths(window, paths)
+    if window.isMinimized():
+        window.showNormal()
+    else:
+        window.show()
+    window.raise_()
+    window.activateWindow()
+
+
+def run_application(arguments, *, instance=None) -> int:
     cleanup_word_cache()
     QApplication.setHighDpiScaleFactorRoundingPolicy(
         Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
@@ -251,6 +244,17 @@ def main(argv=None) -> int:
     apply_theme(settings.value("appearance/theme", "system", type=str))
     window = MainWindow(apply_theme)
     open_startup_paths(window, arguments.paths)
+    if instance is not None:
+        window._external_instance = instance
+        window._ipc_timer = QTimer(window)
+        window._ipc_timer.setInterval(50)
+
+        def receive_requests():
+            for paths in instance.pending():
+                deliver_external_request(window, paths)
+
+        window._ipc_timer.timeout.connect(receive_requests)
+        window._ipc_timer.start()
     app.styleHints().colorSchemeChanged.connect(
         lambda _scheme: apply_theme("system")
         if settings.value("appearance/theme", "system", type=str) == "system"

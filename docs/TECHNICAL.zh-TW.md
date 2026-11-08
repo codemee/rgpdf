@@ -81,7 +81,7 @@ rgPDF 支援 Python 3.12–3.13，並由 uv 管理。PySide6 提供桌面介面�
 
 ## 介面與保存設定
 
-檔案管理員整合改由語系左側的 context_menu_button 狀態按鈕註冊／解除，並保留 CLI。MainWindow 在啟動、切換標籤及操作後依實際註冊同步所有標籤，失敗時還原狀態；tooltip 說明註冊／解除，不支援的平台停用按鈕。按鈕沿用 34 px 尺寸、32 px 狀態底色與 1 px 資料夾／選單圖示。`app.parse_arguments` 接受多個位置參數及 `--` 分隔符；`open_startup_paths` 解析路徑、將檔案映射為父資料夾，於恢復工作階段後開啟標籤。每次啟動建立新程序，不傳送至既有執行個體，也不自動搜尋。封裝版使用 sys.executable；Python 安裝使用目前直譯器搭配 `-m rgpdf`，Windows 優先使用同環境的 pythonw.exe，不依賴 PATH 或工作目錄。
+檔案管理員整合改由語系左側的 context_menu_button 狀態按鈕註冊／解除，並保留 CLI。MainWindow 在啟動、切換標籤及操作後依實際註冊同步所有標籤，失敗時還原狀態；tooltip 說明註冊／解除，不支援的平台停用按鈕。按鈕沿用 34 px 尺寸、32 px 狀態底色與 1 px 資料夾／選單圖示。`app.parse_arguments` 接受多個位置參數及 `--` 分隔符；`open_startup_paths` 解析路徑、將檔案映射為父資料夾，於恢復工作階段後開啟標籤。僅依賴標準函式庫的 bootstrap 會在載入 GUI／PDF 引擎前將路徑交給目前使用者的主要執行個體，不自動搜尋；未傳參數時喚回視窗，--new-window 則略過轉交。封裝版使用 sys.executable；Python 安裝使用目前直譯器搭配 `-m rgpdf`，Windows 優先使用同環境的 pythonw.exe，不依賴 PATH 或工作目錄。
 
 Windows 僅註冊 `HKCU\Software\Classes\Directory\shell\rgPDF` 與 `Directory\Background\shell\rgPDF`，分別使用 `%1`／`%V`、Single 選取模式，命令末尾為 `-- "<placeholder>\."`。附加點號避免磁碟／UNC 根目錄的尾端反斜線影響引號解析。移除僅刪除這兩個機碼及其 command 子機碼，SHChangeNotify 更新關聯狀態。參考 [Microsoft 快顯功能表文件](https://learn.microsoft.com/en-us/windows/win32/shell/context)。
 
@@ -138,6 +138,12 @@ README 圖示由 `uv run python scripts/generate_toolbar_icons.py` 匯出：淺�
 `SearchProgressBar` 保留原進度條背景與填滿區樣式，自繪百分比文字：底層採 `Text` 色，填滿區裁切後採 `HighlightedText` 色，使深色主題的螢光綠進度上使用深色文字、未填滿區使用淺色文字；也支援由右向左及反向進度。
 
 ## 測試與封裝
+
+Windows spec 使用 PyInstaller `COLLECT`（onedir），有版本編號的 ZIP 內包含 `rgpdf.exe` 與相鄰的 `_internal` 相依檔案。啟動時不解壓縮內嵌執行環境，也不另建持久的執行環境快取。macOS 保留資料夾形式的 App bundle。自訂 runtime hook 將 PyInstaller 的 QtCore 資源註冊延後至確定需要 GUI 時，原有 plugin 環境設定照常執行。
+
+`bootstrap.py` 最先呼叫 `freeze_support`，讓封裝版 PDF 子程序略過 GUI IPC，再由 `cli.py` 解析參數。`instance.py` 在匯入 `app.py`、讀取設定及清理 Word 快取前，啟動有容量上限的 JSON 佇列。Windows 使用具名管線；POSIX 使用目前使用者擁有、權限為 0600 的 Unix socket，以及暫存目錄中的鎖定檔，避免同時啟動並回收過時 socket。不接受 pickle。並行首次啟動只選出一個主要執行個體；後續程序以有時限的連線／重試交付路徑，在佇列接受後離開，此時 GUI 可能尚未實際處理。關閉時停止接受。Qt timer 在 GUI 執行緒取出要求，重用資料夾標籤、還原並喚回視窗；Windows 傳送端同時授予前景權限。路徑解析及檔案系統檢查在轉交後執行，不在輕量傳送端進行。`--new-window` 建立不占用主要 IPC 端點的獨立視窗。
+
+IPC 測試涵蓋沒有 GUI 事件迴圈時接收啟動要求、中文及空白路徑、並行端點所有權、關閉後重用、錯誤訊息、關閉時拒絕要求、匯入隔離，以及既有標籤／最小化視窗。遠端 Windows smoke test 會解壓縮實際 ZIP、啟動 GUI、轉交檔案並確認開啟父資料夾、檢查只有一個 GUI 程序，並驗證轉交追蹤沒有 GUI／PDF 匯入。只有明確設定 `RGPDF_STARTUP_TRACE` 才寫入 JSON-lines 診斷檔，預設不建立追蹤檔。原生啟動計時包含程序建立至視窗就緒；轉交完成僅代表要求已被接受。這些檢查不能據以確定先前偶發等待五分鐘的根因。
 
 測試涵蓋純文字與 Regex、大小寫、跨頁映射、斷字合併、摘要、損壞與無文字 PDF、逐筆結果、設定、主題與預覽；另驗證 DOCX 初篩、特殊內容備援、快取略過初篩、候選與正式結果分離、轉檔期間持續初篩、已就緒 PDF 優先、子程序重用及取消清理。另涵蓋 AES 加密 PDF 的開啟／擁有者密碼、錯密碼重試、逐檔略過、免開啟密碼、預覽換頁、工作階段密碼清除，以及等待密碼時取消或關閉。
 

@@ -4,6 +4,11 @@
 
 All notable changes are documented here. Immutable releases use `vX.Y.Z`; the moving `latest` tag points to the newest published release.
 
+## Unreleased
+
+- Changed Windows downloads to a complete folder ZIP, removing startup self-extraction without introducing a persistent runtime cache.
+- Added early per-user instance forwarding before GUI/PDF imports or cache cleanup, including requests received during startup, existing-folder activation, minimized-window restoration, and an explicit `--new-window` override. Added native ZIP startup/IPC checks and cross-platform regression coverage.
+
 ## 0.1.10 — 2026-11-04
 
 - Preserved PDF line/page breaks and line-ending hyphens by default, enabled multiline regex anchors so `^`/`$` match each line without `(?m)`, and limited dehyphenation to opt-in layout joining. Cross-line/page queries can use `\s+` or explicit newlines; literal spaces no longer span breaks. Updated bilingual pattern help and documentation.
