@@ -1,0 +1,63 @@
+name: Cached runtime experiment
+on:
+  push:
+    branches: ['codex/cached-runtime-*']
+    paths: ['scripts/**', 'src/**', 'tests/**', 'rgpdf.spec', '.github/workflows/cached-runtime-test.yml', 'uv.lock']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+      - name: Python tests
+        run: |
+          uv sync --frozen
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          uv run --frozen pytest
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Build cached single EXE
+        run: ./scripts/build-cached-windows.ps1
+      - name: Native cache tests
+        run: ./scripts/test-cached-launcher.ps1
+      - name: Cold and warm startup tests
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $launcher = (Resolve-Path dist/rgpdf-cached.exe).Path
+          $logs = Join-Path $env:LOCALAPPDATA 'rgpdf/logs/cached-launcher'
+          foreach ($trial in @('cold', 'warm')) {
+            $existing = @(Get-ChildItem -LiteralPath $logs -Filter '*.log' -ErrorAction SilentlyContinue | ForEach-Object Name)
+            $watch = [Diagnostics.Stopwatch]::StartNew()
+            $parent = Start-Process -FilePath $launcher -PassThru
+            $log = $null
+            do {
+              Start-Sleep -Milliseconds 100
+              $log = Get-ChildItem -LiteralPath $logs -Filter '*.log' -ErrorAction SilentlyContinue | Where-Object Name -NotIn $existing | Select-Object -First 1
+              $ready = $log -and (Get-Content -LiteralPath $log.FullName -Raw) -match 'window_ready pid=(\d+)'
+            } until ($ready -or $parent.HasExited -or $watch.Elapsed.TotalSeconds -ge 60)
+            if (-not $ready) { throw "$trial startup failed" }
+            $windowId = [int]$Matches[1]
+            Write-Host "$trial responsive in $($watch.Elapsed.TotalSeconds.ToString('F2')) seconds"
+            $text = Get-Content -LiteralPath $log.FullName -Raw
+            if ($trial -eq 'cold' -and $text -notmatch 'cache_installed') { throw 'Cold test did not install cache' }
+            if ($trial -eq 'warm' -and ($text -notmatch 'cache_hit' -or $text -match 'cache_installed')) { throw 'Warm launch did not reuse cache' }
+            $child = Get-Process -Id $windowId
+            if (-not $child.Responding -or $child.MainWindowHandle -eq 0) { throw 'No responsive runtime window' }
+            $null = $child.CloseMainWindow()
+            if (-not $parent.WaitForExit(20000)) { throw 'Launcher did not release runtime on close' }
+            if ($parent.ExitCode -ne 0) { throw 'Runtime exited with error' }
+            Get-Content -LiteralPath $log.FullName
+          }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rgpdf-cached-runtime-test
+          if-no-files-found: warn
+          path: |
+            dist/rgpdf-cached.exe
+            dist/rgpdf-cached.exe.sha256
+            C:/Users/runneradmin/AppData/Local/rgpdf/logs/cached-launcher/*.log

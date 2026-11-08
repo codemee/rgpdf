@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 from pathlib import Path
+import os
 
 from PyInstaller.utils.win32.versioninfo import (
     FixedFileInfo,
@@ -77,13 +78,15 @@ a = Analysis(
 )
 pyz = PYZ(a.pure)
 
+cached_payload = os.environ.get("RGPDF_BUILD_CACHE_PAYLOAD") == "1"
 exe = EXE(
     pyz,
     a.scripts,
-    a.binaries,
-    a.datas,
+    [] if cached_payload else a.binaries,
+    [] if cached_payload else a.datas,
     [],
-    name="rgpdf",
+    name="rgpdf-runtime" if cached_payload else "rgpdf",
+    exclude_binaries=cached_payload,
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -97,3 +100,5 @@ exe = EXE(
     icon=str(project_root / "build-assets" / "rgpdf.ico"),
     version=version_info,
 )
+if cached_payload:
+    collected_runtime = COLLECT(exe, a.binaries, a.datas, strip=False, upx=False, name="rgpdf-runtime")

@@ -6,6 +6,8 @@ rgPDF is a cross-platform desktop application for searching text-layer PDFs and 
 
 The **rg** in its name pays homage to the text-search tool **ripgrep**.
 
+This experimental branch tests a single Windows EXE with a persistent runtime cache. First launch extracts to `%LOCALAPPDATA%\rgpdf\runtime-test`; later launches verify file SHA-256 hashes and reuse it. Logs live in `%LOCALAPPDATA%\rgpdf\logs\cached-launcher`. Only one EXE is distributed, with a launcher using Windows' built-in .NET Framework 4.x; macOS retains its App. This prototype does not automatically prune old builds; close test processes before manually removing test caches. Word PDF caches are separate.
+
 ## Features
 
 - Multiple folder tabs with independent search conditions, results, and preview state; concurrent searches and Word PDF exports.

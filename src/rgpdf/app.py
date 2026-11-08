@@ -9,7 +9,7 @@ import argparse
 import subprocess
 from pathlib import Path
 
-from PySide6.QtCore import QSettings, Qt
+from PySide6.QtCore import QSettings, Qt, QTimer
 from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import QApplication
 
@@ -257,4 +257,6 @@ def main(argv=None) -> int:
         else None
     )
     window.show()
+    from rgpdf.startup import mark_window_ready
+    QTimer.singleShot(0, mark_window_ready)
     return app.exec()

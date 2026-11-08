@@ -22,6 +22,10 @@ SERVICE_ID = "io.github.codemee.rgpdf.finder-service"
 
 
 def launch_command() -> list[str]:
+    from rgpdf.startup import launcher_path
+    outer = launcher_path()
+    if outer is not None:
+        return [str(outer)]
     executable = Path(sys.executable).absolute()
     if getattr(sys, "frozen", False):
         return [str(executable)]

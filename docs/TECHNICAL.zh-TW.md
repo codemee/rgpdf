@@ -139,6 +139,10 @@ README 圖示由 `uv run python scripts/generate_toolbar_icons.py` 匯出：淺�
 
 ## 測試與封裝
 
+`codex/cached-runtime-launcher` 實驗僅在 GitHub 執行 `scripts/build-cached-windows.ps1`：PyInstaller 產生資料夾式 runtime，Python 打包內嵌 ZIP 與逐檔 SHA-256 清單，由 Windows 內建 .NET Framework 編譯器建立小型 WinForms 啟動器。這個原型尚未使用 Rust。各使用者／建置的 mutex 保護準備流程，共享檔案 lease 防止修復使用中的版本，暫存目錄驗證完成後才發布。每次啟動驗證所有檔案雜湊；快取命中不讀內嵌 ZIP。未使用的損壞／不完整快取會重建，使用中損壞則提示錯誤；拒絕未列入清單、跨目錄路徑及 reparse point。此原型暫不清理舊建置或崩潰遺留的準備目錄。
+
+啟動器透過程序專用 `RGPDF_LAUNCHER_PATH` 傳遞外層絕對路徑供右鍵整合使用，PDF 子程序仍使用 sys.executable。`RGPDF_STARTUP_MARKER` 在第一個 GUI 事件後消耗，限定寫入啟動器紀錄目錄。啟動器等待 GUI 結束才釋放 lease，因此工作管理員可同時看到啟動器及 runtime。紀錄分開量測啟動器進入點、快取驗證／解壓、runtime 啟動與視窗 ready；Main 之前的 OS／CLR 載入須由外部量測。CI 驗證冷／暖啟動、原生修復／並行／lease 與 Windows 參數引號。快取位於 `runtime-test`；正式進入點保持原有行為，原生編譯與測試只在遠端執行。
+
 測試涵蓋純文字與 Regex、大小寫、跨頁映射、斷字合併、摘要、損壞與無文字 PDF、逐筆結果、設定、主題與預覽；另驗證 DOCX 初篩、特殊內容備援、快取略過初篩、候選與正式結果分離、轉檔期間持續初篩、已就緒 PDF 優先、子程序重用及取消清理。另涵蓋 AES 加密 PDF 的開啟／擁有者密碼、錯密碼重試、逐檔略過、免開啟密碼、預覽換頁、工作階段密碼清除，以及等待密碼時取消或關閉。
 
 測試亦涵蓋旋轉與加密頁面的文字選取、自動複製與剪貼簿重試、整頁 PNG MIME 資料、系統功能表事件與語言切換、Word 匯出的快取重用與建立、檔名衝突、略過／覆寫、取消、檔案篩選、舊掃描結果拒絕及主視窗匯出流程。

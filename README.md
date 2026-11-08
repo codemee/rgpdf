@@ -6,6 +6,8 @@ rgPDF 是一套跨平台桌面工具，可使用純文字或規則表達式搜�
 
 名稱中的 **rg** 是向文字搜尋工具 **ripgrep** 致敬。
 
+此實驗分支測試 Windows「單一 EXE＋持久執行環境快取」。首次執行會在 `%LOCALAPPDATA%\rgpdf\runtime-test` 解壓，後續核對檔案 SHA-256 後重用；啟動紀錄位於 `%LOCALAPPDATA%\rgpdf\logs\cached-launcher`。外層仍只有一個 EXE，使用 Windows 內建 .NET Framework 4.x 啟動器；macOS 維持原 App。此原型尚未自動清理舊建置，需關閉測試程序後才能手動移除測試快取；不影響 Word PDF 快取。
+
 ## 功能
 
 - 多資料夾標籤，各自保留搜尋條件、結果與預覽；可同時搜尋或匯出 Word PDF。
