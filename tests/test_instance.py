@@ -39,6 +39,7 @@ def test_runtime_hook_defers_qt_until_gui_owner(monkeypatch):
     _prepare_gui()
     _prepare_gui()  # Registration is applied once.
     assert calls == [('PySide6', '/plugins')]
+    sys._rgpdf_deferred_qt = None  # Restore the attribute for monkeypatch teardown.
 
 
 @pytest.fixture
