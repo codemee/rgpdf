@@ -103,7 +103,7 @@ if total size exceeds 500 MB. Use **Cancel** to stop a search.
 
 The **File manager integration** toggle immediately left of Language installs or removes the integration. Its checked background reflects actual registration and stays synchronized across folder tabs; the tooltip describes the available action. Windows and macOS share this control; it is disabled on other platforms.
 
-Windows: click the toggle to add the Explorer context menu. Right-click a folder or a folder's blank background and choose **Open in rgPDF**. On Windows 11, it may appear under **Show more options**. Click the toggle again to remove it.
+Windows: click the toggle to add the Explorer context menu. Right-click a folder or a folder's blank background and choose **Open in rgPDF**. On Windows 11, it may appear under **Show more options**. Click the toggle again to remove it. The background action requires no selection; multiple selected folders are delivered individually to tabs in the same window.
 
 macOS: place the app in a permanent location first (preferably Applications), then click the toggle to add a Finder Quick Action. Right-click selected folders and choose **Open in rgPDF** under **Quick Actions/Services**. Multiple selected folders are supported; Finder's blank background has no equivalent action. If absent, enable the service in System Settings keyboard shortcuts / Services, or log in again. Click the toggle again to remove it.
 

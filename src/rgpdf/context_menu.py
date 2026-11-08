@@ -102,6 +102,13 @@ def is_installed() -> bool:
                 with winreg.OpenKey(winreg.HKEY_CURRENT_USER, path + r"\command") as key:
                     if winreg.QueryValueEx(key, "")[0] != windows_command(placeholder):
                         return False
+                with winreg.OpenKey(winreg.HKEY_CURRENT_USER, path) as key:
+                    try:
+                        selection = winreg.QueryValueEx(key, "MultiSelectModel")[0]
+                    except FileNotFoundError:
+                        selection = None
+                    if selection != ("Document" if placeholder == "%1" else None):
+                        return False
             return True
         except OSError:
             return False
@@ -124,7 +131,17 @@ def set_enabled(enabled: bool, *, title: str = "Open in rgPDF") -> None:
                     winreg.SetValueEx(key, "", 0, winreg.REG_SZ, title)
                     winreg.SetValueEx(key, "Icon", 0, winreg.REG_SZ,
                                      subprocess.list2cmdline([launch_command()[0]]))
-                    winreg.SetValueEx(key, "MultiSelectModel", 0, winreg.REG_SZ, "Single")
+                    if placeholder == "%1":
+                        # Explorer invokes the command for each selected folder;
+                        # bootstrap forwards them into tabs of the same window.
+                        winreg.SetValueEx(key, "MultiSelectModel", 0, winreg.REG_SZ, "Document")
+                    else:
+                        # A background menu has no selected items. Single hides
+                        # this verb in Shell views such as Q-Dir's folder pane.
+                        try:
+                            winreg.DeleteValue(key, "MultiSelectModel")
+                        except FileNotFoundError:
+                            pass
                 with winreg.CreateKey(winreg.HKEY_CURRENT_USER, path + r"\command") as key:
                     winreg.SetValueEx(key, "", 0, winreg.REG_SZ, windows_command(placeholder))
             else:

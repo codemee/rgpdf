@@ -83,7 +83,7 @@ rgPDF 支援 Python 3.12–3.13，並由 uv 管理。PySide6 提供桌面介面�
 
 檔案管理員整合改由語系左側的 context_menu_button 狀態按鈕註冊／解除，並保留 CLI。MainWindow 在啟動、切換標籤及操作後依實際註冊同步所有標籤，失敗時還原狀態；tooltip 說明註冊／解除，不支援的平台停用按鈕。按鈕沿用 34 px 尺寸、32 px 狀態底色與 1 px 資料夾／選單圖示。`app.parse_arguments` 接受多個位置參數及 `--` 分隔符；`open_startup_paths` 解析路徑、將檔案映射為父資料夾，於恢復工作階段後開啟標籤。僅依賴標準函式庫的 bootstrap 會在載入 GUI／PDF 引擎前將路徑交給目前使用者的主要執行個體，不自動搜尋；未傳參數時喚回視窗，--new-window 則略過轉交。封裝版使用 sys.executable；Python 安裝使用目前直譯器搭配 `-m rgpdf`，Windows 優先使用同環境的 pythonw.exe，不依賴 PATH 或工作目錄。
 
-Windows 僅註冊 `HKCU\Software\Classes\Directory\shell\rgPDF` 與 `Directory\Background\shell\rgPDF`，分別使用 `%1`／`%V`、Single 選取模式，命令末尾為 `-- "<placeholder>\."`。附加點號避免磁碟／UNC 根目錄的尾端反斜線影響引號解析。移除僅刪除這兩個機碼及其 command 子機碼，SHChangeNotify 更新關聯狀態。參考 [Microsoft 快顯功能表文件](https://learn.microsoft.com/en-us/windows/win32/shell/context)。
+Windows 僅註冊 `HKCU\Software\Classes\Directory\shell\rgPDF` 與 `Directory\Background\shell\rgPDF`，分別使用 `%1`／`%V`、資料夾項目採 Document 選取模式、背景選單不設定 MultiSelectModel，命令末尾為 `-- "<placeholder>\."`。附加點號避免磁碟／UNC 根目錄的尾端反斜線影響引號解析。移除僅刪除這兩個機碼及其 command 子機碼，SHChangeNotify 更新關聯狀態。參考 [Microsoft 快顯功能表文件](https://learn.microsoft.com/en-us/windows/win32/shell/context)。
 
 macOS 僅寫入 rgPDF 自有的 `~/Library/Services/Open in rgPDF.workflow`：Contents/Info.plist 宣告限定 Finder、接收 public.folder 的服務；document.wflow 使用內建 Automator shell action，以 inputMethod=1 與安全引用的 `"$@"` 傳入資料夾。封裝 App 透過 `open -n -a <絕對 App 路徑> --args` 啟動，原始碼／Python 安裝使用直譯器命令。Shell 非同步啟動後即結束，以 `pbs -update` 更新服務探索。移除前驗證 bundle identifier，拒絕符號連結或非自有檔案，只刪自有檔案及空目錄，不修改 App 簽章或全域偏好。移動程式後需重新註冊。參考 [Apple 快速動作說明](https://support.apple.com/guide/automator/aut73234890a/mac)。測試使用隔離登錄機碼與暫存 workflow，涵蓋 Windows argv、工具列狀態／位置、CLI、重複安裝／移除與所有權檢查；macOS 專用測試會呼叫 `/usr/bin/automator`，驗證資料夾輸入傳遞而不開啟實際 App。
 

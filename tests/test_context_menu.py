@@ -95,6 +95,19 @@ def test_windows_per_user_registration_and_quoted_roots(tmp_path, monkeypatch):
         for key, _ in keys:
             with winreg.OpenKey(winreg.HKEY_CURRENT_USER, key) as handle:
                 assert winreg.QueryValueEx(handle, '')[0] == 'Open test rgPDF'
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, keys[0][0]) as handle:
+            assert winreg.QueryValueEx(handle, 'MultiSelectModel')[0] == 'Document'
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, keys[1][0]) as handle:
+            with pytest.raises(FileNotFoundError):
+                winreg.QueryValueEx(handle, 'MultiSelectModel')
+        # Repair previously registered commands whose Single model hides the
+        # background verb even though their executable paths are up to date.
+        for key, _ in keys:
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, key, 0, winreg.KEY_SET_VALUE) as handle:
+                winreg.SetValueEx(handle, 'MultiSelectModel', 0, winreg.REG_SZ, 'Single')
+        assert not context_menu.is_installed()
+        context_menu.set_enabled(True)
+        assert context_menu.is_installed()
         api = ctypes.WinDLL('shell32')
         api.CommandLineToArgvW.argtypes = [ctypes.c_wchar_p, ctypes.POINTER(ctypes.c_int)]
         api.CommandLineToArgvW.restype = ctypes.POINTER(ctypes.c_wchar_p)

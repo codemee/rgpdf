@@ -6,6 +6,8 @@ All notable changes are documented here. Immutable releases use `vX.Y.Z`; the mo
 
 ## Unreleased
 
+- Fixed folder-background context menus being hidden by an inappropriate Single selection model; registration now repairs old values and supports multiple selected folders.
+
 - Changed Windows downloads to a complete folder ZIP, removing startup self-extraction without introducing a persistent runtime cache.
 - Added early per-user instance forwarding before GUI/PDF imports or cache cleanup, including requests received during startup, existing-folder activation, minimized-window restoration, and an explicit `--new-window` override. Added native ZIP startup/IPC checks and cross-platform regression coverage.
 
