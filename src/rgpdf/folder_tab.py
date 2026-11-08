@@ -181,6 +181,20 @@ class FolderTab(QWidget):
         pattern_row.setSpacing(SettingsButton.SPACING)
         self.search_form.addRow(self.pattern_label, pattern_container)
 
+        self.search_options = QWidget()
+        self.search_options.setObjectName("searchOptions")
+        options_layout = QHBoxLayout(self.search_options)
+        options_layout.setContentsMargins(0, 0, 0, 0)
+        options_layout.setSpacing(SettingsButton.SPACING)
+        for button in (
+            self.recursive_button, self.scope_button, self.case_button,
+            self.whole_word_button, self.regex_button, self.line_wrap_button,
+        ):
+            options_layout.addWidget(button)
+        options_layout.addStretch()
+        self.search_options_label = self._make_label("search_options")
+        self.search_form.addRow(self.search_options_label, self.search_options)
+
         self.search_area = QGroupBox()
         self.search_area.setObjectName("searchArea")
         search_area_layout = QVBoxLayout(self.search_area)
@@ -192,16 +206,6 @@ class FolderTab(QWidget):
         self.settings_toolbar.setMovable(False)
         self.settings_toolbar.setFloatable(False)
         self.settings_toolbar.layout().setSpacing(SettingsButton.SPACING)
-        for button in (
-            self.recursive_button,
-            self.scope_button,
-            self.case_button,
-            self.whole_word_button,
-            self.regex_button,
-            self.line_wrap_button,
-        ):
-            self.settings_toolbar.addWidget(button)
-        self.settings_toolbar.addSeparator()
         for button in (
             self.highlight_button,
             self.cache_button,
@@ -257,13 +261,13 @@ class FolderTab(QWidget):
         self.match_group.setLayout(self._single_widget_layout(self.match_list))
         self.preview_group.setLayout(self._single_widget_layout(self.preview))
 
-        self.result_splitter = QSplitter(Qt.Orientation.Horizontal)
+        self.result_splitter = QSplitter(Qt.Orientation.Vertical)
         self.result_splitter.addWidget(self.file_group)
         self.result_splitter.addWidget(self.match_group)
-        self.result_splitter.setStretchFactor(0, 2)
-        self.result_splitter.setStretchFactor(1, 3)
+        self.result_splitter.setStretchFactor(0, 1)
+        self.result_splitter.setStretchFactor(1, 2)
         self.result_splitter.setHandleWidth(10)
-        self.result_splitter.setSizes([250, 370])
+        self.result_splitter.setSizes([190, 380])
 
         self.left_panel = QWidget()
         left_layout = QVBoxLayout(self.left_panel)
@@ -405,6 +409,9 @@ class FolderTab(QWidget):
         result_splitter_state = self.settings.value("window/result_splitter")
         if result_splitter_state:
             self.result_splitter.restoreState(result_splitter_state)
+            # Qt stores orientation in saveState; old horizontal sessions must
+            # not undo the new layout when restored.
+            self.result_splitter.setOrientation(Qt.Orientation.Vertical)
 
     def t(self, key: str, **values: object) -> str:
         return translate(self.language, key, **values)

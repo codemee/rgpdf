@@ -4,7 +4,7 @@ from zipfile import ZipFile
 import pymupdf as fitz
 import pytest
 from PySide6.QtCore import QPoint, QRect, QSettings, Qt
-from PySide6.QtWidgets import QMessageBox, QTabBar
+from PySide6.QtWidgets import QMessageBox, QSplitter, QTabBar, QWidget
 from PySide6.QtGui import QPalette, QPixmap
 
 from rgpdf import word_conversion
@@ -38,6 +38,26 @@ def _window(qtbot, tmp_path):
     qtbot.addWidget(window)
     window.show()
     return window
+
+
+def test_old_horizontal_splitter_restores_as_stacked_results(qtbot, tmp_path):
+    legacy = QSplitter(Qt.Orientation.Horizontal)
+    qtbot.addWidget(legacy)
+    legacy.addWidget(QWidget())
+    legacy.addWidget(QWidget())
+    legacy.setSizes([180, 420])
+    settings = QSettings(str(tmp_path / 'session.ini'), QSettings.Format.IniFormat)
+    settings.setValue('window/result_splitter', legacy.saveState())
+    window = _window(qtbot, tmp_path)
+    qtbot.wait(20)
+    tab = window.current_tab
+    assert tab.result_splitter.orientation() == Qt.Orientation.Vertical
+    assert tab.file_group.geometry().bottom() < tab.match_group.geometry().top()
+    assert tab.file_group.width() == tab.match_group.width()
+    assert tab.search_options.isAncestorOf(tab.case_button)
+    assert tab.search_area.isAncestorOf(tab.scope_button)
+    window.close()
+    qtbot.waitUntil(lambda: not window.isVisible())
 
 
 def test_tab_identity_independent_conditions_and_restore(qtbot, tmp_path):

@@ -6,6 +6,8 @@ All notable changes are documented here. Immutable releases use `vX.Y.Z`; the mo
 
 ## Unreleased
 
+- Added PDF/DOC/DOCX file context menus and matching Finder Quick Action inputs, opening parent folders without changing default applications. Moved per-tab search options into Search target and stacked the file/match panes vertically, including legacy splitter-state restoration.
+
 - Fixed folder-background context menus being hidden by an inappropriate Single selection model; registration now repairs old values and supports multiple selected folders.
 
 - Changed Windows downloads to a complete folder ZIP, removing startup self-extraction without introducing a persistent runtime cache.

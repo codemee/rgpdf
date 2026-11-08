@@ -40,7 +40,7 @@ def test_disabled_export_marks_remain_opaque_and_cover_overlap(qapp, qtbot, them
     assert pdf.lightness() > enabled.pixelColor(25, 17).lightness()
 
 
-def test_main_window_has_three_result_columns(qtbot, monkeypatch, tmp_path) -> None:
+def test_main_window_has_stacked_results_and_local_search_options(qtbot, monkeypatch, tmp_path) -> None:
     settings = QSettings(str(tmp_path / "settings.ini"), QSettings.Format.IniFormat)
     settings.setValue("appearance/language", "en")
     applied_themes = []
@@ -51,6 +51,7 @@ def test_main_window_has_three_result_columns(qtbot, monkeypatch, tmp_path) -> N
     assert window.main_splitter.handleWidth() == 12
     assert window.main_splitter.widget(1) is window.preview_group
     assert window.result_splitter.count() == 2
+    assert window.result_splitter.orientation() == Qt.Orientation.Vertical
     assert window.result_splitter.handleWidth() == 10
     assert window.file_list.columnCount() == 2
     assert window.match_list.columnCount() == 2
@@ -75,7 +76,7 @@ def test_main_window_has_three_result_columns(qtbot, monkeypatch, tmp_path) -> N
     assert all(button.contentsMargins() == QMargins(4, 4, 4, 4) for button in settings_buttons)
     assert isinstance(window.settings_toolbar, QToolBar)
     assert window.settings_toolbar.layout().spacing() == 4
-    assert len(window.settings_toolbar.findChildren(SettingsButton)) == 12
+    assert len(window.settings_toolbar.findChildren(SettingsButton)) == 6
     toolbar_buttons = [
         widget
         for action in window.settings_toolbar.actions()
@@ -83,13 +84,17 @@ def test_main_window_has_three_result_columns(qtbot, monkeypatch, tmp_path) -> N
             (widget := window.settings_toolbar.widgetForAction(action)), SettingsButton
         )
     ]
-    assert toolbar_buttons == [
+    search_buttons = [
         window.recursive_button,
         window.scope_button,
         window.case_button,
         window.whole_word_button,
         window.regex_button,
         window.line_wrap_button,
+    ]
+    assert all(window.search_area.isAncestorOf(button) for button in search_buttons)
+    assert all(not window.settings_toolbar.isAncestorOf(button) for button in search_buttons)
+    assert toolbar_buttons == [
         window.highlight_button,
         window.cache_button,
         window.export_word_button,

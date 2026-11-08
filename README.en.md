@@ -55,14 +55,14 @@ Use the preview’s Previous page / Next page buttons to browse all document pag
 The preview toolbar provides <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/select_text.png"><img src="docs/toolbar/select_text.png" width="34" height="34" alt="Select and copy text"></picture> **Select and copy text**, enabled by default. Drag to select text on the current page; releasing the mouse automatically copies it to the clipboard. Dragging does not repeatedly write to the clipboard. Ctrl+A/⌘A selects and copies all page text; Esc clears the visible selection. Selection supports CJK text, multiple lines, zoom, rotated pages, and authenticated PDFs. Changing pages/files or re-rendering at a new scale clears the selection. Pages without a text layer cannot be selected; existing search highlights remain visible.
 
 Separators group the preview toolbar into page navigation, copying, and zoom controls. <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/copy_page.png"><img src="docs/toolbar/copy_page.png" width="34" height="34" alt="Copy current page as PNG"></picture> **Copy current page as PNG** places the complete rendered preview area on the clipboard for pasting into image-capable applications. It uses the current preview resolution and includes search highlights and content outside the scroll viewport, excluding toolbar controls and text selection overlays. No disk file is created. Pages without a text layer can also be copied; copying is disabled while loading.
-The toolbar controls below are listed in their on-screen order. Hover over a
+The controls below list the Search target options first, followed by the main toolbar actions. Hover over a
 button to see its current setting; clicking a three-state button cycles modes.
 
 Enabled toggle buttons retain the same background as their hover state. The dark theme uses an EVA Unit-01-inspired palette: deep purple surfaces, neon-green selections and enabled controls, with restrained orange focus and link accents. Document previews retain their original page colors.
 
-The toolbar places File manager integration, Language, and Theme on the right; search tools remain on the left. On Windows, About rgPDF is in the system menu opened by clicking the application icon at the top-left of the main window or pressing Alt+Space. macOS uses the native application menu; other platforms use the rgPDF menu. About provides version, license, and source links.
+The toolbar places File manager integration, Language, and Theme on the right; highlight color, cache clearing and Word export remain on the left. Include subfolders, file type, case sensitivity, Whole word, Regex and Ignore line wraps belong to each tab’s Search target pane and are absent from the main toolbar. On Windows, About rgPDF is in the system menu opened by clicking the application icon at the top-left of the main window or pressing Alt+Space. macOS uses the native application menu; other platforms use the rgPDF menu. About provides version, license, and source links.
 
-| Toolbar icon | Control | Usage |
+| Icon | Control | Usage |
 | --- | --- | --- |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/recursive.png"><img src="docs/toolbar/recursive.png" width="34" height="34" alt="Nested folders"></picture> | Include subfolders | Toggle recursive folder search. |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/scope_pdf.png"><img src="docs/toolbar/scope_pdf.png" width="34" height="34" alt="PDF"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/scope_word.png"><img src="docs/toolbar/scope_word.png" width="34" height="34" alt="Word"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset="docs/toolbar/dark/scope_all.png"><img src="docs/toolbar/scope_all.png" width="34" height="34" alt="PDF and Word"></picture> | File types | Cycle PDF → Word (DOC/DOCX) → both. Word requires Microsoft Word on Windows or LibreOffice. |
@@ -99,13 +99,15 @@ Search settings are saved between sessions. Conversion cache is cleaned at
 startup: entries unused for 30 days expire, then the oldest entries are removed
 if total size exceeds 500 MB. Use **Cancel** to stop a search.
 
+The file list sits above the match list on the left, each using the full left-pane width. Drag their divider to adjust heights; the page preview remains on the right.
+
 ## Explorer and Finder context menus
 
 The **File manager integration** toggle immediately left of Language installs or removes the integration. Its checked background reflects actual registration and stays synchronized across folder tabs; the tooltip describes the available action. Windows and macOS share this control; it is disabled on other platforms.
 
-Windows: click the toggle to add the Explorer context menu. Right-click a folder or a folder's blank background and choose **Open in rgPDF**. On Windows 11, it may appear under **Show more options**. Click the toggle again to remove it. The background action requires no selection; multiple selected folders are delivered individually to tabs in the same window.
+Windows: click the toggle to add the Explorer context menu. Right-click a PDF/Word file (`.pdf`, `.doc`, `.docx`), a folder or a folder's blank background and choose **Open in rgPDF**. On Windows 11, it may appear under **Show more options**. Click the toggle again to remove it. The background action requires no selection; multiple selected folders are delivered individually to tabs in the same window.
 
-macOS: place the app in a permanent location first (preferably Applications), then click the toggle to add a Finder Quick Action. Right-click selected folders and choose **Open in rgPDF** under **Quick Actions/Services**. Multiple selected folders are supported; Finder's blank background has no equivalent action. If absent, enable the service in System Settings keyboard shortcuts / Services, or log in again. Click the toggle again to remove it.
+macOS: place the app in a permanent location first (preferably Applications), then click the toggle to add a Finder Quick Action. Right-click selected folders or PDF/Word files and choose **Open in rgPDF** under **Quick Actions/Services**. Multiple selected folders or supported files are accepted; Finder's blank background has no equivalent action. If absent, enable the service in System Settings keyboard shortcuts / Services, or log in again. Click the toggle again to remove it.
 
 Both integrations are opt-in, per-user, require no administrator privileges, and are never installed automatically. If rgPDF is running, the action forwards paths to its existing window and opens or selects folder tabs; otherwise it starts the app and restores the session. Neither starts a search. Paths can also be queued while the app is starting, avoiding duplicate GUI and PDF-engine loading. Register again after moving the app; on macOS, remove and reinstall the action. Commands are also available:
 
@@ -115,7 +117,7 @@ rgpdf --remove-context-menu
 rgpdf "folder path" "another folder path"
 ```
 
-Passing a file opens its parent folder. Launching without arguments brings back the existing window; use `rgpdf --new-window` for an independent window. In a development checkout, use `uv run rgpdf ...`; the Windows portable executable accepts the same arguments.
+Opening a file from the context menu or command line uses its parent folder as the search target without starting a search. Existing default PDF/Word applications remain unchanged. Launching without arguments brings back the existing window; use `rgpdf --new-window` for an independent window. In a development checkout, use `uv run rgpdf ...`; the Windows portable executable accepts the same arguments.
 
 ## Install the latest release
 

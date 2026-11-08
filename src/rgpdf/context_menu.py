@@ -18,7 +18,13 @@ WINDOWS_KEYS = (
     (r"Software\Classes\Directory\shell\rgPDF", "%1"),
     (r"Software\Classes\Directory\Background\shell\rgPDF", "%V"),
 )
+WINDOWS_FILE_KEYS = tuple(
+    (rf"Software\Classes\SystemFileAssociations\{extension}\shell\rgPDF", "%1")
+    for extension in (".pdf", ".doc", ".docx")
+)
 SERVICE_ID = "io.github.codemee.rgpdf.finder-service"
+SERVICE_TYPES = ("public.folder", "com.adobe.pdf", "com.microsoft.word.doc",
+                 "org.openxmlformats.wordprocessingml.document")
 
 
 def launch_command() -> list[str]:
@@ -30,10 +36,11 @@ def launch_command() -> list[str]:
     return [str(executable), "-m", "rgpdf"]
 
 
-def windows_command(placeholder: str) -> str:
+def windows_command(placeholder: str, *, is_file: bool = False) -> str:
     # Appending \. also quotes drive/UNC roots safely: a trailing backslash
     # immediately before a closing quote has special meaning to Windows argv.
-    return subprocess.list2cmdline(launch_command()) + f' -- "{placeholder}\\."'
+    suffix = "" if is_file else "\\."
+    return subprocess.list2cmdline(launch_command()) + f' -- "{placeholder}{suffix}"'
 
 
 def service_path() -> Path:
@@ -73,8 +80,8 @@ def finder_workflow() -> tuple[dict, dict]:
         "applicationBundleID": "com.apple.finder",
         "serviceApplicationBundleID": "com.apple.finder",
         "serviceApplicationPath": "/System/Library/CoreServices/Finder.app",
-        "inputTypeIdentifier": "com.apple.Automator.fileSystemObject.folder",
-        "serviceInputTypeIdentifier": "com.apple.Automator.fileSystemObject.folder",
+        "inputTypeIdentifier": "com.apple.Automator.fileSystemObject",
+        "serviceInputTypeIdentifier": "com.apple.Automator.fileSystemObject",
         "outputTypeIdentifier": "com.apple.Automator.nothing",
         "serviceOutputTypeIdentifier": "com.apple.Automator.nothing",
         "processesInput": 0, "serviceProcessesInput": 0,
@@ -88,7 +95,7 @@ def finder_workflow() -> tuple[dict, dict]:
             "NSMenuItem": {"default": "Open in rgPDF", "zh_TW": "用 rgPDF 開啟"},
             "NSMessage": "runWorkflowAsService",
             "NSRequiredContext": {"NSApplicationIdentifier": "com.apple.finder"},
-            "NSSendFileTypes": ["public.folder"],
+            "NSSendFileTypes": list(SERVICE_TYPES),
         }],
     }
     return info, workflow
@@ -98,9 +105,10 @@ def is_installed() -> bool:
     if sys.platform == "win32":
         import winreg
         try:
-            for path, placeholder in WINDOWS_KEYS:
+            for path, placeholder in WINDOWS_KEYS + WINDOWS_FILE_KEYS:
                 with winreg.OpenKey(winreg.HKEY_CURRENT_USER, path + r"\command") as key:
-                    if winreg.QueryValueEx(key, "")[0] != windows_command(placeholder):
+                    if winreg.QueryValueEx(key, "")[0] != windows_command(
+                            placeholder, is_file=(path, placeholder) in WINDOWS_FILE_KEYS):
                         return False
                 with winreg.OpenKey(winreg.HKEY_CURRENT_USER, path) as key:
                     try:
@@ -116,6 +124,8 @@ def is_installed() -> bool:
         try:
             info = plistlib.loads((service_path() / "Contents" / "Info.plist").read_bytes())
             return (info.get("CFBundleIdentifier") == SERVICE_ID
+                    and any(set(SERVICE_TYPES).issubset(service.get("NSSendFileTypes", []))
+                            for service in info.get("NSServices", []))
                     and (service_path() / "Contents" / "document.wflow").is_file())
         except (OSError, ValueError, plistlib.InvalidFileException):
             return False
@@ -125,7 +135,7 @@ def is_installed() -> bool:
 def set_enabled(enabled: bool, *, title: str = "Open in rgPDF") -> None:
     if sys.platform == "win32":
         import winreg
-        for path, placeholder in WINDOWS_KEYS:
+        for path, placeholder in WINDOWS_KEYS + WINDOWS_FILE_KEYS:
             if enabled:
                 with winreg.CreateKey(winreg.HKEY_CURRENT_USER, path) as key:
                     winreg.SetValueEx(key, "", 0, winreg.REG_SZ, title)
@@ -143,7 +153,8 @@ def set_enabled(enabled: bool, *, title: str = "Open in rgPDF") -> None:
                         except FileNotFoundError:
                             pass
                 with winreg.CreateKey(winreg.HKEY_CURRENT_USER, path + r"\command") as key:
-                    winreg.SetValueEx(key, "", 0, winreg.REG_SZ, windows_command(placeholder))
+                    winreg.SetValueEx(key, "", 0, winreg.REG_SZ, windows_command(
+                        placeholder, is_file=(path, placeholder) in WINDOWS_FILE_KEYS))
             else:
                 for owned in (path + r"\command", path):
                     try:

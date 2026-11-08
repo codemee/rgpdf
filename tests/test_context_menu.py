@@ -85,7 +85,9 @@ def test_windows_per_user_registration_and_quoted_roots(tmp_path, monkeypatch):
     import winreg
     root = rf'Software\rgpdf-test-{uuid4()}'
     keys = ((root + r'\Folder', '%1'), (root + r'\Background', '%V'))
+    file_keys = tuple((root + '\\File' + extension, '%1') for extension in ('.pdf', '.doc', '.docx'))
     monkeypatch.setattr(context_menu, 'WINDOWS_KEYS', keys)
+    monkeypatch.setattr(context_menu, 'WINDOWS_FILE_KEYS', file_keys)
     monkeypatch.setattr(context_menu, 'launch_command', lambda: [r'C:\App space\rgpdf.exe'])
     try:
         assert not context_menu.is_installed()
@@ -108,6 +110,9 @@ def test_windows_per_user_registration_and_quoted_roots(tmp_path, monkeypatch):
         assert not context_menu.is_installed()
         context_menu.set_enabled(True)
         assert context_menu.is_installed()
+        for key, placeholder in file_keys:
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, key + r'\command') as handle:
+                assert winreg.QueryValueEx(handle, '')[0] == context_menu.windows_command(placeholder, is_file=True)
         api = ctypes.WinDLL('shell32')
         api.CommandLineToArgvW.argtypes = [ctypes.c_wchar_p, ctypes.POINTER(ctypes.c_int)]
         api.CommandLineToArgvW.restype = ctypes.POINTER(ctypes.c_wchar_p)
@@ -122,11 +127,22 @@ def test_windows_per_user_registration_and_quoted_roots(tmp_path, monkeypatch):
                 assert [argv[i] for i in range(count.value)] == [r'C:\App space\rgpdf.exe', '--', folder + r'\.']
             finally:
                 kernel.LocalFree(argv)
+        for file in (r'C:\space folder\中文.pdf', r'C:\space folder\notes.doc', r'C:\space folder\notes.docx'):
+            count = ctypes.c_int()
+            argv = api.CommandLineToArgvW(context_menu.windows_command('%1', is_file=True).replace('%1', file),
+                                          ctypes.byref(count))
+            try:
+                assert [argv[i] for i in range(count.value)] == [r'C:\App space\rgpdf.exe', '--', file]
+            finally:
+                kernel.LocalFree(argv)
         context_menu.set_enabled(False)
         context_menu.set_enabled(False)
         assert not context_menu.is_installed()
+        for key, _ in keys + file_keys:
+            with pytest.raises(FileNotFoundError):
+                winreg.OpenKey(winreg.HKEY_CURRENT_USER, key)
     finally:
-        for key, _ in keys:
+        for key, _ in keys + file_keys:
             for owned in (key + r'\command', key):
                 try:
                     winreg.DeleteKey(winreg.HKEY_CURRENT_USER, owned)
@@ -150,7 +166,11 @@ def test_finder_workflow_install_remove_and_safe_paths(tmp_path, monkeypatch):
     context_menu.set_enabled(True)
     assert context_menu.is_installed()
     info = plistlib.loads((root / 'Contents' / 'Info.plist').read_bytes())
-    assert info['NSServices'][0]['NSSendFileTypes'] == ['public.folder']
+    assert set(info['NSServices'][0]['NSSendFileTypes']) == set(context_menu.SERVICE_TYPES)
+    info['NSServices'][0]['NSSendFileTypes'] = ['public.folder']
+    (root / 'Contents' / 'Info.plist').write_bytes(plistlib.dumps(info))
+    assert not context_menu.is_installed()
+    context_menu.set_enabled(True)
     workflow = plistlib.loads((root / 'Contents' / 'document.wflow').read_bytes())
     action = workflow['actions'][0]['action']['ActionParameters']
     assert action['inputMethod'] == 1
@@ -158,7 +178,7 @@ def test_finder_workflow_install_remove_and_safe_paths(tmp_path, monkeypatch):
     context_menu.set_enabled(False)
     context_menu.set_enabled(False)
     assert not root.exists()
-    assert len(refresh) == 4
+    assert len(refresh) == 5
     root.mkdir()
     marker = root / 'unrelated.txt'
     marker.write_text('keep')
@@ -180,7 +200,8 @@ def test_frozen_finder_command_uses_bundle_and_new_instance(monkeypatch):
 
 
 @pytest.mark.skipif(sys.platform != 'darwin', reason='Native macOS Automator execution')
-def test_finder_workflow_runs_with_folder_arguments(tmp_path, monkeypatch, qtbot):
+@pytest.mark.parametrize('as_file', [False, True])
+def test_finder_workflow_runs_with_folder_arguments(tmp_path, monkeypatch, qtbot, as_file):
     output = tmp_path / 'arguments.json'
     script = f'import json,sys; from pathlib import Path; Path({str(output)!r}).write_text(json.dumps(sys.argv[1:]))'
     monkeypatch.setattr(context_menu, 'launch_command', lambda: [sys.executable, '-c', script])
@@ -192,8 +213,12 @@ def test_finder_workflow_runs_with_folder_arguments(tmp_path, monkeypatch, qtbot
     document.write_bytes(plistlib.dumps(workflow))
     folder = tmp_path / 'folder with spaces & quotes'
     folder.mkdir()
-    result = subprocess.run(['/usr/bin/automator', '-i', str(folder), str(document)],
+    target = folder
+    if as_file:
+        target = folder / '中文 document.pdf'
+        target.touch()
+    result = subprocess.run(['/usr/bin/automator', '-i', str(target), str(document)],
                             capture_output=True, text=True, timeout=30)
     assert result.returncode == 0, result.stdout + result.stderr
     qtbot.waitUntil(output.is_file, timeout=5000)
-    assert json.loads(output.read_text()) == ['--', str(folder)]
+    assert json.loads(output.read_text()) == ['--', str(target)]
