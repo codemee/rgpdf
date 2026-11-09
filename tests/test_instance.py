@@ -14,16 +14,24 @@ from rgpdf.instance import AlreadyRunning, InstanceError, LocalInstance
 from rgpdf.main_window import MainWindow
 
 
-def test_new_window_bypasses_primary_instance(monkeypatch):
+def test_new_window_bypasses_primary_instance(monkeypatch, tmp_path):
     from rgpdf.bootstrap import main
     calls = []
-    monkeypatch.setattr('rgpdf.app.run_application', lambda args: calls.append(args.paths) or 7)
+    trace = tmp_path / 'trace.jsonl'
+    monkeypatch.setenv('RGPDF_STARTUP_TRACE', str(trace))
+    def run(args, **kwargs):
+        calls.append(args.paths)
+        kwargs['on_ready']()
+        return 7
+    monkeypatch.setattr('rgpdf.app.run_application', run)
 
     def forbidden():
         pytest.fail('Independent windows must not contact or own the primary endpoint')
 
     assert main(['--new-window', 'folder'], _instance_factory=forbidden) == 7
     assert calls == [['folder']]
+    import json
+    assert json.loads(trace.read_text(encoding='utf-8'))['event'] == 'gui-ready'
 
 
 def test_runtime_hook_defers_qt_until_gui_owner(monkeypatch):

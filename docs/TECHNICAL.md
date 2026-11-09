@@ -157,19 +157,27 @@ Whole-word tests cover prefixes/suffixes, underscores/digits, CJK and combining 
 
 ```shell
 uv sync
-uv run pytest
+uv run python scripts/check.py
 uv build
 ```
 
 `uv build` produces an sdist and wheel. The SVG application icon uses an equal-width/height silhouette with balanced margins, retaining the blue folded-document and `.*` mark. It lives inside the Python package so both editable and built installations can resolve it through `importlib.resources`.
 
+Local checks use `scripts/check.py`: targeted runs never certify the complete suite. A successful full run records a content/environment fingerprint in `.pytest_cache/rgpdf/full-pass.json`. Inputs include source/assets, tests, scripts, workflows, packaging and test configuration, locked dependencies, installed package versions, interpreter/platform and relevant environment variables. Only the project's version fields and documentation contents are excluded; the three version declarations are always checked for agreement. Failed runs invalidate the record; input changes during a run prevent certification. `PYTEST_ADDOPTS` disables reuse/certification, and `--force` runs regardless of an existing pass. Ordinary UI changes use local targeted checks and one final full run; remote trial builds are reserved for packaging changes. CI independently runs `uv run --frozen pytest` on both platforms.
+
 ## Release process
 
 1. Set the same version in `pyproject.toml` and `src/rgpdf/__init__.py`.
 2. Update both changelogs and both README/technical-document variants when behavior changes.
-3. Run tests locally and launch `uv run rgpdf` for manual testing. Executable builds run only remotely.
+3. Run `uv run python scripts/check.py` locally and launch `uv run rgpdf` for manual testing. Matching full passes may be reused for version/documentation-only changes. Executable builds run only remotely.
 4. Commit and push `main`, then create and push the immutable `vX.Y.Z` tag.
-5. The tag push runs `.github/workflows/publish-pypi.yml`, tests and builds Windows/macOS artifacts remotely, creates the GitHub Release, and publishes to PyPI through Trusted Publishing.
+5. The tag push runs `.github/workflows/publish-pypi.yml`: prepare a draft, test/build both platforms, upload assets directly and in parallel, then publish only after all jobs and asset validation pass. PyPI publication follows through Trusted Publishing.
 6. Move the `latest` source tag to the same commit after the release workflow succeeds.
 
 Install documentation must use PyPI's latest release or the moving `latest` source tag, never a hard-coded version tag. Immutable version tags remain available for reproducible source checkout and release history. The PyPI project must trust repository `codemee/rgpdf`, workflow `publish-pypi.yml`, and environment `pypi`; no long-lived upload token is stored in GitHub.
+
+The draft helper `scripts/release.py` pins the tag to the tested commit and records that SHA in bilingual release notes. Retries resume only an owned draft for that SHA. Uploads cannot overwrite published releases; the publish gate requires exactly the ten expected, nonempty, fully uploaded assets. Failed jobs leave the draft unpublished. Only wheel/sdist files travel through Actions artifacts for the subsequent PyPI job, without redundant compression; native and corresponding-source bundles go directly to the draft.
+
+`scripts/package_third_party_sources.py --cache-dir ...` validates locked native dependency versions before every cache use. Cached tar members are streamed without extraction, enforcing the expected file set, regular-file types, pinned upstream SHA-256 hashes and exact manifest/README contents. Invalid caches are rebuilt from verified downloads. The stable cached bundle is copied to each version's release filename and a fresh outer checksum is emitted. CI keys include the source manifest and packaging script, not the application version. `.github/workflows/source-cache.yml` warms the default-branch cache only when those inputs change (or on manual dispatch), allowing new version-tag workflows to restore it across releases. A first cold/racing release may still download sources. This cache belongs to GitHub runners and does not change application caches.
+
+macOS startup checks use `scripts/test_macos_startup.py`, waiting with a timeout for an optional `gui-ready` trace emitted from the GUI event loop instead of sleeping for eight seconds. They then check file forwarding without heavy imports. The trace is enabled only for smoke tests through `RGPDF_STARTUP_TRACE`. Windows retains the extracted-ZIP startup and IPC checks.

@@ -224,7 +224,7 @@ def deliver_external_request(window, paths):
     window.activateWindow()
 
 
-def run_application(arguments, *, instance=None) -> int:
+def run_application(arguments, *, instance=None, on_ready=None) -> int:
     cleanup_word_cache()
     QApplication.setHighDpiScaleFactorRoundingPolicy(
         Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
@@ -261,4 +261,6 @@ def run_application(arguments, *, instance=None) -> int:
         else None
     )
     window.show()
+    if on_ready is not None:
+        QTimer.singleShot(0, on_ready)
     return app.exec()

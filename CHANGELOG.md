@@ -4,6 +4,11 @@
 
 All notable changes are documented here. Immutable releases use `vX.Y.Z`; the moving `latest` tag points to the newest published release.
 
+## Unreleased
+
+- Reuse local full-test passes only for matching code/environment fingerprints; keep independent full Windows/macOS release tests.
+- Cache and verify corresponding source bundles across releases, upload build outputs directly to a commit-bound draft, and publish only after all checks and assets pass. Generate bilingual release notes automatically and wait for real macOS GUI readiness.
+
 ## 0.1.11 — 2026-11-08
 
 - Moved Open folder from the tab-bar corner to the first main-toolbar position, using the standard button size and preserving folder-tab behavior.

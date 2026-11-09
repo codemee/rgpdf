@@ -157,7 +157,7 @@ IPC 測試涵蓋沒有 GUI 事件迴圈時接收啟動要求、中文及空白�
 
 ```shell
 uv sync
-uv run pytest
+uv run python scripts/check.py
 uv build
 ```
 
@@ -165,13 +165,21 @@ uv build
 
 應用程式的 SVG 圖示採等寬高輪廓與均衡留白，保留藍色折角文件及 `.*` 標誌；Windows 與 macOS 圖示產生器都沿用同一份 SVG。
 
+本機檢查使用 `scripts/check.py`：部分測試通過不代表整套通過。完整測試成功後，將內容／環境指紋保存在 `.pytest_cache/rgpdf/full-pass.json`，涵蓋程式與資源、測試、腳本、工作流程、封裝及測試設定、鎖定相依套件、實際安裝版本、直譯器／平台與相關環境變數。僅排除專案版本欄位及文件內容；每次仍檢查三處版本一致。測試失敗會使紀錄失效；測試期間輸入改變則不記錄成功。有 `PYTEST_ADDOPTS` 時不重用或認證完整結果，`--force` 可強制重跑。一般介面修改先跑相關測試，定稿後整套跑一次；僅封裝改動才提前遠端建置測試版。CI 仍在兩平台獨立執行 `uv run --frozen pytest`。
+
 ## 發布流程
 
 1. 在 `pyproject.toml` 與 `src/rgpdf/__init__.py` 設定相同版本。
 2. 行為變更時同步更新中英文變更紀錄、README 與技術文件。
-3. 本機執行測試並啟動 `uv run rgpdf` 供手動測試；執行檔只在遠端建置。
+3. 本機執行 `uv run python scripts/check.py` 並啟動 `uv run rgpdf` 供手動測試；只有版本／文件更新時，可沿用指紋相同的完整通過結果。執行檔只在遠端建置。
 4. 提交並推送 `main`，建立並推送不可變的 `vX.Y.Z` 標籤。
-5. tag 推送會觸發 `.github/workflows/publish-pypi.yml`，遠端測試與建置 Windows／macOS 發布檔、建立 GitHub Release，再透過 Trusted Publishing 發布至 PyPI。
+5. tag 推送觸發 `.github/workflows/publish-pypi.yml`：先建立草稿，兩平台測試與建置後平行直接上傳附件；全部工作及附件驗證通過才公開，再透過 Trusted Publishing 發布至 PyPI。
 6. 發布工作流程成功後，將 `latest` 原始碼標籤移至相同 commit。
 
 安裝文件必須使用 PyPI 的最新發布版本或會移動的 `latest` 原始碼標籤，不得寫死版本標籤；不可變版本標籤則保留給可重現的原始碼 checkout 與發布歷程。PyPI 專案必須信任儲存庫 `codemee/rgpdf`、工作流程 `publish-pypi.yml` 與 environment `pypi`，GitHub 不保存長效上傳 token。
+
+草稿工具 `scripts/release.py` 會將版本標籤固定在受測提交，並在雙語說明記錄 SHA；重試僅能接續同一 SHA 的自有草稿，不覆寫已發布版本。公開前要求十個預期附件完整、非空且上傳完成。工作失敗時保留未公開草稿。僅後續 PyPI 需要的 wheel／sdist 經 Actions artifact 傳遞，停用重複壓縮；原生發布檔與對應來源包直接上傳草稿。
+
+`scripts/package_third_party_sources.py --cache-dir ...` 每次先驗證鎖定的原生相依版本。快取 tar 不解壓到磁碟，而是串流檢查成員清單、一般檔案類型、上游固定 SHA-256 及完整的清單／README 內容；不符便重新下載驗證並重建。穩定的快取包複製為各版檔名，再產生外層校驗碼。CI key 使用來源清單及打包腳本，不包含應用程式版本。`.github/workflows/source-cache.yml` 僅在這些輸入變更（或手動觸發）時預熱主分支快取，讓不同版本標籤能重用；首次快取未就緒時仍可能下載。此快取只在 GitHub runner，與應用程式快取無關。
+
+macOS 改由 `scripts/test_macos_startup.py` 限時等待 GUI 事件迴圈發出的選用 `gui-ready` 追蹤，再驗證檔案轉交不載入大型模組，取代固定等待八秒。只有 smoke test 設定 `RGPDF_STARTUP_TRACE` 時才寫追蹤檔；Windows 保留解壓後 ZIP 的啟動與 IPC 驗證。

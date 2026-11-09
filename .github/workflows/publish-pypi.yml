@@ -8,6 +8,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   validate:
     name: Validate release version
@@ -15,7 +19,7 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - id: version
         name: Match package version to tag
         shell: python
@@ -37,12 +41,27 @@ jobs:
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
               print(f"version={tag_version}", file=output)
 
+  prepare-release:
+    name: Prepare draft Release
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - name: Create or resume the draft for this commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python scripts/release.py prepare --tag "$GITHUB_REF_NAME" --sha "$GITHUB_SHA"
+
   build-windows:
     name: Build Windows x86_64
-    needs: validate
+    needs: [validate, prepare-release]
     runs-on: windows-latest
+    permissions:
+      contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: "3.12"
@@ -59,20 +78,21 @@ jobs:
           $expanded = Join-Path $env:RUNNER_TEMP 'rgpdf-release-smoke'
           Expand-Archive -LiteralPath "dist\rgpdf-${{ needs.validate.outputs.version }}-windows-x86_64.zip" -DestinationPath $expanded
           ./scripts/test-windows-startup.ps1 -Binary (Join-Path $expanded 'rgpdf\rgpdf.exe')
-      - uses: actions/upload-artifact@v4
-        with:
-          name: release-windows-x86_64
-          if-no-files-found: error
-          path: |
-            dist/rgpdf-*-windows-x86_64.zip
-            dist/rgpdf-*-windows-x86_64.zip.sha256
+      - name: Upload Windows assets directly to the draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          .venv/Scripts/python.exe scripts/release.py upload --tag $env:GITHUB_REF_NAME --sha $env:GITHUB_SHA --files "dist/rgpdf-${{ needs.validate.outputs.version }}-windows-x86_64.zip" "dist/rgpdf-${{ needs.validate.outputs.version }}-windows-x86_64.zip.sha256"
 
   build-macos:
     name: Build macOS arm64
-    needs: validate
+    needs: [validate, prepare-release]
     runs-on: macos-15
+    permissions:
+      contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: "3.12"
@@ -85,14 +105,7 @@ jobs:
       - name: Build App
         run: ./scripts/build-macos.sh
       - name: Smoke test App
-        shell: bash
-        run: |
-          QT_QPA_PLATFORM=offscreen dist/rgpdf.app/Contents/MacOS/rgpdf &
-          app_pid=$!
-          sleep 8
-          kill -0 "$app_pid"
-          kill "$app_pid"
-          wait "$app_pid" || true
+        run: uv run --frozen python scripts/test_macos_startup.py dist/rgpdf.app/Contents/MacOS/rgpdf
       - name: Verify and package App as DMG
         shell: bash
         run: |
@@ -102,22 +115,20 @@ jobs:
             ./scripts/package-macos-dmg.sh "dist/$filename"
           cd dist
           shasum -a 256 "$filename" > "$filename.sha256"
-      - uses: actions/upload-artifact@v4
-        with:
-          name: release-macos-arm64
-          if-no-files-found: error
-          path: |
-            dist/rgpdf-*-macos-arm64.dmg
-            dist/rgpdf-*-macos-arm64.dmg.sha256
+      - name: Upload macOS assets directly to the draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          .venv/bin/python scripts/release.py upload --tag "$GITHUB_REF_NAME" --sha "$GITHUB_SHA" --files "dist/rgpdf-${{ needs.validate.outputs.version }}-macos-arm64.dmg" "dist/rgpdf-${{ needs.validate.outputs.version }}-macos-arm64.dmg.sha256"
 
   package-python:
     name: Build Python and source distributions
-    needs: validate
+    needs: [validate, prepare-release]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v6
       - name: Build wheel and source distribution
         run: uv build
@@ -127,73 +138,61 @@ jobs:
             --format=tar.gz \
             --prefix="rgpdf-${{ needs.validate.outputs.version }}/" \
             --output="dist/rgpdf-${{ needs.validate.outputs.version }}-source.tar.gz" \
-            "${{ github.ref_name }}"
+            HEAD
           cd dist
           sha256sum "rgpdf-${{ needs.validate.outputs.version }}-source.tar.gz" \
             > "rgpdf-${{ needs.validate.outputs.version }}-source.tar.gz.sha256"
-      - uses: actions/upload-artifact@v4
+      - name: Upload project sources directly to the draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python scripts/release.py upload --tag "$GITHUB_REF_NAME" --sha "$GITHUB_SHA" --files "dist/rgpdf-${{ needs.validate.outputs.version }}-source.tar.gz" "dist/rgpdf-${{ needs.validate.outputs.version }}-source.tar.gz.sha256"
+      - uses: actions/upload-artifact@v7
         with:
           name: python-distributions
           if-no-files-found: error
-          path: dist/
+          compression-level: 0
+          path: |
+            dist/rgpdf-${{ needs.validate.outputs.version }}-*.whl
+            dist/rgpdf-${{ needs.validate.outputs.version }}.tar.gz
 
   package-third-party-sources:
     name: Package corresponding third-party sources
-    needs: validate
+    needs: [validate, prepare-release]
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+      - uses: actions/cache@v6
+        with:
+          path: .cache/third-party-sources
+          key: third-party-sources-v1-${{ hashFiles('third-party-sources.toml', 'scripts/package_third_party_sources.py') }}
       - name: Download, verify, and package sources
         run: |
           python scripts/package_third_party_sources.py \
             --project-version "${{ needs.validate.outputs.version }}" \
-            --output-dir dist
-      - uses: actions/upload-artifact@v4
-        with:
-          name: third-party-sources
-          if-no-files-found: error
-          compression-level: 0
-          path: |
-            dist/rgpdf-*-third-party-sources.tar.gz
-            dist/rgpdf-*-third-party-sources.tar.gz.sha256
+            --output-dir dist --cache-dir .cache/third-party-sources
+      - name: Upload third-party sources directly to the draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python scripts/release.py upload --tag "$GITHUB_REF_NAME" --sha "$GITHUB_SHA" --files "dist/rgpdf-${{ needs.validate.outputs.version }}-third-party-sources.tar.gz" "dist/rgpdf-${{ needs.validate.outputs.version }}-third-party-sources.tar.gz.sha256"
 
   release:
     name: Publish GitHub Release
-    needs: [validate, build-windows, build-macos, package-python, package-third-party-sources]
+    needs: [validate, prepare-release, build-windows, build-macos, package-python, package-third-party-sources]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          pattern: release-*
-          path: release-assets
-          merge-multiple: true
-      - uses: actions/download-artifact@v4
-        with:
-          name: python-distributions
-          path: python-dist
-      - uses: actions/download-artifact@v4
-        with:
-          name: third-party-sources
-          path: third-party-sources
-      - name: Collect GitHub Release assets
-        run: |
-          cp python-dist/rgpdf-*-source.tar.gz release-assets/
-          cp python-dist/rgpdf-*-source.tar.gz.sha256 release-assets/
-          cp third-party-sources/* release-assets/
-          cp LICENSE THIRD-PARTY-NOTICES.md release-assets/
-      - name: Create GitHub Release
+      - uses: actions/checkout@v7
+      - name: Verify complete assets and publish the draft
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "${{ github.ref_name }}" \
-            release-assets/* \
-            --verify-tag \
-            --generate-notes \
-            --title "rgPDF ${{ needs.validate.outputs.version }}"
+          python scripts/release.py publish --tag "$GITHUB_REF_NAME" --sha "$GITHUB_SHA"
 
   publish-pypi:
     name: Publish to PyPI
@@ -205,11 +204,9 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: python-distributions
           path: dist/
-      - name: Remove GitHub-only source archive
-        run: rm dist/rgpdf-*-source.tar.gz dist/rgpdf-*-source.tar.gz.sha256
       - name: Publish distributions
         uses: pypa/gh-action-pypi-publish@release/v1

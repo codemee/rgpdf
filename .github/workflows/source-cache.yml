@@ -1,0 +1,32 @@
+name: Cache corresponding third-party sources
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - third-party-sources.toml
+      - scripts/package_third_party_sources.py
+      - .github/workflows/source-cache.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: source-cache-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  cache:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/cache@v6
+        with:
+          path: .cache/third-party-sources
+          key: third-party-sources-v1-${{ hashFiles('third-party-sources.toml', 'scripts/package_third_party_sources.py') }}
+      - name: Verify or build the default-branch source cache
+        run: |
+          python scripts/package_third_party_sources.py --project-version cache \
+            --output-dir "$RUNNER_TEMP/source-cache-check" --cache-dir .cache/third-party-sources

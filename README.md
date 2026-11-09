@@ -171,9 +171,11 @@ uv tool install "git+https://github.com/codemee/rgpdf.git@latest"
 git clone https://github.com/codemee/rgpdf.git
 cd rgpdf
 uv sync
-uv run pytest
+uv run python scripts/check.py
 uv run rgpdf
 ```
+
+開發時可用 `uv run python scripts/check.py tests/test_ui.py` 執行相關測試；定稿後執行不帶路徑的完整檢查。程式、測試、相依套件或執行環境未變時，完整通過結果可重用；只改版本與文件仍會檢查版本一致性。`--force` 可強制重跑。
 
 工具列圖示修改後，使用 `uv run python scripts/generate_toolbar_icons.py` 更新 README 圖片。
 

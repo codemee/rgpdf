@@ -47,7 +47,7 @@ def main(argv=None, *, _instance_factory=LocalInstance) -> int:
     if arguments.new_window:
         _prepare_gui()
         from rgpdf.app import run_application
-        return run_application(arguments)
+        return run_application(arguments, on_ready=lambda: _trace('gui-ready', started))
     instance = _instance_factory()
     # Lexical normalization only: filesystem/network access belongs to the GUI.
     paths = [os.path.abspath(os.path.expanduser(path)) for path in arguments.paths if path]
@@ -68,7 +68,7 @@ def main(argv=None, *, _instance_factory=LocalInstance) -> int:
         _trace('primary', started)
         _prepare_gui()
         from rgpdf.app import run_application
-        return run_application(arguments, instance=instance)
+        return run_application(arguments, instance=instance, on_ready=lambda: _trace('gui-ready', started))
     except OSError as exc:
         return _error(str(exc))
     finally:

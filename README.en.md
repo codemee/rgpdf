@@ -181,9 +181,11 @@ uv tool install "git+https://github.com/codemee/rgpdf.git@latest"
 git clone https://github.com/codemee/rgpdf.git
 cd rgpdf
 uv sync
-uv run pytest
+uv run python scripts/check.py
 uv run rgpdf
 ```
+
+During development, target relevant tests with `uv run python scripts/check.py tests/test_ui.py`; run without paths when the implementation settles. A full pass is reused only for identical code, tests, dependencies and environment. Version/documentation-only changes still check version consistency; `--force` reruns tests.
 
 After toolbar artwork changes, regenerate the README images with
 `uv run python scripts/generate_toolbar_icons.py`.
